@@ -1,0 +1,551 @@
+// Mobile App Mock Events Data
+// Adapted from v3 web app with mobile-optimized structure
+
+export type EventStatus = "trending" | "upcoming" | "featured" | "past" | "completed";
+export type EventCategory =
+  | "Hackathon"
+  | "Cultural"
+  | "MUN"
+  | "Film & Arts"
+  | "Entrepreneurship"
+  | "Science & Tech"
+  | "Workshop"
+  | "Sports"
+  | "Ideathon";
+
+export interface Org {
+  id: string;
+  name: string;
+  type: "university" | "college" | "club" | "community";
+  description: string;
+  parentOrgId?: string;
+  image: string;
+  website?: string;
+}
+
+export interface OrgRef {
+  id: string;
+  name: string;
+}
+
+export interface ScheduleItem {
+  time: string;
+  title: string;
+  speaker?: string;
+}
+
+export interface Speaker {
+  name: string;
+  title: string;
+  organization: string;
+  bio: string;
+  image?: string;
+  social?: {
+    linkedin?: string;
+    twitter?: string;
+  };
+}
+
+export interface Reward {
+  position: string;
+  prize: string;
+  description?: string;
+  icon?: string;
+}
+
+export interface MockEvent {
+  id: string;
+  title: string;
+  org: OrgRef;
+  collaborators?: OrgRef[];  // For collaboration events
+  organizer: string;  // kept for backwards compat display
+  college: string;
+  date: string;
+  dateISO: string;
+  time: string;
+  category: EventCategory;
+  eventType: "inPerson" | "online" | "hybrid";
+  status: EventStatus[];
+  tags: string[];
+  description: string;
+  price: number;
+  spotsLeft: number;
+  totalSpots: number;
+  registrationDeadline: string;
+  location: string;
+  attendees: number;
+  schedule: ScheduleItem[];
+  speakers?: Speaker[];  // Guest speakers and special guests
+  rewards?: Reward[];  // Prizes, certificates, goodies
+  posterGradient: string;
+  parentEventId?: string;  // For sub-events
+  isParentEvent?: boolean;  // Indicates this event has sub-events
+}
+
+// ─── Org Data ────────────────────────────────────────────────────────────────
+
+export const orgs: Org[] = [
+  {
+    id: "mruh",
+    name: "Malla Reddy University",
+    type: "university",
+    description: "Malla Reddy University (MRUH) is one of the leading private universities in Hyderabad, Telangana. Home to diverse clubs, cells, and departments that host 25+ events every academic year.",
+    image: "/orgs/mruh.png",
+  },
+  {
+    id: "ie-cell",
+    name: "Innovation & Entrepreneurship Cell",
+    type: "club",
+    description: "The IE Cell at MRUH is the driving force behind the campus startup ecosystem. From ideathons to summits, we build tomorrow's founders today.",
+    parentOrgId: "mruh",
+    image: "/orgs/tech.png",
+  },
+  {
+    id: "gdg-mruh",
+    name: "GDGon Campus MRUH",
+    type: "club",
+    description: "Google Developer Groups on Campus at MRUH — a community of developers building with Google technologies. We run hackathons, workshops, and open source sprints.",
+    parentOrgId: "mruh",
+    image: "/orgs/tech.png",
+  },
+  {
+    id: "marquee",
+    name: "Marquee Film Club",
+    type: "club",
+    description: "Marquee is MRUH's official film and arts collective. We celebrate student creativity through screenings, cultural festivals, open mics, and film competitions.",
+    parentOrgId: "mruh",
+    image: "/orgs/arts.png",
+  },
+  {
+    id: "mun-mruh",
+    name: "MUN Club MRUH",
+    type: "club",
+    description: "The MUN Club organises Model United Nations conferences and debate summits, training students in diplomacy, public speaking, and global affairs.",
+    parentOrgId: "mruh",
+    image: "/orgs/event.png",
+  },
+  {
+    id: "linkedinspire",
+    name: "LinkedInspire Club",
+    type: "club",
+    description: "LinkedInspire helps students build their professional brand, master LinkedIn, and connect with industry — from freshers to final years.",
+    parentOrgId: "mruh",
+    image: "/orgs/tech.png",
+  },
+  {
+    id: "bos-rd",
+    name: "BOS & R&D Dept. MRUH",
+    type: "club",
+    description: "The Board of Studies and Research & Development Department drives academic innovation at MRUH, organising Science Day, research expos, and faculty-led seminars.",
+    parentOrgId: "mruh",
+    image: "/orgs/tech.png",
+  },
+  {
+    id: "sports-committee",
+    name: "Sports Committee MRUH",
+    type: "club",
+    description: "The Sports Committee manages all inter-departmental and university-level sporting events — from cricket and football to basketball and athletics.",
+    parentOrgId: "mruh",
+    image: "/orgs/event.png",
+  },
+  {
+    id: "soe",
+    name: "School of Engineering",
+    type: "college",
+    description: "The School of Engineering at MRUH houses departments across CSE, ECE, Mechanical, Civil and more — and is home to several active technical clubs and cells.",
+    parentOrgId: "mruh",
+    image: "/orgs/mruh.png",
+  },
+  {
+    id: "sos",
+    name: "School of Science",
+    type: "college",
+    description: "The School of Science at MRUH encompasses Physics, Chemistry, Mathematics, and Life Sciences departments, fostering scientific research and innovation.",
+    parentOrgId: "mruh",
+    image: "/orgs/mruh.png",
+  },
+  {
+    id: "tedx-mruh",
+    name: "TEDx Malla Reddy University",
+    type: "community",
+    description: "TEDx MRUH is an independently organised TED event that brings together ideas worth spreading — student talks, workshops, and community conversations.",
+    image: "/orgs/event.png",
+  },
+];
+
+const mockEvents: MockEvent[] = [
+  {
+    id: "esummit26",
+    title: "ESummit'26",
+    org: { id: "ie-cell", name: "Innovation & Entrepreneurship Cell" },
+    organizer: "Innovation & Entrepreneurship Cell",
+    college: "Malla Reddy University",
+    date: "Monday, March 16, 2026",
+    dateISO: "2026-03-16",
+    time: "10:00 AM – 06:00 PM",
+    category: "Entrepreneurship",
+    eventType: "inPerson",
+    status: ["featured", "trending"],
+    tags: ["Trending", "Featured", "Free"],
+    description:
+      "The flagship entrepreneurship summit — startup pitches, VC talks, panel discussions & networking. ESummit'26 brings together the brightest student founders, mentors, and investors for a full day of action-packed programming.",
+    price: 0,
+    spotsLeft: 180,
+    totalSpots: 1200,
+    registrationDeadline: "March 14, 2026",
+    location: "Auditorium, Block 3, Malla Reddy University",
+    attendees: 1020,
+    schedule: [
+      { time: "10:00 AM", title: "Inauguration & Opening Keynote" },
+      { time: "11:30 AM", title: "Startup Pitch Round 1" },
+      { time: "01:00 PM", title: "Lunch & Networking" },
+      { time: "02:30 PM", title: "Panel: Future of Student Entrepreneurship" },
+      { time: "04:00 PM", title: "Startup Pitch Finals" },
+      { time: "05:30 PM", title: "Awards & Closing" },
+    ],
+    speakers: [
+      {
+        name: "Priya Sharma",
+        title: "Founder & CEO",
+        organization: "TechVentures India",
+        bio: "Serial entrepreneur with 3 successful exits. Passionate about empowering student founders and building the next generation of Indian startups.",
+        social: {
+          linkedin: "https://linkedin.com/in/priyasharma",
+          twitter: "https://twitter.com/priyasharma"
+        }
+      },
+      {
+        name: "Rahul Mehta",
+        title: "Partner",
+        organization: "Sequoia Capital India",
+        bio: "Early-stage investor focused on SaaS and consumer tech. Previously founded two startups and led product at Flipkart.",
+        social: {
+          linkedin: "https://linkedin.com/in/rahulmehta"
+        }
+      },
+    ],
+    rewards: [
+      {
+        position: "Best Startup Pitch",
+        prize: "₹50,000 Seed Funding",
+        description: "Cash prize + 6 months free incubation + mentorship"
+      },
+      {
+        position: "Runner Up",
+        prize: "₹25,000 Cash Prize",
+        description: "Mentorship sessions + networking with VCs"
+      },
+    ],
+    posterGradient: "linear-gradient(135deg, #0062ff 0%, #3491ff 50%, #5aa3ff 100%)",
+  },
+  {
+    id: "science-day",
+    title: "National Science Day 2026",
+    org: { id: "bos-rd", name: "BOS & R&D Dept. MRUH" },
+    collaborators: [
+      { id: "soe", name: "School of Engineering" },
+      { id: "sos", name: "School of Science" },
+    ],
+    organizer: "BOS & R&D Dept. MRUH",
+    college: "Malla Reddy University",
+    date: "Saturday, February 28, 2026",
+    dateISO: "2026-02-28",
+    time: "09:00 AM – 05:00 PM",
+    category: "Science & Tech",
+    eventType: "inPerson",
+    status: ["past"],
+    tags: ["Completed", "Collaboration"],
+    description:
+      "National Science Day celebrations — a collaborative event organized by BOS & R&D Department with School of Engineering and School of Science. Features 4 sub-events including exhibitions, quizzes, lab demos & talks. Marking Raman Effect Day with science all day.",
+    price: 0,
+    spotsLeft: 0,
+    totalSpots: 900,
+    registrationDeadline: "February 25, 2026",
+    location: "Science Block, Malla Reddy University",
+    attendees: 870,
+    isParentEvent: true,
+    schedule: [
+      { time: "09:00 AM", title: "Inauguration" },
+      { time: "09:30 AM", title: "Science Quiz Competition" },
+      { time: "11:00 AM", title: "Lab Demonstrations" },
+      { time: "01:00 PM", title: "Lunch" },
+      { time: "02:00 PM", title: "Guest Talk: History of Science" },
+      { time: "04:00 PM", title: "Science Exhibition" },
+    ],
+    posterGradient: "linear-gradient(135deg, #001a4d 0%, #003d99 50%, #0062ff 100%)",
+  },
+  {
+    id: "science-day-quiz",
+    title: "Science Quiz Competition",
+    org: { id: "soe", name: "School of Engineering" },
+    organizer: "School of Engineering",
+    college: "Malla Reddy University",
+    date: "Saturday, February 28, 2026",
+    dateISO: "2026-02-28",
+    time: "09:30 AM – 11:00 AM",
+    category: "Science & Tech",
+    eventType: "inPerson",
+    status: ["past"],
+    tags: ["Completed", "Sub-event"],
+    description:
+      "Inter-department science quiz competition covering Physics, Chemistry, Biology, and Mathematics. Part of National Science Day 2026 celebrations.",
+    price: 0,
+    spotsLeft: 0,
+    totalSpots: 200,
+    registrationDeadline: "February 25, 2026",
+    location: "Auditorium, Science Block",
+    attendees: 185,
+    parentEventId: "science-day",
+    schedule: [
+      { time: "09:30 AM", title: "Registration & Team Formation" },
+      { time: "10:00 AM", title: "Round 1: Written Quiz" },
+      { time: "10:30 AM", title: "Round 2: Rapid Fire" },
+      { time: "11:00 AM", title: "Prize Distribution" },
+    ],
+    posterGradient: "linear-gradient(135deg, #0062ff 0%, #3491ff 50%, #5aa3ff 100%)",
+  },
+  {
+    id: "science-day-lab-demo",
+    title: "Interactive Lab Demonstrations",
+    org: { id: "soe", name: "School of Engineering" },
+    organizer: "School of Engineering",
+    college: "Malla Reddy University",
+    date: "Saturday, February 28, 2026",
+    dateISO: "2026-02-28",
+    time: "11:00 AM – 01:00 PM",
+    category: "Science & Tech",
+    eventType: "inPerson",
+    status: ["past"],
+    tags: ["Completed", "Sub-event"],
+    description:
+      "Hands-on lab demonstrations across Physics, Chemistry, and Engineering labs. Students can interact with experiments and learn from faculty. Part of National Science Day 2026.",
+    price: 0,
+    spotsLeft: 0,
+    totalSpots: 300,
+    registrationDeadline: "February 25, 2026",
+    location: "Lab Complex, Science Block",
+    attendees: 280,
+    parentEventId: "science-day",
+    schedule: [
+      { time: "11:00 AM", title: "Physics Lab Demo" },
+      { time: "11:30 AM", title: "Chemistry Lab Demo" },
+      { time: "12:00 PM", title: "Engineering Lab Demo" },
+      { time: "12:30 PM", title: "Q&A with Faculty" },
+    ],
+    posterGradient: "linear-gradient(135deg, #1a75ff 0%, #3491ff 50%, #0062ff 100%)",
+  },
+  {
+    id: "science-day-talk",
+    title: "History of Science: A Journey",
+    org: { id: "soe", name: "School of Engineering" },
+    organizer: "School of Engineering",
+    college: "Malla Reddy University",
+    date: "Saturday, February 28, 2026",
+    dateISO: "2026-02-28",
+    time: "02:00 PM – 03:30 PM",
+    category: "Science & Tech",
+    eventType: "inPerson",
+    status: ["past"],
+    tags: ["Completed", "Sub-event"],
+    description:
+      "Guest lecture on the evolution of scientific thought from ancient times to modern discoveries. Special focus on Indian contributions to science. Part of National Science Day 2026.",
+    price: 0,
+    spotsLeft: 0,
+    totalSpots: 250,
+    registrationDeadline: "February 25, 2026",
+    location: "Main Auditorium, Block 3",
+    attendees: 235,
+    parentEventId: "science-day",
+    schedule: [
+      { time: "02:00 PM", title: "Introduction", speaker: "Dr. Rajesh Kumar" },
+      { time: "02:15 PM", title: "Ancient Scientific Discoveries" },
+      { time: "02:45 PM", title: "Modern Science & Technology" },
+      { time: "03:15 PM", title: "Q&A Session" },
+    ],
+    posterGradient: "linear-gradient(135deg, #004acc 0%, #0062ff 50%, #1a75ff 100%)",
+  },
+  {
+    id: "science-day-exhibition",
+    title: "Science Exhibition & Projects",
+    org: { id: "sos", name: "School of Science" },
+    organizer: "School of Science",
+    college: "Malla Reddy University",
+    date: "Saturday, February 28, 2026",
+    dateISO: "2026-02-28",
+    time: "04:00 PM – 05:00 PM",
+    category: "Science & Tech",
+    eventType: "inPerson",
+    status: ["past"],
+    tags: ["Completed", "Sub-event"],
+    description:
+      "Student science project exhibition showcasing innovative research and experiments. Open to all departments. Best projects awarded. Part of National Science Day 2026.",
+    price: 0,
+    spotsLeft: 0,
+    totalSpots: 400,
+    registrationDeadline: "February 25, 2026",
+    location: "Exhibition Hall, Science Block",
+    attendees: 370,
+    parentEventId: "science-day",
+    schedule: [
+      { time: "04:00 PM", title: "Exhibition Opens" },
+      { time: "04:30 PM", title: "Judging Round" },
+      { time: "04:45 PM", title: "Best Project Awards" },
+    ],
+    posterGradient: "linear-gradient(135deg, #003d99 0%, #0062ff 50%, #3491ff 100%)",
+  },
+];
+
+// ─── Mock API ────────────────────────────────────────────────────────────────
+
+export function getAllEvents(): MockEvent[] {
+  return mockEvents;
+}
+
+export function getEventById(id: string): MockEvent | undefined {
+  return mockEvents.find((e) => e.id === id);
+}
+
+export function filterEvents({
+  query = "",
+  category = "All",
+  status = "all",
+  price = "all",
+  dateRange = "all",
+}: {
+  query?: string;
+  category?: string;
+  status?: string;
+  price?: "all" | "free" | "paid";
+  dateRange?: "all" | "today" | "week" | "upcoming";
+}): MockEvent[] {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const weekEnd = new Date(today);
+  weekEnd.setDate(today.getDate() + 7);
+
+  return mockEvents.filter((e) => {
+    const matchesQuery =
+      !query ||
+      e.title.toLowerCase().includes(query.toLowerCase()) ||
+      e.organizer.toLowerCase().includes(query.toLowerCase()) ||
+      e.description.toLowerCase().includes(query.toLowerCase());
+    const matchesCategory = category === "All" || e.category === category;
+    const matchesStatus = status === "all" || e.status.includes(status as EventStatus);
+    const matchesPrice =
+      price === "all" ||
+      (price === "free" && e.price === 0) ||
+      (price === "paid" && e.price > 0);
+    const eventDate = new Date(e.dateISO);
+    const matchesDate =
+      dateRange === "all" ||
+      (dateRange === "today" && eventDate.toDateString() === today.toDateString()) ||
+      (dateRange === "week" && eventDate >= today && eventDate <= weekEnd) ||
+      (dateRange === "upcoming" && eventDate >= today);
+    return matchesQuery && matchesCategory && matchesStatus && matchesPrice && matchesDate;
+  });
+}
+
+export const ALL_CATEGORIES: string[] = [
+  "All",
+  "Hackathon",
+  "Ideathon",
+  "Cultural",
+  "MUN",
+  "Film & Arts",
+  "Entrepreneurship",
+  "Science & Tech",
+  "Workshop",
+  "Sports",
+];
+
+export const STATUS_TABS = [
+  { key: "all", label: "All Events" },
+  { key: "trending", label: "Trending" },
+  { key: "upcoming", label: "Upcoming" },
+  { key: "featured", label: "Featured" },
+];
+
+export const DATE_FILTERS = [
+  { key: "all", label: "Any time" },
+  { key: "today", label: "Today" },
+  { key: "week", label: "This week" },
+  { key: "upcoming", label: "Upcoming" },
+];
+
+export const PRICE_FILTERS = [
+  { key: "all", label: "All" },
+  { key: "free", label: "Free" },
+  { key: "paid", label: "Paid" },
+];
+
+// ─── Event Relationship API ──────────────────────────────────────────────────
+
+export function getSubEvents(parentEventId: string): MockEvent[] {
+  return mockEvents.filter((e) => e.parentEventId === parentEventId);
+}
+
+export function getParentEvent(eventId: string): MockEvent | undefined {
+  const event = getEventById(eventId);
+  if (!event?.parentEventId) return undefined;
+  return getEventById(event.parentEventId);
+}
+
+export function isCollaborationEvent(event: MockEvent): boolean {
+  return !!event.collaborators && event.collaborators.length > 0;
+}
+
+export function getAllCollaborators(event: MockEvent): OrgRef[] {
+  return [event.org, ...(event.collaborators || [])];
+}
+
+// ─── Org API ─────────────────────────────────────────────────────────────────
+
+export function getAllOrgs(): Org[] {
+  return orgs;
+}
+
+export function getOrgById(id: string): Org | undefined {
+  return orgs.find((o) => o.id === id);
+}
+
+export function getEventsByOrg(orgId: string): MockEvent[] {
+  return mockEvents.filter((e) => e.org.id === orgId);
+}
+
+export function getSubOrgs(parentOrgId: string): Org[] {
+  return orgs.filter((o) => o.parentOrgId === parentOrgId);
+}
+
+/** Returns all org IDs in the subtree rooted at orgId (inclusive). */
+export function getAllOrgIdsInTree(orgId: string): string[] {
+  const children = orgs.filter((o) => o.parentOrgId === orgId);
+  return [orgId, ...children.flatMap((c) => getAllOrgIdsInTree(c.id))];
+}
+
+/** Events by org + all sub-orgs (recursive). */
+export function getEventsByOrgTree(orgId: string): MockEvent[] {
+  const ids = new Set(getAllOrgIdsInTree(orgId));
+  return mockEvents.filter((e) => ids.has(e.org.id));
+}
+
+export function getOrgsByType(type: Org["type"]): Org[] {
+  return orgs.filter((o) => o.type === type);
+}
+
+export function getParentChain(orgId: string): Org[] {
+  const chain: Org[] = [];
+  let current = getOrgById(orgId);
+  while (current?.parentOrgId) {
+    const parent = getOrgById(current.parentOrgId);
+    if (parent) chain.unshift(parent);
+    current = parent;
+  }
+  return chain;
+}
+
+export const ORG_TYPE_LABELS: Record<Org["type"], string> = {
+  university: "University",
+  college: "College",
+  club: "Club",
+  community: "Community",
+};
