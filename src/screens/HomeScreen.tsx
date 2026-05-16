@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
+  Platform,
   RefreshControl,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -14,11 +15,15 @@ import { LinearGradient } from 'expo-linear-gradient';
 import GradientText from '../components/GradientText';
 import Skeleton from '../components/Skeleton';
 import Footer from '../components/Footer';
+import LoginModal from '../components/LoginModal';
 import { colors, spacing, typography, borderRadius, shadows } from '../theme';
 import { getFontFamily } from '../theme/fontHelpers';
 import { useAuth } from '../context/AuthContext';
 import { getProfile, Profile } from '../lib/api/profile';
-import { getEvents, getFeaturedEvents, getTrendingEvents, Event } from '../lib/api/events';
+import { getEvents, getFeaturedEvents, getTrendingEvents, Event, getEventCardPrice } from '../lib/api/events';
+
+// Space needed to clear the transparent gradient header
+const HEADER_TOP_OFFSET = Platform.OS === 'ios' ? 150 : 130;
 
 export default function HomeScreen() {
   const navigation = useNavigation<any>();
@@ -30,6 +35,7 @@ export default function HomeScreen() {
   const [featuredEvents, setFeaturedEvents] = useState<Event[]>([]);
   const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([]);
   const [trendingEvents, setTrendingEvents] = useState<Event[]>([]);
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   // Load profile data
   const loadProfile = useCallback(async () => {
@@ -40,7 +46,6 @@ export default function HomeScreen() {
           setProfile(userProfile);
         }
       } catch (error) {
-        console.error('Error loading profile:', error);
       } finally {
         setIsLoadingProfile(false);
       }
@@ -53,7 +58,7 @@ export default function HomeScreen() {
   const loadEvents = useCallback(async () => {
     try {
       setIsLoadingEvents(true);
-      
+
       // Load featured events
       const featured = await getFeaturedEvents(3);
       setFeaturedEvents(featured);
@@ -66,7 +71,6 @@ export default function HomeScreen() {
       const upcoming = await getEvents(1, 3);
       setUpcomingEvents(upcoming.events);
     } catch (error) {
-      console.error('[HomeScreen] Error loading events:', error);
       // Set empty arrays on error
       setFeaturedEvents([]);
       setTrendingEvents([]);
@@ -88,7 +92,6 @@ export default function HomeScreen() {
     try {
       await Promise.all([loadProfile(), loadEvents()]);
     } catch (error) {
-      console.error('Error refreshing data:', error);
     } finally {
       setRefreshing(false);
     }
@@ -180,7 +183,7 @@ export default function HomeScreen() {
           <View style={styles.featuredEventFooter}>
             <Text style={styles.featuredEventOrganizer}>{event.organization?.name || 'Organizer'}</Text>
             <Text style={styles.featuredEventPrice}>
-              {event.is_free ? 'Free' : `₹${event.price || 0}`}
+              {getEventCardPrice(event)}
             </Text>
           </View>
         </View>
@@ -242,7 +245,7 @@ export default function HomeScreen() {
           <View style={styles.featuredEventFooter}>
             <Text style={styles.featuredEventOrganizer}>{event.organization?.name || 'Organizer'}</Text>
             <Text style={styles.featuredEventPrice}>
-              {event.is_free ? 'Free' : `₹${event.price || 0}`}
+              {getEventCardPrice(event)}
             </Text>
           </View>
         </View>
@@ -252,14 +255,16 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView 
+      <ScrollView
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 100 }}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
             tintColor={colors.primary}
             colors={[colors.primary]}
+            progressViewOffset={HEADER_TOP_OFFSET}
           />
         }
       >
@@ -268,9 +273,9 @@ export default function HomeScreen() {
           <View style={styles.welcomeContent}>
             <Text style={styles.welcomeText}>Welcome,</Text>
             {isLoadingProfile ? (
-              <Skeleton 
-                width={200} 
-                height={typography.fontSize['4xl'] * 1.2} 
+              <Skeleton
+                width={200}
+                height={typography.fontSize['4xl'] * 1.2}
                 borderRadius={borderRadius.md}
                 style={styles.skeletonName}
               />
@@ -278,22 +283,32 @@ export default function HomeScreen() {
               <GradientText style={styles.welcomeUser}>{getDisplayName()}</GradientText>
             )}
           </View>
-          
+
           {/* Guest Sign-In Prompt */}
           {!user && (
-            <TouchableOpacity
-              style={styles.guestSignInPrompt}
-              onPress={() => navigation.navigate('Login')}
-              activeOpacity={0.8}
-            >
-              <View style={styles.guestSignInContent}>
-                <Text style={styles.guestSignInTitle}>Sign in to unlock more features</Text>
-                <Text style={styles.guestSignInDescription}>
-                  Access Events, Tickets, Wallet & Profile
-                </Text>
+            <View style={styles.guestSection}>
+              <TouchableOpacity
+                style={styles.guestSignInPrompt}
+                onPress={() => setShowLoginModal(true)}
+                activeOpacity={0.8}
+              >
+                <View style={styles.guestSignInContent}>
+                  <Text style={styles.guestSignInTitle}>Sign in to unlock more features</Text>
+                  <Text style={styles.guestSignInDescription}>
+                    Access Events, Tickets, Wallet & Profile
+                  </Text>
+                </View>
+                <ArrowRight size={20} color={colors.primary} strokeWidth={2} />
+              </TouchableOpacity>
+
+              {/* Sign Up Link */}
+              <View style={styles.signUpPrompt}>
+                <Text style={styles.signUpPromptText}>Don't have an account? </Text>
+                <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
+                  <Text style={styles.signUpPromptLink}>Sign Up</Text>
+                </TouchableOpacity>
               </View>
-              <ArrowRight size={20} color={colors.primary} strokeWidth={2} />
-            </TouchableOpacity>
+            </View>
           )}
         </View>
 
@@ -410,66 +425,66 @@ export default function HomeScreen() {
               contentContainerStyle={styles.horizontalScroll}
             >
               {upcomingEvents.map((event) => (
-              <TouchableOpacity
-                key={event.id}
-                style={styles.featuredEventCard}
-                onPress={() => navigation.navigate('EventDetail', { eventId: event.id })}
-                activeOpacity={0.9}
-              >
-                {event.image_url || event.banner_url || event.thumbnail_url ? (
-                  <Image
-                    source={{ uri: event.image_url || event.banner_url || event.thumbnail_url }}
-                    style={styles.featuredEventImage}
-                    resizeMode="cover"
-                  />
-                ) : (
-                  <View style={styles.featuredEventImagePlaceholder}>
-                    <Text style={styles.featuredEventImageText}>{event.category}</Text>
-                  </View>
-                )}
-                <LinearGradient
-                  colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.9)']}
-                  style={styles.featuredEventGradient}
-                />
-                <View style={styles.featuredEventContent}>
-                  {/* Badges at top */}
-                  <View style={styles.featuredEventBadgesTop}>
-                    <View style={styles.featuredEventBadge}>
-                      <Text style={styles.featuredEventBadgeText}>{event.category}</Text>
+                <TouchableOpacity
+                  key={event.id}
+                  style={styles.featuredEventCard}
+                  onPress={() => navigation.navigate('EventDetail', { eventId: event.id })}
+                  activeOpacity={0.9}
+                >
+                  {event.image_url || event.banner_url || event.thumbnail_url ? (
+                    <Image
+                      source={{ uri: event.image_url || event.banner_url || event.thumbnail_url }}
+                      style={styles.featuredEventImage}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <View style={styles.featuredEventImagePlaceholder}>
+                      <Text style={styles.featuredEventImageText}>{event.category}</Text>
                     </View>
-                  </View>
+                  )}
+                  <LinearGradient
+                    colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.9)']}
+                    style={styles.featuredEventGradient}
+                  />
+                  <View style={styles.featuredEventContent}>
+                    {/* Badges at top */}
+                    <View style={styles.featuredEventBadgesTop}>
+                      <View style={styles.featuredEventBadge}>
+                        <Text style={styles.featuredEventBadgeText}>{event.category}</Text>
+                      </View>
+                    </View>
 
-                  {/* Title and info at bottom */}
-                  <View style={styles.featuredEventBottom}>
-                    <Text style={styles.featuredEventTitle} numberOfLines={2}>
-                      {event.title}
-                    </Text>
-                    <View style={styles.featuredEventMeta}>
-                      <View style={styles.featuredEventMetaItem}>
-                        <Calendar size={12} color={colors.textMuted} strokeWidth={2} />
-                        <Text style={styles.featuredEventMetaText}>
-                          {new Date(event.start_date).toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                          })}
+                    {/* Title and info at bottom */}
+                    <View style={styles.featuredEventBottom}>
+                      <Text style={styles.featuredEventTitle} numberOfLines={2}>
+                        {event.title}
+                      </Text>
+                      <View style={styles.featuredEventMeta}>
+                        <View style={styles.featuredEventMetaItem}>
+                          <Calendar size={12} color={colors.textMuted} strokeWidth={2} />
+                          <Text style={styles.featuredEventMetaText}>
+                            {new Date(event.start_date).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                            })}
+                          </Text>
+                        </View>
+                        <View style={styles.featuredEventMetaItem}>
+                          <Users size={12} color={colors.textMuted} strokeWidth={2} />
+                          <Text style={styles.featuredEventMetaText}>{event.max_attendees || 'TBA'}</Text>
+                        </View>
+                      </View>
+                      <View style={styles.featuredEventFooter}>
+                        <Text style={styles.featuredEventOrganizer}>{event.organization?.name || 'Organizer'}</Text>
+                        <Text style={styles.featuredEventPrice}>
+                          {getEventCardPrice(event)}
                         </Text>
                       </View>
-                      <View style={styles.featuredEventMetaItem}>
-                        <Users size={12} color={colors.textMuted} strokeWidth={2} />
-                        <Text style={styles.featuredEventMetaText}>{event.max_attendees || 'TBA'}</Text>
-                      </View>
-                    </View>
-                    <View style={styles.featuredEventFooter}>
-                      <Text style={styles.featuredEventOrganizer}>{event.organization?.name || 'Organizer'}</Text>
-                      <Text style={styles.featuredEventPrice}>
-                        {event.is_free ? 'Free' : `₹${event.price || 0}`}
-                      </Text>
                     </View>
                   </View>
-                </View>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
           ) : (
             <View style={styles.emptyState}>
               <Text style={styles.emptyStateText}>No upcoming events available</Text>
@@ -480,6 +495,16 @@ export default function HomeScreen() {
         {/* Footer */}
         <Footer />
       </ScrollView>
+
+      {/* Login Modal */}
+      <LoginModal
+        visible={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        onSuccess={() => {
+          setShowLoginModal(false);
+          loadProfile();
+        }}
+      />
     </View>
   );
 }
@@ -492,7 +517,7 @@ const styles = StyleSheet.create({
   // Welcome Section
   welcomeSection: {
     paddingHorizontal: spacing[6],
-    paddingTop: spacing[12],
+    paddingTop: HEADER_TOP_OFFSET,
     paddingBottom: spacing[8],
   },
   welcomeContent: {
@@ -511,6 +536,50 @@ const styles = StyleSheet.create({
   },
   skeletonName: {
     marginTop: spacing[1],
+  },
+  guestSection: {
+    gap: spacing[4],
+  },
+  guestSignInPrompt: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(52, 145, 255, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(52, 145, 255, 0.3)',
+    borderRadius: borderRadius.xl,
+    padding: spacing[5],
+    marginTop: spacing[6],
+    ...shadows.md,
+  },
+  guestSignInContent: {
+    flex: 1,
+    marginRight: spacing[4],
+  },
+  guestSignInTitle: {
+    fontSize: typography.fontSize.base,
+    color: colors.text,
+    fontFamily: getFontFamily('bold'),
+    marginBottom: spacing[1],
+  },
+  guestSignInDescription: {
+    fontSize: typography.fontSize.sm,
+    color: colors.textSecondary,
+    lineHeight: typography.lineHeight.relaxed * typography.fontSize.sm,
+  },
+  signUpPrompt: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  signUpPromptText: {
+    fontSize: typography.fontSize.sm,
+    color: colors.textSecondary,
+  },
+  signUpPromptLink: {
+    fontSize: typography.fontSize.sm,
+    color: colors.primary,
+    fontFamily: getFontFamily('bold'),
   },
   section: {
     marginBottom: spacing[12],
@@ -1042,31 +1111,5 @@ const styles = StyleSheet.create({
   emptyStateText: {
     fontSize: typography.fontSize.sm,
     color: colors.textMuted,
-  },
-  // Guest Sign-In Prompt
-  guestSignInPrompt: {
-    marginTop: spacing[6],
-    backgroundColor: 'rgba(52, 145, 255, 0.1)',
-    borderRadius: borderRadius.lg,
-    borderWidth: 1,
-    borderColor: 'rgba(52, 145, 255, 0.3)',
-    padding: spacing[5],
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[4],
-  },
-  guestSignInContent: {
-    flex: 1,
-  },
-  guestSignInTitle: {
-    fontSize: typography.fontSize.base,
-    fontFamily: getFontFamily('bold'),
-    color: colors.text,
-    marginBottom: spacing[1],
-  },
-  guestSignInDescription: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
-    lineHeight: typography.lineHeight.relaxed * typography.fontSize.sm,
   },
 });

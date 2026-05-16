@@ -6,7 +6,6 @@ import { Platform } from 'react-native';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import OneSignalService from '../services/OneSignalService';
 import FirebaseAnalyticsService from '../services/FirebaseAnalyticsService';
-import AppTrackingService from '../services/AppTrackingService';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -100,17 +99,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       // Update OneSignal user identification
       if (session?.user) {
-        // Request App Tracking Transparency permission (iOS 14.5+)
-        // This should be requested before any tracking activities
-        try {
-          const shouldRequest = await AppTrackingService.shouldRequestPermission();
-          if (shouldRequest) {
-            await AppTrackingService.requestTrackingPermission();
-          }
-        } catch (error) {
-          console.error('[AuthContext] Error requesting tracking permission:', error);
-        }
-
         // Request notification permission if not already granted
         try {
           const hasNotificationPermission = OneSignalService.hasPermission();
@@ -118,7 +106,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             await OneSignalService.requestPermission();
           }
         } catch (error) {
-          console.error('[AuthContext] Error requesting notification permission:', error);
         }
 
         // Create profile if it doesn't exist (important for social logins and new signups)
@@ -133,10 +120,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           
           if (!response.ok) {
             const errorText = await response.text();
-            console.error('[AuthContext] Failed to sync profile:', response.status, errorText);
           }
         } catch (error) {
-          console.error('[AuthContext] Error syncing profile:', error);
         }
 
         // Apply pending referral code if exists (for new signups)
@@ -145,7 +130,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             const { applyReferralCode } = require('../lib/api/wallet');
             await applyReferralCode(pendingReferralCode);
           } catch (error) {
-            console.error('[AuthContext] Failed to apply referral code:', error);
           } finally {
             // Clear the pending referral code
             pendingReferralCode = null;
@@ -250,11 +234,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       // Sign out from Supabase in background (don't wait)
       supabase.auth.signOut().catch((error) => {
-        console.error('Sign out error:', error);
       });
       
     } catch (err) {
-      console.error('Sign out error:', err);
       // Even if there's an error, clear local state
       setSession(null);
       setUser(null);
@@ -358,7 +340,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       });
 
       if (error) {
-        console.error('Supabase Apple sign-in error:', error);
         return { error };
       }
 
@@ -370,7 +351,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
       
       // Actual errors
-      console.error('Apple sign-in error:', err);
       return { error: { message: err.message || 'An unexpected error occurred during sign-in' } };
     }
   };

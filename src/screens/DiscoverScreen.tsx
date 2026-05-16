@@ -6,6 +6,7 @@ import {
   ScrollView,
   TextInput,
   TouchableOpacity,
+  Platform,
   Image,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -14,13 +15,15 @@ import { LinearGradient } from 'expo-linear-gradient';
 import GradientText from '../components/GradientText';
 import { colors, spacing, typography, borderRadius, shadows } from '../theme';
 import { getFontFamily } from '../theme/fontHelpers';
-import { getEvents } from '../lib/api/events';
-import { 
-  ALL_CATEGORIES, 
-  STATUS_TABS, 
-  DATE_FILTERS, 
-  PRICE_FILTERS 
+import { getEvents, getEventCardPrice } from '../lib/api/events';
+import {
+  ALL_CATEGORIES,
+  STATUS_TABS,
+  DATE_FILTERS,
+  PRICE_FILTERS
 } from '../lib/constants';
+
+const HEADER_TOP_OFFSET = Platform.OS === 'ios' ? 150 : 130;
 
 export default function DiscoverScreen() {
   const navigation = useNavigation<any>();
@@ -42,15 +45,15 @@ export default function DiscoverScreen() {
     try {
       setLoading(true);
       const filters: any = {};
-      
+
       if (searchQuery) filters.search = searchQuery;
       if (selectedCategory !== 'All') filters.category = selectedCategory;
       if (selectedPrice === 'free') filters.is_free = true;
       if (selectedPrice === 'paid') filters.is_free = false;
-      
+
       const response = await getEvents(1, 50, filters);
       let filtered = response.events;
-      
+
       // Client-side filtering for date range
       if (selectedDate !== 'all') {
         const now = new Date();
@@ -68,10 +71,9 @@ export default function DiscoverScreen() {
           return true;
         });
       }
-      
+
       setEvents(filtered);
     } catch (error) {
-      console.error('[DiscoverScreen] Error loading events:', error);
       setEvents([]);
     } finally {
       setLoading(false);
@@ -100,6 +102,7 @@ export default function DiscoverScreen() {
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 100 }}
       >
         {/* Search Header */}
         <View style={styles.searchHeader}>
@@ -151,12 +154,11 @@ export default function DiscoverScreen() {
             >
               <SlidersHorizontal size={18} color={colors.primary} strokeWidth={2} />
               <Text style={styles.filterToggleText}>
-                Filters {hasFilters && `(${
-                  (selectedCategory !== 'All' ? 1 : 0) +
+                Filters {hasFilters && `(${(selectedCategory !== 'All' ? 1 : 0) +
                   (selectedStatus !== 'all' ? 1 : 0) +
                   (selectedDate !== 'all' ? 1 : 0) +
                   (selectedPrice !== 'all' ? 1 : 0)
-                })`}
+                  })`}
               </Text>
               {showFilters ? (
                 <ChevronUp size={18} color={colors.textMuted} strokeWidth={2} />
@@ -184,18 +186,18 @@ export default function DiscoverScreen() {
                 >
                   {STATUS_TABS.map((tab) => (
                     <TouchableOpacity
-                      key={tab.key}
+                      key={tab.id}
                       style={[
                         styles.filterChip,
-                        selectedStatus === tab.key && styles.filterChipActive,
+                        selectedStatus === tab.id && styles.filterChipActive,
                       ]}
-                      onPress={() => setSelectedStatus(tab.key)}
+                      onPress={() => setSelectedStatus(tab.id)}
                       activeOpacity={0.7}
                     >
                       <Text
                         style={[
                           styles.filterChipText,
-                          selectedStatus === tab.key && styles.filterChipTextActive,
+                          selectedStatus === tab.id && styles.filterChipTextActive,
                         ]}
                       >
                         {tab.label}
@@ -243,18 +245,18 @@ export default function DiscoverScreen() {
                   <View style={styles.filterChipsWrap}>
                     {DATE_FILTERS.map((filter) => (
                       <TouchableOpacity
-                        key={filter.key}
+                        key={filter.id}
                         style={[
                           styles.filterChipSmall,
-                          selectedDate === filter.key && styles.filterChipActive,
+                          selectedDate === filter.id && styles.filterChipActive,
                         ]}
-                        onPress={() => setSelectedDate(filter.key)}
+                        onPress={() => setSelectedDate(filter.id)}
                         activeOpacity={0.7}
                       >
                         <Text
                           style={[
                             styles.filterChipTextSmall,
-                            selectedDate === filter.key && styles.filterChipTextActive,
+                            selectedDate === filter.id && styles.filterChipTextActive,
                           ]}
                         >
                           {filter.label}
@@ -269,18 +271,18 @@ export default function DiscoverScreen() {
                   <View style={styles.filterChipsWrap}>
                     {PRICE_FILTERS.map((filter) => (
                       <TouchableOpacity
-                        key={filter.key}
+                        key={filter.id}
                         style={[
                           styles.filterChipSmall,
-                          selectedPrice === filter.key && styles.filterChipActive,
+                          selectedPrice === filter.id && styles.filterChipActive,
                         ]}
-                        onPress={() => setSelectedPrice(filter.key as 'all' | 'free' | 'paid')}
+                        onPress={() => setSelectedPrice(filter.id as 'all' | 'free' | 'paid')}
                         activeOpacity={0.7}
                       >
                         <Text
                           style={[
                             styles.filterChipTextSmall,
-                            selectedPrice === filter.key && styles.filterChipTextActive,
+                            selectedPrice === filter.id && styles.filterChipTextActive,
                           ]}
                         >
                           {filter.label}
@@ -339,7 +341,7 @@ export default function DiscoverScreen() {
                     <Text style={styles.eventTitle} numberOfLines={2}>
                       {event.title}
                     </Text>
-                    
+
                     {event.organization?.name && (
                       <Text style={styles.eventOrganizer} numberOfLines={1}>
                         {event.organization.name}
@@ -356,7 +358,7 @@ export default function DiscoverScreen() {
                           </Text>
                         </View>
                       )}
-                      
+
                       {event.max_attendees && (
                         <View style={styles.eventMetaItem}>
                           <Users size={14} color={colors.textMuted} strokeWidth={2} />
@@ -377,7 +379,7 @@ export default function DiscoverScreen() {
                         </Text>
                       </View>
                       <Text style={styles.eventPrice}>
-                        {event.is_free ? 'Free' : `₹${event.price || 0}`}
+                        {getEventCardPrice(event)}
                       </Text>
                     </View>
                   </View>
@@ -409,7 +411,7 @@ const styles = StyleSheet.create({
   },
   searchHeader: {
     paddingHorizontal: spacing[6],
-    paddingTop: spacing[8],
+    paddingTop: HEADER_TOP_OFFSET,
     paddingBottom: spacing[6],
   },
   headerTitle: {

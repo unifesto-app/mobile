@@ -18,7 +18,6 @@ export function navigate(name: string, params?: any) {
     // @ts-ignore - Dynamic navigation requires type assertion
     navigationRef.navigate(name, params);
   } else {
-    console.warn('Navigation not ready, cannot navigate to:', name);
   }
 }
 
@@ -34,7 +33,6 @@ export function resetToAuth() {
       })
     );
   } else {
-    console.warn('Navigation not ready, cannot reset to auth');
   }
 }
 

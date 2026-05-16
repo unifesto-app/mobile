@@ -23,144 +23,6 @@ async function getAuthHeaders(): Promise<HeadersInit> {
 }
 
 // ============================================================================
-// WALLET PASSCODE APIs
-// ============================================================================
-
-/**
- * Request OTP for wallet passcode change
- */
-export async function requestWalletOtp(email: string): Promise<{ message: string }> {
-  try {
-    const headers = await getAuthHeaders();
-    
-    const response = await fetch(`${API_URL}/auth/wallet/request-otp`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ email }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to request OTP');
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error('Error requesting wallet OTP:', error);
-    throw error;
-  }
-}
-
-/**
- * Verify OTP for wallet passcode change
- */
-export async function verifyWalletOtp(
-  email: string,
-  otp: string
-): Promise<{ message: string; token: string }> {
-  try {
-    const headers = await getAuthHeaders();
-    
-    const response = await fetch(`${API_URL}/auth/wallet/verify-otp`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ email, otp }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to verify OTP');
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error('Error verifying wallet OTP:', error);
-    throw error;
-  }
-}
-
-/**
- * Set wallet passcode (requires verified OTP token)
- */
-export async function setWalletPasscode(
-  passcode: string,
-  otpToken: string
-): Promise<{ message: string }> {
-  try {
-    const headers = await getAuthHeaders();
-    
-    const response = await fetch(`${API_URL}/auth/wallet/set-passcode`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ passcode, otp_token: otpToken }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to set passcode');
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error('Error setting wallet passcode:', error);
-    throw error;
-  }
-}
-
-/**
- * Verify wallet passcode
- */
-export async function verifyWalletPasscode(
-  passcode: string
-): Promise<{ valid: boolean; message: string }> {
-  try {
-    const headers = await getAuthHeaders();
-    
-    const response = await fetch(`${API_URL}/auth/wallet/verify-passcode`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ passcode }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to verify passcode');
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error('Error verifying wallet passcode:', error);
-    throw error;
-  }
-}
-
-/**
- * Check if user has wallet passcode set
- */
-export async function hasWalletPasscode(): Promise<{ hasPasscode: boolean }> {
-  try {
-    const headers = await getAuthHeaders();
-    
-    const response = await fetch(`${API_URL}/auth/wallet/has-passcode`, {
-      method: 'GET',
-      headers,
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to check passcode status');
-    }
-
-    const data = await response.json();
-    // Backend returns has_passcode (snake_case), convert to camelCase
-    return { hasPasscode: data.has_passcode };
-  } catch (error) {
-    console.error('Error checking wallet passcode:', error);
-    throw error;
-  }
-}
-
-// ============================================================================
 // WALLET BALANCE & TRANSACTIONS APIs
 // ============================================================================
 
@@ -206,7 +68,6 @@ export async function getWalletBalance(): Promise<WalletBalance> {
 
     return await response.json();
   } catch (error) {
-    console.error('Error getting wallet balance:', error);
     throw error;
   }
 }
@@ -230,7 +91,6 @@ export async function getWalletStats(): Promise<WalletStats> {
 
     return await response.json();
   } catch (error) {
-    console.error('Error getting wallet stats:', error);
     throw error;
   }
 }
@@ -260,7 +120,6 @@ export async function getTransactions(
 
     return await response.json();
   } catch (error) {
-    console.error('Error getting transactions:', error);
     throw error;
   }
 }
@@ -306,7 +165,6 @@ export async function getReferralInfo(): Promise<ReferralInfo> {
 
     return await response.json();
   } catch (error) {
-    console.error('Error getting referral info:', error);
     throw error;
   }
 }
@@ -333,7 +191,6 @@ export async function applyReferralCode(
 
     return await response.json();
   } catch (error) {
-    console.error('Error applying referral code:', error);
     throw error;
   }
 }
@@ -360,7 +217,67 @@ export async function getReferralHistory(): Promise<{
 
     return await response.json();
   } catch (error) {
-    console.error('Error getting referral history:', error);
     throw error;
+  }
+}
+
+// ============================================================================
+// REDEEM CODE APIs
+// ============================================================================
+
+/**
+ * Apply a redeem code
+ */
+export async function applyRedeemCode(
+  code: string
+): Promise<{ message: string; coin_amount: number; new_balance: number }> {
+  try {
+    const headers = await getAuthHeaders();
+    
+    const response = await fetch(`${API_URL}/wallet/redeem`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ code }),
+    });
+
+    const responseText = await response.text();
+
+    if (!response.ok) {
+      let errorData;
+      try {
+        errorData = JSON.parse(responseText);
+      } catch {
+        errorData = { message: `HTTP ${response.status}: ${responseText || 'Unknown error'}` };
+      }
+      
+      throw new Error(errorData.message || errorData.error || `Failed to apply redeem code (${response.status})`);
+    }
+
+    return JSON.parse(responseText);
+  } catch (error: any) {
+    throw error;
+  }
+}
+
+/**
+ * Get referral reward amount setting
+ */
+export async function getReferralRewardAmount(): Promise<number> {
+  try {
+    const headers = await getAuthHeaders();
+    
+    const response = await fetch(`${API_URL}/wallet/settings/referral-reward`, {
+      method: 'GET',
+      headers,
+    });
+
+    if (!response.ok) {
+      return 25; // Default fallback
+    }
+
+    const data = await response.json();
+    return data.referral_reward_amount || 25;
+  } catch (error) {
+    return 25; // Default fallback
   }
 }

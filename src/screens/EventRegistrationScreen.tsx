@@ -6,7 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
-  BackHandler,
+  ActivityIndicator,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { 
@@ -17,7 +17,6 @@ import {
   CreditCard,
   Smartphone,
   Building2,
-  Users,
   Clock
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -25,28 +24,20 @@ import GradientText from '../components/GradientText';
 import RegistrationTimer from '../components/RegistrationTimer';
 import StepIndicator from '../components/StepIndicator';
 import AttendeeForm from '../components/AttendeeForm';
-import { colors, spacing, typography, borderRadius, shadows } from '../theme';
+import { colors, spacing, typography, borderRadius } from '../theme';
 import { getEventById, Event } from '../lib/api/events';
+import { getEventTickets, getEventCustomFields, getFieldsForTicket, Ticket, CustomField, calculateTicketPrice, isTicketAvailable } from '../lib/api/tickets';
+import CustomFieldInput from '../components/CustomFieldInput';
+import { useRegistrationPayment } from '../hooks/useRegistrationPayment';
 
-type TicketType = 'individual' | 'group';
-type PricingModel = 'perPerson' | 'perGroup';
 type StepType = 'ticket' | 'details' | 'review' | 'payment';
-
-interface TicketOption {
-  id: string;
-  name: string;
-  type: TicketType;
-  pricingModel: PricingModel;
-  price: number;
-  maxQuantity: number;
-  description?: string;
-}
 
 interface AttendeeInfo {
   name: string;
   email: string;
   mobile: string;
   gender: string;
+  customFields?: Record<string, any>; // Custom field answers
 }
 
 const REGISTRATION_TIME_LIMIT = 15 * 60; // 15 minutes in seconds
@@ -58,21 +49,31 @@ export default function EventRegistrationScreen() {
   
   // Event state
   const [event, setEvent] = useState<Event | null>(null);
+  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [customFields, setCustomFields] = useState<CustomField[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // Load event data
+  // Load event data and tickets
   useEffect(() => {
-    const loadEvent = async () => {
+    const loadEventData = async () => {
       try {
-        const eventData = await getEventById(eventId);
+        setLoading(true);
+        const [eventData, ticketsData, fieldsData] = await Promise.all([
+          getEventById(eventId),
+          getEventTickets(eventId),
+          getEventCustomFields(eventId),
+        ]);
+        
         setEvent(eventData);
+        setTickets(ticketsData.tickets || []);
+        setCustomFields(fieldsData.fields || []);
       } catch (error) {
-        console.error('Error loading event:', error);
+        console.error('Error loading event data:', error);
       } finally {
         setLoading(false);
       }
     };
-    loadEvent();
+    loadEventData();
   }, [eventId]);
   
   // Timer state
@@ -82,7 +83,7 @@ export default function EventRegistrationScreen() {
   const [step, setStep] = useState<StepType>('ticket');
 
   // Ticket selection
-  const [selectedTicket, setSelectedTicket] = useState<TicketOption | null>(null);
+  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [quantity, setQuantity] = useState(1);
 
   // Attendee details
@@ -91,42 +92,53 @@ export default function EventRegistrationScreen() {
     email: '',
     mobile: '',
     gender: '',
+    customFields: {},
   }]);
 
-  // Mock ticket options
-  const ticketOptions: TicketOption[] = event ? [
-    {
-      id: 'standard-individual',
-      name: 'Standard Individual',
-      type: 'individual',
-      pricingModel: 'perPerson',
-      price: event.price || 0,
-      maxQuantity: 5,
-      description: 'Single attendee registration'
-    },
-    {
-      id: 'group-ticket',
-      name: 'Group Registration',
-      type: 'group',
-      pricingModel: 'perPerson',
-      price: event.price || 0,
-      maxQuantity: 50,
-      description: 'Register multiple people together (5-50 people)'
-    },
-  ] : [];
+  // Payment hook
+  const { processRegistration, loading: paymentLoading, error: paymentError } = useRegistrationPayment();
+
+  const CURRENCY_SYMBOLS: Record<string, string> = {
+    INR: '₹',
+    USD: '$',
+    EUR: '€',
+    GBP: '£',
+  };
   
   if (loading) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.errorText}>Loading...</Text>
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <Text style={styles.loadingMoreText}>Loading...</Text>
       </View>
     );
   }
   
   if (!event) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
         <Text style={styles.errorText}>Event not found</Text>
+      </View>
+    );
+  }
+
+  if (tickets.length === 0) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', padding: spacing[6] }]}>
+        <Text style={styles.errorText}>No tickets available</Text>
+        <Text style={[styles.errorText, { fontSize: typography.fontSize.sm, marginTop: spacing[2] }]}>
+          This event doesn't have any tickets configured yet.
+        </Text>
+        <TouchableOpacity
+          style={[styles.backButton, { marginTop: spacing[6] }]}
+          onPress={() => navigation.goBack()}
+        >
+          <LinearGradient
+            colors={['#3491ff', '#0062ff']}
+            style={styles.backButtonGradient}
+          >
+            <Text style={styles.backButtonText}>Back to Event</Text>
+          </LinearGradient>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -152,17 +164,18 @@ export default function EventRegistrationScreen() {
   };
 
   // Handle ticket selection
-  const handleTicketSelect = (ticket: TicketOption) => {
+  const handleTicketSelect = (ticket: Ticket) => {
     setSelectedTicket(ticket);
 
     if (ticket.type === 'group') {
-      const initialGroupSize = 5;
+      const initialGroupSize = ticket.group_size || 5;
       setQuantity(initialGroupSize);
       setAttendees(Array(initialGroupSize).fill(null).map(() => ({
         name: '',
         email: '',
         mobile: '',
         gender: '',
+        customFields: {},
       })));
     } else {
       setQuantity(1);
@@ -171,6 +184,7 @@ export default function EventRegistrationScreen() {
         email: '',
         mobile: '',
         gender: '',
+        customFields: {},
       }]);
     }
   };
@@ -179,7 +193,13 @@ export default function EventRegistrationScreen() {
   const handleQuantityChange = (newQuantity: number) => {
     if (!selectedTicket) return;
 
-    if (selectedTicket.type === 'group' && newQuantity < 5) {
+    const minQty = selectedTicket.type === 'group' ? (selectedTicket.group_size || 5) : selectedTicket.min_purchase;
+    const maxQty = Math.min(
+      selectedTicket.max_purchase,
+      selectedTicket.quantity_available - selectedTicket.quantity_sold
+    );
+
+    if (newQuantity < minQty || newQuantity > maxQty) {
       return;
     }
 
@@ -190,6 +210,7 @@ export default function EventRegistrationScreen() {
         email: '',
         mobile: '',
         gender: '',
+        customFields: {},
       }
     );
     setAttendees(newAttendees);
@@ -202,27 +223,66 @@ export default function EventRegistrationScreen() {
     setAttendees(newAttendees);
   };
 
+  // Handle custom field change
+  const handleCustomFieldChange = (attendeeIndex: number, fieldId: string, value: any) => {
+    const newAttendees = [...attendees];
+    newAttendees[attendeeIndex] = {
+      ...newAttendees[attendeeIndex],
+      customFields: {
+        ...newAttendees[attendeeIndex].customFields,
+        [fieldId]: value,
+      },
+    };
+    setAttendees(newAttendees);
+  };
+
   // Validate attendee info
   const validateAttendees = () => {
-    return attendees.every(attendee =>
-      attendee.name.trim() !== '' &&
-      attendee.email.trim() !== '' &&
-      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(attendee.email) &&
-      attendee.mobile.trim() !== '' &&
-      /^[0-9]{10}$/.test(attendee.mobile) &&
-      attendee.gender !== ''
-    );
+    if (!selectedTicket) return false;
+
+    // Get applicable custom fields for this ticket
+    const applicableFields = getFieldsForTicket(customFields, selectedTicket.id);
+
+    return attendees.every(attendee => {
+      // Validate basic fields
+      const basicValid =
+        attendee.name.trim() !== '' &&
+        attendee.email.trim() !== '' &&
+        /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(attendee.email) &&
+        attendee.mobile.trim() !== '' &&
+        /^[0-9]{10}$/.test(attendee.mobile) &&
+        attendee.gender !== '';
+
+      if (!basicValid) return false;
+
+      // Validate required custom fields
+      const customFieldsValid = applicableFields
+        .filter(field => field.is_required)
+        .every(field => {
+          const value = attendee.customFields?.[field.id];
+          if (field.field_type === 'checkbox') {
+            return value === true;
+          }
+          if (field.field_type === 'multi_select') {
+            return Array.isArray(value) && value.length > 0;
+          }
+          return value !== undefined && value !== null && value !== '';
+        });
+
+      return customFieldsValid;
+    });
   };
 
   // Calculate total price
   const calculateTotal = () => {
     if (!selectedTicket) return 0;
+    return calculateTicketPrice(selectedTicket, quantity);
+  };
 
-    if (selectedTicket.pricingModel === 'perPerson') {
-      return selectedTicket.price * quantity;
-    } else {
-      return selectedTicket.price;
-    }
+  // Get currency symbol
+  const getCurrencySymbol = () => {
+    if (!selectedTicket) return '₹';
+    return CURRENCY_SYMBOLS[selectedTicket.currency] || selectedTicket.currency;
   };
 
   // Handle step navigation
@@ -242,27 +302,62 @@ export default function EventRegistrationScreen() {
     else if (step === 'payment') setStep('review');
   };
 
-  const handleSubmit = () => {
-    const registrationData = {
-      event: event.id,
-      ticket: selectedTicket,
-      quantity,
-      attendees,
-      total: calculateTotal(),
-    };
+  const handleSubmit = async () => {
+    if (!selectedTicket || !event) return;
 
-    
-    // Navigate to success screen and reset navigation stack
-    navigation.reset({
-      index: 0,
-      routes: [
-        { name: 'MainApp' as never },
-        { 
-          name: 'RegistrationSuccess' as never, 
-          params: { eventId: event.id, registrationData } as never 
-        }
-      ],
-    });
+    try {
+      // Prepare registration data
+      const registrationData = {
+        eventId: event.id,
+        ticketId: selectedTicket.id,
+        quantity,
+        attendees: attendees.map(a => ({
+          name: a.name,
+          email: a.email,
+          mobile: a.mobile,
+          gender: a.gender,
+          customFields: a.customFields,
+        })),
+        buyerName: attendees[0].name, // Use first attendee as buyer
+        buyerEmail: attendees[0].email,
+        buyerPhone: attendees[0].mobile,
+      };
+
+      // Process registration with payment
+      const result = await processRegistration(
+        registrationData,
+        event.title,
+        event.banner_url
+      );
+
+      if (result.success) {
+        // Navigate to success screen
+        navigation.reset({
+          index: 0,
+          routes: [
+            { name: 'MainApp' as never },
+            { 
+              name: 'RegistrationSuccess' as never, 
+              params: { 
+                eventId: event.id, 
+                registrationData: {
+                  event: event.id,
+                  ticket: selectedTicket,
+                  quantity,
+                  attendees,
+                  total: calculateTotal(),
+                  registrations: result.registrations,
+                  paymentId: result.paymentId,
+                }
+              } as never 
+            }
+          ],
+        });
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      // Error is already handled in the hook with Alert
+    }
   };
 
   if (timerExpired) {
@@ -347,48 +442,82 @@ export default function EventRegistrationScreen() {
           {step === 'ticket' && (
             <View>
               <Text style={styles.sectionTitle}>Select Your Ticket</Text>
-              <View style={styles.ticketOptions}>
-                {ticketOptions.map((ticket) => (
-                  <TouchableOpacity
-                    key={ticket.id}
-                    style={[
-                      styles.ticketOption,
-                      selectedTicket?.id === ticket.id && styles.ticketOptionSelected,
-                    ]}
-                    onPress={() => handleTicketSelect(ticket)}
-                  >
-                    <View style={styles.ticketOptionContent}>
-                      <View style={styles.ticketOptionHeader}>
-                        <View style={styles.ticketOptionInfo}>
-                          <Text style={styles.ticketOptionName}>{ticket.name}</Text>
-                          <Text style={styles.ticketOptionDescription}>{ticket.description}</Text>
+              {tickets.length === 0 ? (
+                <View style={styles.emptyTickets}>
+                  <Text style={styles.emptyTicketsText}>No tickets available for this event</Text>
+                </View>
+              ) : (
+                <View style={styles.ticketOptions}>
+                  {tickets.map((ticket) => {
+                    const available = isTicketAvailable(ticket);
+                    const spotsLeft = ticket.quantity_available - ticket.quantity_sold;
+                    const currencySymbol = CURRENCY_SYMBOLS[ticket.currency] || ticket.currency;
+                    
+                    return (
+                      <TouchableOpacity
+                        key={ticket.id}
+                        style={[
+                          styles.ticketOption,
+                          selectedTicket?.id === ticket.id && styles.ticketOptionSelected,
+                          !available && styles.ticketOptionDisabled,
+                        ]}
+                        onPress={() => available && handleTicketSelect(ticket)}
+                        disabled={!available}
+                      >
+                        <View style={styles.ticketOptionContent}>
+                          <View style={styles.ticketOptionHeader}>
+                            <View style={styles.ticketOptionInfo}>
+                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing[2] }}>
+                                <Text style={styles.ticketOptionName}>{ticket.name}</Text>
+                                {ticket.type === 'group' && (
+                                  <View style={styles.groupBadge}>
+                                    <Text style={styles.groupBadgeText}>Group</Text>
+                                  </View>
+                                )}
+                              </View>
+                              {ticket.description && (
+                                <Text style={styles.ticketOptionDescription}>{ticket.description}</Text>
+                              )}
+                              {!available && (
+                                <Text style={styles.unavailableText}>
+                                  {spotsLeft === 0 ? 'Sold Out' : 'Not Available'}
+                                </Text>
+                              )}
+                              {available && spotsLeft <= 10 && (
+                                <Text style={styles.lowStockText}>
+                                  Only {spotsLeft} left!
+                                </Text>
+                              )}
+                            </View>
+                            <View
+                              style={[
+                                styles.radioButton,
+                                selectedTicket?.id === ticket.id && styles.radioButtonSelected,
+                                !available && styles.radioButtonDisabled,
+                              ]}
+                            >
+                              {selectedTicket?.id === ticket.id && (
+                                <View style={styles.radioButtonInner} />
+                              )}
+                            </View>
+                          </View>
+                          <View style={styles.ticketOptionPrice}>
+                            <Text style={styles.priceText}>
+                              {ticket.price === 0 ? 'Free' : `${currencySymbol}${ticket.price}`}
+                            </Text>
+                            {ticket.price_type === 'per_person' && (
+                              <Text style={styles.priceSubtext}>per person</Text>
+                            )}
+                            {ticket.price_type === 'per_group' && (
+                              <Text style={styles.priceSubtext}>per group</Text>
+                            )}
+                          </View>
                         </View>
-                        <View
-                          style={[
-                            styles.radioButton,
-                            selectedTicket?.id === ticket.id && styles.radioButtonSelected,
-                          ]}
-                        >
-                          {selectedTicket?.id === ticket.id && (
-                            <View style={styles.radioButtonInner} />
-                          )}
-                        </View>
-                      </View>
-                      <View style={styles.ticketOptionPrice}>
-                        <Text style={styles.priceText}>
-                          {ticket.price === 0 ? 'Free' : `₹${ticket.price}`}
-                        </Text>
-                        {ticket.pricingModel === 'perPerson' && ticket.type === 'individual' && (
-                          <Text style={styles.priceSubtext}>per person</Text>
-                        )}
-                        {ticket.pricingModel === 'perGroup' && (
-                          <Text style={styles.priceSubtext}>per group</Text>
-                        )}
-                      </View>
-                    </View>
-                  </TouchableOpacity>
-                ))}
-              </View>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              )}
 
               {/* Quantity Selector */}
               {selectedTicket && (
@@ -400,10 +529,13 @@ export default function EventRegistrationScreen() {
                     <TouchableOpacity
                       style={[
                         styles.quantityButton,
-                        quantity <= (selectedTicket.type === 'group' ? 5 : 1) && styles.quantityButtonDisabled,
+                        quantity <= (selectedTicket.type === 'group' ? (selectedTicket.group_size || 5) : selectedTicket.min_purchase) && styles.quantityButtonDisabled,
                       ]}
-                      onPress={() => handleQuantityChange(Math.max(selectedTicket.type === 'group' ? 5 : 1, quantity - 1))}
-                      disabled={quantity <= (selectedTicket.type === 'group' ? 5 : 1)}
+                      onPress={() => {
+                        const minQty = selectedTicket.type === 'group' ? (selectedTicket.group_size || 5) : selectedTicket.min_purchase;
+                        handleQuantityChange(Math.max(minQty, quantity - 1));
+                      }}
+                      disabled={quantity <= (selectedTicket.type === 'group' ? (selectedTicket.group_size || 5) : selectedTicket.min_purchase)}
                     >
                       <Minus size={20} color={colors.text} strokeWidth={2} />
                     </TouchableOpacity>
@@ -411,16 +543,22 @@ export default function EventRegistrationScreen() {
                     <TouchableOpacity
                       style={[
                         styles.quantityButton,
-                        quantity >= selectedTicket.maxQuantity && styles.quantityButtonDisabled,
+                        quantity >= Math.min(selectedTicket.max_purchase, selectedTicket.quantity_available - selectedTicket.quantity_sold) && styles.quantityButtonDisabled,
                       ]}
-                      onPress={() => handleQuantityChange(Math.min(selectedTicket.maxQuantity, quantity + 1))}
-                      disabled={quantity >= selectedTicket.maxQuantity}
+                      onPress={() => {
+                        const maxQty = Math.min(selectedTicket.max_purchase, selectedTicket.quantity_available - selectedTicket.quantity_sold);
+                        handleQuantityChange(Math.min(maxQty, quantity + 1));
+                      }}
+                      disabled={quantity >= Math.min(selectedTicket.max_purchase, selectedTicket.quantity_available - selectedTicket.quantity_sold)}
                     >
                       <Plus size={20} color={colors.text} strokeWidth={2} />
                     </TouchableOpacity>
                   </View>
                   <Text style={styles.quantityHint}>
-                    {selectedTicket.type === 'group' ? 'Min: 5, Max: 50' : `Max: ${selectedTicket.maxQuantity}`}
+                    {selectedTicket.type === 'group' 
+                      ? `Min: ${selectedTicket.group_size || 5}, Max: ${Math.min(selectedTicket.max_purchase, selectedTicket.quantity_available - selectedTicket.quantity_sold)}`
+                      : `Min: ${selectedTicket.min_purchase}, Max: ${Math.min(selectedTicket.max_purchase, selectedTicket.quantity_available - selectedTicket.quantity_sold)}`
+                    }
                   </Text>
                 </View>
               )}
@@ -437,15 +575,38 @@ export default function EventRegistrationScreen() {
                 )}
               </Text>
 
-              {attendees.map((attendee, index) => (
-                <AttendeeForm
-                  key={index}
-                  attendee={attendee}
-                  index={index}
-                  onChange={handleAttendeeChange}
-                  showTitle={attendees.length > 1}
-                />
-              ))}
+              {attendees.map((attendee, index) => {
+                // Get custom fields applicable to the selected ticket
+                const applicableFields = selectedTicket 
+                  ? getFieldsForTicket(customFields, selectedTicket.id)
+                  : [];
+
+                return (
+                  <View key={index}>
+                    <AttendeeForm
+                      attendee={attendee}
+                      index={index}
+                      onChange={handleAttendeeChange}
+                      showTitle={attendees.length > 1}
+                    />
+
+                    {/* Custom Fields */}
+                    {applicableFields.length > 0 && (
+                      <View style={styles.customFieldsSection}>
+                        <Text style={styles.customFieldsTitle}>Additional Information</Text>
+                        {applicableFields.map((field) => (
+                          <CustomFieldInput
+                            key={field.id}
+                            field={field}
+                            value={attendee.customFields?.[field.id]}
+                            onChange={(value) => handleCustomFieldChange(index, field.id, value)}
+                          />
+                        ))}
+                      </View>
+                    )}
+                  </View>
+                );
+              })}
             </View>
           )}
 
@@ -497,29 +658,61 @@ export default function EventRegistrationScreen() {
               {/* Attendee List */}
               <View style={styles.reviewSection}>
                 <Text style={styles.reviewSectionTitle}>Attendee Information</Text>
-                {attendees.map((attendee, index) => (
-                  <View key={index} style={styles.attendeeReview}>
-                    <Text style={styles.attendeeReviewTitle}>Attendee {index + 1}</Text>
-                    <View style={styles.attendeeReviewGrid}>
-                      <View style={styles.attendeeReviewItem}>
-                        <Text style={styles.attendeeReviewLabel}>Name:</Text>
-                        <Text style={styles.attendeeReviewValue}>{attendee.name}</Text>
-                      </View>
-                      <View style={styles.attendeeReviewItem}>
-                        <Text style={styles.attendeeReviewLabel}>Email:</Text>
-                        <Text style={styles.attendeeReviewValue}>{attendee.email}</Text>
-                      </View>
-                      <View style={styles.attendeeReviewItem}>
-                        <Text style={styles.attendeeReviewLabel}>Mobile:</Text>
-                        <Text style={styles.attendeeReviewValue}>{attendee.mobile}</Text>
-                      </View>
-                      <View style={styles.attendeeReviewItem}>
-                        <Text style={styles.attendeeReviewLabel}>Gender:</Text>
-                        <Text style={styles.attendeeReviewValue}>{attendee.gender}</Text>
+                {attendees.map((attendee, index) => {
+                  // Get custom fields for display
+                  const applicableFields = selectedTicket 
+                    ? getFieldsForTicket(customFields, selectedTicket.id)
+                    : [];
+
+                  return (
+                    <View key={index} style={styles.attendeeReview}>
+                      <Text style={styles.attendeeReviewTitle}>Attendee {index + 1}</Text>
+                      <View style={styles.attendeeReviewGrid}>
+                        <View style={styles.attendeeReviewItem}>
+                          <Text style={styles.attendeeReviewLabel}>Name:</Text>
+                          <Text style={styles.attendeeReviewValue}>{attendee.name}</Text>
+                        </View>
+                        <View style={styles.attendeeReviewItem}>
+                          <Text style={styles.attendeeReviewLabel}>Email:</Text>
+                          <Text style={styles.attendeeReviewValue}>{attendee.email}</Text>
+                        </View>
+                        <View style={styles.attendeeReviewItem}>
+                          <Text style={styles.attendeeReviewLabel}>Mobile:</Text>
+                          <Text style={styles.attendeeReviewValue}>{attendee.mobile}</Text>
+                        </View>
+                        <View style={styles.attendeeReviewItem}>
+                          <Text style={styles.attendeeReviewLabel}>Gender:</Text>
+                          <Text style={styles.attendeeReviewValue}>{attendee.gender}</Text>
+                        </View>
+
+                        {/* Custom Fields */}
+                        {applicableFields.map((field) => {
+                          const value = attendee.customFields?.[field.id];
+                          let displayValue = value;
+
+                          // Format display value based on field type
+                          if (field.field_type === 'checkbox') {
+                            displayValue = value ? 'Yes' : 'No';
+                          } else if (field.field_type === 'multi_select' && Array.isArray(value)) {
+                            displayValue = value.join(', ');
+                          } else if (field.field_type === 'dropdown' || field.field_type === 'radio') {
+                            const option = field.options_json?.find(opt => opt.value === value);
+                            displayValue = option?.label || value;
+                          }
+
+                          return (
+                            <View key={field.id} style={styles.attendeeReviewItem}>
+                              <Text style={styles.attendeeReviewLabel}>{field.label}:</Text>
+                              <Text style={styles.attendeeReviewValue}>
+                                {displayValue || '-'}
+                              </Text>
+                            </View>
+                          );
+                        })}
                       </View>
                     </View>
-                  </View>
-                ))}
+                  );
+                })}
               </View>
 
               {/* Total */}
@@ -527,7 +720,7 @@ export default function EventRegistrationScreen() {
                 <View style={styles.totalRow}>
                   <Text style={styles.totalLabel}>Total Amount</Text>
                   <Text style={styles.totalValue}>
-                    {calculateTotal() === 0 ? 'Free' : `₹${calculateTotal()}`}
+                    {calculateTotal() === 0 ? 'Free' : `${getCurrencySymbol()}${calculateTotal()}`}
                   </Text>
                 </View>
               </View>
@@ -554,7 +747,7 @@ export default function EventRegistrationScreen() {
                   <View style={styles.paymentAmount}>
                     <View style={styles.paymentAmountRow}>
                       <Text style={styles.paymentAmountLabel}>Amount to Pay</Text>
-                      <Text style={styles.paymentAmountValue}>₹{calculateTotal()}</Text>
+                      <Text style={styles.paymentAmountValue}>{getCurrencySymbol()}{calculateTotal()}</Text>
                     </View>
                   </View>
 
@@ -619,14 +812,22 @@ export default function EventRegistrationScreen() {
             </LinearGradient>
           </TouchableOpacity>
         ) : (
-          <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
+          <TouchableOpacity 
+            style={[styles.submitButton, paymentLoading && styles.submitButtonDisabled]} 
+            onPress={handleSubmit}
+            disabled={paymentLoading}
+          >
             <LinearGradient
               colors={['#3491ff', '#0062ff']}
               style={styles.submitButtonGradient}
             >
-              <Text style={styles.submitButtonText}>
-                {calculateTotal() === 0 ? 'Confirm Registration' : 'Proceed to Payment'}
-              </Text>
+              {paymentLoading ? (
+                <ActivityIndicator color="#000000" />
+              ) : (
+                <Text style={styles.submitButtonText}>
+                  {calculateTotal() === 0 ? 'Confirm Registration' : 'Proceed to Payment'}
+                </Text>
+              )}
             </LinearGradient>
           </TouchableOpacity>
         )}
@@ -1048,10 +1249,6 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontFamily: typography.fontFamily.bold,
   },
-  attendeeCount: {
-    fontSize: typography.fontSize.base,
-    color: colors.textMuted,
-  },
   // Review
   reviewSection: {
     backgroundColor: colors.card,
@@ -1259,13 +1456,83 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.full,
     overflow: 'hidden',
   },
+  submitButtonDisabled: {
+    opacity: 0.6,
+  },
   submitButtonGradient: {
     paddingHorizontal: spacing[8],
     paddingVertical: spacing[3],
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   submitButtonText: {
     fontSize: typography.fontSize.sm,
     fontFamily: typography.fontFamily.bold,
     color: '#000000',
+  },
+  // New styles for ticket updates
+  emptyTickets: {
+    padding: spacing[8],
+    alignItems: 'center',
+  },
+  emptyTicketsText: {
+    fontSize: typography.fontSize.sm,
+    color: colors.textMuted,
+    textAlign: 'center',
+  },
+  ticketOptionDisabled: {
+    opacity: 0.5,
+  },
+  groupBadge: {
+    backgroundColor: 'rgba(52, 145, 255, 0.15)',
+    paddingHorizontal: spacing[2],
+    paddingVertical: spacing[1],
+    borderRadius: borderRadius.sm,
+  },
+  groupBadgeText: {
+    fontSize: typography.fontSize.xs,
+    color: colors.primary,
+    fontFamily: typography.fontFamily.bold,
+  },
+  unavailableText: {
+    fontSize: typography.fontSize.xs,
+    color: colors.error,
+    marginTop: spacing[1],
+    fontFamily: typography.fontFamily.bold,
+  },
+  lowStockText: {
+    fontSize: typography.fontSize.xs,
+    color: '#ff9800',
+    marginTop: spacing[1],
+    fontFamily: typography.fontFamily.bold,
+  },
+  radioButtonDisabled: {
+    opacity: 0.3,
+  },
+  attendeeCount: {
+    fontSize: typography.fontSize.base,
+    color: colors.textMuted,
+    fontFamily: typography.fontFamily.primary,
+  },
+  loadingMoreText: {
+    fontSize: typography.fontSize.sm,
+    color: colors.textMuted,
+    fontFamily: typography.fontFamily.bold,
+  },
+  // Custom Fields
+  customFieldsSection: {
+    backgroundColor: colors.card,
+    borderRadius: borderRadius.xl,
+    borderWidth: 1,
+    borderColor: colors.borderMuted,
+    padding: spacing[5],
+    marginBottom: spacing[6],
+  },
+  customFieldsTitle: {
+    fontSize: typography.fontSize.sm,
+    fontFamily: typography.fontFamily.bold,
+    color: colors.text,
+    marginBottom: spacing[4],
   },
 });

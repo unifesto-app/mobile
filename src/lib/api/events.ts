@@ -26,6 +26,10 @@ export interface Event {
   is_free: boolean;
   price?: number;
   currency?: string;
+  // Ticket pricing (calculated from tickets)
+  min_ticket_price?: number;
+  ticket_currency?: string;
+  has_paid_tickets?: boolean;
   status: 'draft' | 'published' | 'cancelled' | 'completed';
   is_featured: boolean;
   is_trending: boolean;
@@ -66,6 +70,71 @@ const EMPTY_EVENT_LIST: EventListResponse = {
   page: 1,
   limit: 20,
 };
+
+/**
+ * Enrich event with ticket pricing information
+ */
+async function enrichEventWithTicketPricing(event: Event): Promise<Event> {
+  try {
+    // Import here to avoid circular dependency
+    const { getEventTickets, getMinimumTicketPrice } = await import('./tickets');
+    
+    const { tickets } = await getEventTickets(event.id);
+    const minPrice = getMinimumTicketPrice(tickets);
+    
+    return {
+      ...event,
+      has_paid_tickets: minPrice !== null,
+      min_ticket_price: minPrice?.price,
+      ticket_currency: minPrice?.currency,
+    };
+  } catch (error) {
+    // If ticket fetching fails, return event as-is
+    return event;
+  }
+}
+
+/**
+ * Get display price for an event card (without fetching tickets)
+ * Uses event's price field as fallback
+ */
+export function getEventCardPrice(event: { is_free?: boolean; price?: number; currency?: string }): string {
+  if (event.is_free || !event.price || event.price === 0) {
+    return 'Free';
+  }
+  
+  const currencySymbol = getCurrencySymbol(event.currency || 'INR');
+  return `From ${currencySymbol}${event.price}`;
+}
+
+/**
+ * Get display price for an event
+ */
+export function getEventDisplayPrice(event: Event): string {
+  // If event has ticket pricing info, use it
+  if (event.has_paid_tickets && event.min_ticket_price) {
+    const currencySymbol = getCurrencySymbol(event.ticket_currency || 'INR');
+    return `Starting from ${currencySymbol}${event.min_ticket_price}`;
+  }
+  
+  // Fallback to old pricing model
+  if (event.is_free || !event.price || event.price === 0) {
+    return 'Free';
+  }
+  
+  const currencySymbol = getCurrencySymbol(event.currency || 'INR');
+  return `From ${currencySymbol}${event.price}`;
+}
+
+function getCurrencySymbol(currency: string): string {
+  const symbols: Record<string, string> = {
+    INR: '₹',
+    USD: '$',
+    EUR: '€',
+    GBP: '£',
+  };
+  return symbols[currency] || currency;
+}
 
 /**
  * Fetch with timeout for React Native
@@ -128,7 +197,6 @@ export async function getEvents(
     }, 10000);
 
     if (!response.ok) {
-      console.error('[API] Error fetching events:', response.status, response.statusText);
       return EMPTY_EVENT_LIST;
     }
 
@@ -136,9 +204,7 @@ export async function getEvents(
     return data || EMPTY_EVENT_LIST;
   } catch (error) {
     if (error instanceof Error) {
-      console.error('[API] Error fetching events:', error.message);
     } else {
-      console.error('[API] Unknown error fetching events');
     }
     return EMPTY_EVENT_LIST;
   }
@@ -158,7 +224,6 @@ export async function getEventById(id: string): Promise<Event | null> {
     }, 10000);
 
     if (!response.ok) {
-      console.error('[API] Error fetching event:', response.status, response.statusText);
       return null;
     }
 
@@ -166,7 +231,6 @@ export async function getEventById(id: string): Promise<Event | null> {
     return data.event || null;
   } catch (error) {
     if (error instanceof Error) {
-      console.error('[API] Error fetching event:', error.message);
     }
     return null;
   }
@@ -190,14 +254,12 @@ export async function getEventBySlug(slug: string): Promise<Event | null> {
     });
 
     if (!response.ok) {
-      console.error('Error fetching event:', response.statusText);
       return null;
     }
 
     const data = await response.json();
     return data.event || null;
   } catch (error) {
-    console.error('Unexpected error in getEventBySlug:', error);
     return null;
   }
 }
@@ -216,7 +278,6 @@ export async function getFeaturedEvents(limit: number = 10): Promise<Event[]> {
     }, 10000);
 
     if (!response.ok) {
-      console.error('[API] Error fetching featured events:', response.status, response.statusText);
       return [];
     }
 
@@ -224,7 +285,6 @@ export async function getFeaturedEvents(limit: number = 10): Promise<Event[]> {
     return data.events || [];
   } catch (error) {
     if (error instanceof Error) {
-      console.error('[API] Error fetching featured events:', error.message);
     }
     return [];
   }
@@ -244,7 +304,6 @@ export async function getTrendingEvents(limit: number = 10): Promise<Event[]> {
     }, 10000);
 
     if (!response.ok) {
-      console.error('[API] Error fetching trending events:', response.status, response.statusText);
       return [];
     }
 
@@ -252,7 +311,6 @@ export async function getTrendingEvents(limit: number = 10): Promise<Event[]> {
     return data.events || [];
   } catch (error) {
     if (error instanceof Error) {
-      console.error('[API] Error fetching trending events:', error.message);
     }
     return [];
   }
@@ -287,7 +345,6 @@ export async function registerForEvent(
     const data = await response.json();
     return data.registration || null;
   } catch (error) {
-    console.error('Unexpected error in registerForEvent:', error);
     throw error;
   }
 }
@@ -316,7 +373,6 @@ export async function cancelEventRegistration(eventId: string): Promise<boolean>
 
     return true;
   } catch (error) {
-    console.error('Unexpected error in cancelEventRegistration:', error);
     throw error;
   }
 }
@@ -384,7 +440,6 @@ export async function isRegisteredForEvent(eventId: string): Promise<boolean> {
     const data = await response.json();
     return data.is_registered || false;
   } catch (error) {
-    console.error('Unexpected error in isRegisteredForEvent:', error);
     return false;
   }
 }
@@ -418,14 +473,12 @@ export async function searchEvents(
     });
 
     if (!response.ok) {
-      console.error('Error searching events:', response.statusText);
       return null;
     }
 
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error('Unexpected error in searchEvents:', error);
     return null;
   }
 }

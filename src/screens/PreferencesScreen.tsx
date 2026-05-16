@@ -72,7 +72,6 @@ export default function PreferencesScreen() {
         setPushNotifications(false);
       }
     } catch (error) {
-      console.error('Error loading preferences:', error);
     } finally {
       setLoading(false);
     }
@@ -98,7 +97,6 @@ export default function PreferencesScreen() {
         body: JSON.stringify(preferences),
       });
     } catch (error) {
-      console.error('Error saving preferences:', error);
       Alert.alert('Error', 'Failed to save preferences');
     }
   };

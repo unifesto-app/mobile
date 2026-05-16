@@ -15,6 +15,7 @@ export interface Organization {
   city?: string;
   state?: string;
   country?: string;
+  parent_org_id?: string;
   social_links?: {
     facebook?: string;
     twitter?: string;
@@ -108,7 +109,6 @@ export async function getAllOrganizations(
     );
 
     if (!response.ok) {
-      console.error('[API] Error fetching organizations:', response.status, response.statusText);
       return EMPTY_ORGANIZATION_LIST;
     }
 
@@ -116,9 +116,7 @@ export async function getAllOrganizations(
     return data || EMPTY_ORGANIZATION_LIST;
   } catch (error) {
     if (error instanceof Error) {
-      console.error('[API] Error fetching organizations:', error.message);
     } else {
-      console.error('[API] Unknown error fetching organizations');
     }
     return EMPTY_ORGANIZATION_LIST;
   }
@@ -141,7 +139,6 @@ export async function getOrganizationById(id: string): Promise<Organization | nu
     );
 
     if (!response.ok) {
-      console.error('[API] Error fetching organization:', response.status, response.statusText);
       return null;
     }
 
@@ -149,7 +146,6 @@ export async function getOrganizationById(id: string): Promise<Organization | nu
     return data.organization || null;
   } catch (error) {
     if (error instanceof Error) {
-      console.error('[API] Error fetching organization:', error.message);
     }
     return null;
   }
@@ -181,7 +177,6 @@ export async function getOrganizationEvents(
     );
 
     if (!response.ok) {
-      console.error('[API] Error fetching organization events:', response.status, response.statusText);
       return EMPTY_EVENTS_LIST;
     }
 
@@ -189,9 +184,36 @@ export async function getOrganizationEvents(
     return data || EMPTY_EVENTS_LIST;
   } catch (error) {
     if (error instanceof Error) {
-      console.error('[API] Error fetching organization events:', error.message);
     }
     return EMPTY_EVENTS_LIST;
+  }
+}
+
+/**
+ * Get sub-organizations of a parent organization
+ */
+export async function getSubOrganizations(parentId: string): Promise<{ organizations: Organization[] }> {
+  try {
+    const response = await fetchWithTimeout(
+      `${API_URL}/public/organizations/${parentId}/sub-orgs`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      },
+      10000
+    );
+
+    if (!response.ok) {
+      return { organizations: [] };
+    }
+
+    const data = await response.json();
+    return data || { organizations: [] };
+  } catch (error) {
+    console.error('Error fetching sub-organizations:', error);
+    return { organizations: [] };
   }
 }
 

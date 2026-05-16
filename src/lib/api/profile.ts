@@ -32,7 +32,6 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://api.unifesto.app';
 export async function getProfile(): Promise<Profile | null> {
   try {
     if (!supabase) {
-      console.error('Supabase not configured');
       return null;
     }
 
@@ -40,7 +39,6 @@ export async function getProfile(): Promise<Profile | null> {
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
     
     if (sessionError) {
-      console.error('Session error:', sessionError);
       // If refresh token is invalid, sign out the user
       if (sessionError.message?.includes('Refresh Token')) {
         await supabase.auth.signOut();
@@ -49,7 +47,6 @@ export async function getProfile(): Promise<Profile | null> {
     }
     
     if (!session) {
-      console.error('No active session');
       return null;
     }
 
@@ -63,7 +60,6 @@ export async function getProfile(): Promise<Profile | null> {
     });
 
     if (!response.ok) {
-      console.error('Error fetching profile:', response.statusText);
       return null;
     }
 
@@ -76,7 +72,6 @@ export async function getProfile(): Promise<Profile | null> {
       email: data.email,
     };
   } catch (error) {
-    console.error('Unexpected error in getProfile:', error);
     return null;
   }
 }
@@ -87,7 +82,6 @@ export async function getProfile(): Promise<Profile | null> {
 export async function createProfileIfNotExists(): Promise<Profile | null> {
   try {
     if (!supabase) {
-      console.error('Supabase not configured');
       return null;
     }
 
@@ -95,7 +89,6 @@ export async function createProfileIfNotExists(): Promise<Profile | null> {
     const { data: { session } } = await supabase.auth.getSession();
     
     if (!session) {
-      console.error('No active session');
       return null;
     }
 
@@ -109,14 +102,12 @@ export async function createProfileIfNotExists(): Promise<Profile | null> {
     });
 
     if (!response.ok) {
-      console.error('Error creating profile:', response.statusText);
       return null;
     }
 
     const data = await response.json();
     return data.profile || null;
   } catch (error) {
-    console.error('Unexpected error in createProfileIfNotExists:', error);
     return null;
   }
 }
@@ -157,7 +148,6 @@ export async function updateProfile(
     const data = await response.json();
     return data.profile || null;
   } catch (error) {
-    console.error('Unexpected error in updateProfile:', error);
     throw error;
   }
 }
@@ -207,7 +197,6 @@ export async function uploadAvatar(uri: string): Promise<string | null> {
     const data = await response.json();
     return data.avatar_url || null;
   } catch (error) {
-    console.error('Unexpected error in uploadAvatar:', error);
     throw error;
   }
 }
@@ -244,7 +233,6 @@ export async function deleteAvatar(): Promise<boolean> {
 
     return true;
   } catch (error) {
-    console.error('Unexpected error in deleteAvatar:', error);
     throw error;
   }
 }
@@ -282,7 +270,6 @@ export async function deleteAccount(): Promise<{ success: boolean; error?: strin
 
     return { success: true };
   } catch (error: any) {
-    console.error('Unexpected error in deleteAccount:', error);
     return { 
       success: false, 
       error: error.message || 'Failed to delete account' 

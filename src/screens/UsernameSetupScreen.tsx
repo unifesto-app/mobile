@@ -104,7 +104,6 @@ export default function UsernameSetupScreen({ navigation }: UsernameSetupScreenP
         setIsAvailable(null);
       }
     } catch (err) {
-      console.error('Error checking username:', err);
       setError('Failed to check username availability');
       setIsAvailable(null);
     } finally {
@@ -147,7 +146,6 @@ export default function UsernameSetupScreen({ navigation }: UsernameSetupScreenP
       // Navigate to main app
       navigation.replace('MainApp');
     } catch (err: any) {
-      console.error('Error setting username:', err);
       Alert.alert(
         'Error',
         err.message || 'Failed to set username. Please try again.'

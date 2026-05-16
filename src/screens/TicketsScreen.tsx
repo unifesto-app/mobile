@@ -6,16 +6,20 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
+  Platform,
   ActivityIndicator,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Calendar, Clock, Ticket } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import GradientText from '../components/GradientText';
+import LoginModal from '../components/LoginModal';
 import { useAuth } from '../context/AuthContext';
 import { colors, spacing, typography, borderRadius, shadows, brandGradient, brandGradientStart, brandGradientEnd } from '../theme';
 import { getMyRegisteredEvents } from '../lib/api/events';
 import { getFontFamily } from '../theme/fontHelpers';
+
+const HEADER_TOP_OFFSET = Platform.OS === 'ios' ? 150 : 130;
 
 const TABS = ['Upcoming', 'Past'];
 
@@ -26,6 +30,7 @@ export default function TicketsScreen() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const navigation = useNavigation<any>();
   const { user } = useAuth();
 
@@ -41,10 +46,10 @@ export default function TicketsScreen() {
       } else {
         setLoadingMore(true);
       }
-      
+
       // Get user's registered events
       const response = await getMyRegisteredEvents(pageNum, 20);
-      
+
       // If API returns null (error or not implemented), show empty state
       if (!response) {
         if (reset) {
@@ -53,9 +58,9 @@ export default function TicketsScreen() {
         setHasMore(false);
         return;
       }
-      
+
       const allEvents = response?.events || [];
-      
+
       // Filter based on active tab
       const now = new Date();
       const filtered = allEvents.filter(event => {
@@ -66,18 +71,17 @@ export default function TicketsScreen() {
           return eventDate < now;
         }
       });
-      
+
       if (reset) {
         setTickets(filtered);
       } else {
         setTickets(prev => [...prev, ...filtered]);
       }
-      
+
       // Check if there are more items
       setHasMore(allEvents.length === 20);
       setPage(pageNum);
     } catch (error) {
-      console.error('[TicketsScreen] Error loading tickets:', error);
       // Set empty array on error - show "no tickets" instead of error
       if (reset) {
         setTickets([]);
@@ -158,7 +162,7 @@ export default function TicketsScreen() {
   if (!user) {
     return (
       <View style={styles.container}>
-        <ScrollView 
+        <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.guestContainer}
         >
@@ -171,15 +175,15 @@ export default function TicketsScreen() {
             >
               <Ticket size={48} color={colors.text} strokeWidth={2} />
             </LinearGradient>
-            
+
             <GradientText style={styles.guestTitle}>Sign in to view your tickets</GradientText>
             <Text style={styles.guestDescription}>
               Create an account or sign in to register for events and manage your tickets
             </Text>
-            
+
             <TouchableOpacity
               style={styles.signInButton}
-              onPress={() => navigation.navigate('Login')}
+              onPress={() => setShowLoginModal(true)}
               activeOpacity={0.8}
             >
               <LinearGradient
@@ -191,7 +195,7 @@ export default function TicketsScreen() {
                 <Text style={styles.signInButtonText}>Sign In</Text>
               </LinearGradient>
             </TouchableOpacity>
-            
+
             <TouchableOpacity
               style={styles.browseButton}
               onPress={() => navigation.navigate('Discover')}
@@ -201,6 +205,13 @@ export default function TicketsScreen() {
             </TouchableOpacity>
           </View>
         </ScrollView>
+
+        {/* Login Modal */}
+        <LoginModal
+          visible={showLoginModal}
+          onClose={() => setShowLoginModal(false)}
+          onSuccess={() => setShowLoginModal(false)}
+        />
       </View>
     );
   }
@@ -209,6 +220,7 @@ export default function TicketsScreen() {
     <ScrollView
       style={styles.container}
       showsVerticalScrollIndicator={false}
+      contentContainerStyle={{ paddingBottom: 100 }}
       onScroll={({ nativeEvent }) => {
         const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
         const isCloseToBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - 100;
@@ -282,7 +294,7 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: spacing[6],
-    paddingTop: spacing[8],
+    paddingTop: HEADER_TOP_OFFSET,
     paddingBottom: spacing[6],
   },
   headerTitle: {
@@ -323,7 +335,6 @@ const styles = StyleSheet.create({
   ticketsListContent: {
     padding: spacing[6],
     gap: spacing[6],
-    paddingBottom: spacing[8],
   },
   ticketCard: {
     backgroundColor: colors.card,

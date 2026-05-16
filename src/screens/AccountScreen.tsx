@@ -5,33 +5,50 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  ActivityIndicator,
   Alert,
   TextInput,
   Image,
+  Platform,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
-import { 
-  User, 
-  Mail, 
-  Phone, 
-  Edit2,
-  X,
-  Check,
+import {
   Camera,
   Trash2,
-  ChevronLeft,
+  Edit2,
+  Check,
+  X,
+  User,
+  Mail,
+  Phone,
+  CalendarDays,
 } from 'lucide-react-native';
 import { useAuth } from '../context/AuthContext';
-import { getProfile, updateProfile, uploadAvatar, deleteAvatar, deleteAccount, Profile } from '../lib/api/profile';
-import { colors, spacing, typography, borderRadius, shadows } from '../theme';
+import {
+  getProfile,
+  updateProfile,
+  uploadAvatar,
+  deleteAvatar,
+  deleteAccount,
+  Profile,
+} from '../lib/api/profile';
+import GradientText from '../components/GradientText';
+import GradientButton from '../components/GradientButton';
+import Skeleton from '../components/Skeleton';
+import {
+  colors,
+  spacing,
+  typography,
+  borderRadius,
+  shadows,
+  brandGradient,
+  brandGradientStart,
+  brandGradientEnd,
+} from '../theme';
 import { getFontFamily } from '../theme/fontHelpers';
 
-const MOCK_USER = {
-  joinedDate: 'January 2024',
-};
+const HEADER_TOP_OFFSET = 50;
 
 export default function AccountScreen() {
   const navigation = useNavigation<any>();
@@ -59,8 +76,8 @@ export default function AccountScreen() {
       const userProfile = await getProfile();
       if (userProfile) {
         setProfile(userProfile);
-        const displayPhone = userProfile.phone?.startsWith('+91') 
-          ? userProfile.phone.substring(3) 
+        const displayPhone = userProfile.phone?.startsWith('+91')
+          ? userProfile.phone.substring(3)
           : userProfile.phone || '';
         setEditedUser({
           name: userProfile.name || '',
@@ -73,27 +90,24 @@ export default function AccountScreen() {
     setIsLoading(false);
   };
 
-  const handleSaveProfile = async (section: string) => {
+  const handleSaveProfile = async () => {
     setSaveError('');
     setSaveLoading(true);
-    
     try {
       let phoneToSave = editedUser.phone.trim();
       if (phoneToSave && !phoneToSave.startsWith('+')) {
         phoneToSave = '+91' + phoneToSave;
       }
-      
       const updated = await updateProfile({
         name: editedUser.name,
         username: editedUser.username,
         bio: editedUser.bio,
         phone: phoneToSave === '' ? undefined : phoneToSave,
       });
-
       if (updated) {
         setProfile(updated);
-        const displayPhone = updated.phone?.startsWith('+91') 
-          ? updated.phone.substring(3) 
+        const displayPhone = updated.phone?.startsWith('+91')
+          ? updated.phone.substring(3)
           : updated.phone || '';
         setEditedUser({
           name: updated.name || '',
@@ -113,10 +127,10 @@ export default function AccountScreen() {
     }
   };
 
-  const handleCancelEdit = (section: string) => {
+  const handleCancelEdit = () => {
     if (profile) {
-      const displayPhone = profile.phone?.startsWith('+91') 
-        ? profile.phone.substring(3) 
+      const displayPhone = profile.phone?.startsWith('+91')
+        ? profile.phone.substring(3)
         : profile.phone || '';
       setEditedUser({
         name: profile.name || '',
@@ -132,29 +146,24 @@ export default function AccountScreen() {
   const handlePickImage = async () => {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      
       if (status !== 'granted') {
         Alert.alert('Permission Required', 'Please grant camera roll permissions to upload an avatar.');
         return;
       }
-
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.8,
       });
-
       if (!result.canceled && result.assets[0]) {
         setAvatarLoading(true);
         try {
-          const avatarUrl = await uploadAvatar(result.assets[0].uri);
-          if (avatarUrl) {
-            const updatedProfile = await getProfile();
-            if (updatedProfile) {
-              setProfile(updatedProfile);
-              Alert.alert('Success', 'Avatar updated successfully');
-            }
+          await uploadAvatar(result.assets[0].uri);
+          const updatedProfile = await getProfile();
+          if (updatedProfile) {
+            setProfile(updatedProfile);
+            Alert.alert('Success', 'Avatar updated successfully');
           }
         } catch (error: any) {
           Alert.alert('Error', error.message || 'Failed to upload avatar');
@@ -162,54 +171,39 @@ export default function AccountScreen() {
           setAvatarLoading(false);
         }
       }
-    } catch (error) {
-      console.error('Error picking image:', error);
+    } catch {
       Alert.alert('Error', 'Failed to pick image');
     }
   };
 
-  const handleDeleteAvatar = async () => {
-    Alert.alert(
-      'Delete Avatar',
-      'Are you sure you want to remove your profile picture?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            setAvatarLoading(true);
-            try {
-              await deleteAvatar();
-              const updatedProfile = await getProfile();
-              if (updatedProfile) {
-                setProfile(updatedProfile);
-                Alert.alert('Success', 'Avatar removed successfully');
-              }
-            } catch (error: any) {
-              Alert.alert('Error', error.message || 'Failed to delete avatar');
-            } finally {
-              setAvatarLoading(false);
-            }
-          },
+  const handleDeleteAvatar = () => {
+    Alert.alert('Remove Photo', 'Remove your profile picture?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Remove',
+        style: 'destructive',
+        onPress: async () => {
+          setAvatarLoading(true);
+          try {
+            await deleteAvatar();
+            const updatedProfile = await getProfile();
+            if (updatedProfile) setProfile(updatedProfile);
+          } catch (error: any) {
+            Alert.alert('Error', error.message || 'Failed to remove avatar');
+          } finally {
+            setAvatarLoading(false);
+          }
         },
-      ]
-    );
-  };
-
-  const getInitials = (name: string) => {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase();
+      },
+    ]);
   };
 
   const handleDeleteAccount = () => {
     Alert.alert(
       'Delete Account',
-      'Are you sure you want to permanently delete your account? This action cannot be undone and will delete:\n\n• Your profile and personal information\n• All your event registrations\n• Your wallet and transaction history\n• All your tickets and QR codes\n\nYou will be immediately signed out.',
+      'This will permanently delete your profile, tickets, wallet, and all data. This cannot be undone.',
       [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
+        { text: 'Cancel', style: 'cancel' },
         {
           text: 'Delete Account',
           style: 'destructive',
@@ -217,35 +211,13 @@ export default function AccountScreen() {
             setDeleteLoading(true);
             try {
               const result = await deleteAccount();
-              
               if (result.success) {
-                // Sign out the user
                 await signOut();
-                
-                // Show success message
-                Alert.alert(
-                  'Account Deleted',
-                  'Your account has been permanently deleted. We\'re sorry to see you go.',
-                  [
-                    {
-                      text: 'OK',
-                      onPress: () => {
-                        // Navigation will be handled by auth state change
-                      },
-                    },
-                  ]
-                );
               } else {
-                Alert.alert(
-                  'Error',
-                  result.error || 'Failed to delete account. Please try again or contact support.'
-                );
+                Alert.alert('Error', result.error || 'Failed to delete account');
               }
             } catch (error: any) {
-              Alert.alert(
-                'Error',
-                error.message || 'An unexpected error occurred. Please try again.'
-              );
+              Alert.alert('Error', error.message || 'An error occurred');
             } finally {
               setDeleteLoading(false);
             }
@@ -255,695 +227,616 @@ export default function AccountScreen() {
     );
   };
 
+  const getInitials = (name: string) =>
+    name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
+
+  // ─── Skeleton ─────────────────────────────────────────────────────────────
   if (isLoading) {
     return (
-      <View style={[styles.container, styles.centerContent]}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loadingText}>Loading account...</Text>
+      <View style={styles.container}>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+          <View style={styles.headerSection}>
+            <Skeleton width={160} height={36} borderRadius={borderRadius.md} style={{ marginBottom: spacing[2] }} />
+            <Skeleton width={220} height={16} borderRadius={borderRadius.sm} />
+          </View>
+
+          {/* Avatar skeleton */}
+          <View style={styles.section}>
+            <View style={styles.avatarRow}>
+              <Skeleton width={80} height={80} borderRadius={40} />
+              <View style={{ flex: 1, gap: spacing[2] }}>
+                <Skeleton width={120} height={18} borderRadius={borderRadius.sm} />
+                <Skeleton width={80} height={13} borderRadius={borderRadius.sm} />
+                <Skeleton width={100} height={28} borderRadius={borderRadius.lg} style={{ marginTop: spacing[1] }} />
+              </View>
+            </View>
+          </View>
+
+          {/* Personal card skeleton */}
+          <View style={styles.section}>
+            <View style={styles.card}>
+              {[1, 2, 3].map((i) => (
+                <View key={i}>
+                  <View style={styles.infoRow}>
+                    <Skeleton width={34} height={34} borderRadius={borderRadius.sm} />
+                    <View style={{ flex: 1, gap: spacing[1] }}>
+                      <Skeleton width={70} height={11} borderRadius={borderRadius.sm} />
+                      <Skeleton width={140} height={15} borderRadius={borderRadius.sm} />
+                    </View>
+                  </View>
+                  {i < 3 && <View style={styles.rowDivider} />}
+                </View>
+              ))}
+            </View>
+          </View>
+
+          {/* Contact card skeleton */}
+          <View style={styles.section}>
+            <View style={styles.card}>
+              {[1, 2].map((i) => (
+                <View key={i}>
+                  <View style={styles.infoRow}>
+                    <Skeleton width={34} height={34} borderRadius={borderRadius.sm} />
+                    <View style={{ flex: 1, gap: spacing[1] }}>
+                      <Skeleton width={50} height={11} borderRadius={borderRadius.sm} />
+                      <Skeleton width={180} height={15} borderRadius={borderRadius.sm} />
+                    </View>
+                  </View>
+                  {i < 2 && <View style={styles.rowDivider} />}
+                </View>
+              ))}
+            </View>
+          </View>
+        </ScrollView>
       </View>
     );
   }
 
+  // ─── Real Content ─────────────────────────────────────────────────────────
+  const isEditing = !!editingSection;
+
   return (
     <View style={styles.container}>
-      {/* Custom Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-          activeOpacity={0.7}
-        >
-          <ChevronLeft size={24} color={colors.text} strokeWidth={2} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Account</Text>
-        <View style={styles.headerRight} />
-      </View>
-
-      <ScrollView 
+      <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={{ paddingBottom: 100 }}
+        keyboardShouldPersistTaps="handled"
       >
-        {/* Avatar Section */}
-        <View style={styles.avatarSection}>
-          <View style={styles.avatarContainer}>
-            {profile?.avatar_url ? (
-              <Image source={{ uri: profile.avatar_url }} style={styles.avatarImage} />
-            ) : (
-              <LinearGradient
-                colors={['#3491ff', '#0062ff']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.avatar}
-              >
-                <Text style={styles.avatarText}>
-                  {getInitials(profile?.name || editedUser.name || 'U')}
-                </Text>
-              </LinearGradient>
-            )}
-            
-            {editingSection === 'avatar' && (
-              <>
-                {avatarLoading ? (
-                  <View style={styles.avatarLoadingOverlay}>
-                    <View style={styles.avatarLoadingContainer}>
-                      <ActivityIndicator size="large" color="#ffffff" />
-                      <Text style={styles.avatarLoadingText}>Uploading...</Text>
-                    </View>
-                  </View>
-                ) : (
-                  <>
-                    <TouchableOpacity
-                      style={styles.avatarEditOverlay}
-                      onPress={handlePickImage}
-                      activeOpacity={0.9}
-                    >
-                      <View style={styles.avatarEditContent}>
-                        <Camera size={16} color="#ffffff" strokeWidth={2.5} />
-                        <Text style={styles.avatarEditText}>
-                          {profile?.avatar_url ? 'Change' : 'Upload'}
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-                    
-                    {profile?.avatar_url && (
-                      <TouchableOpacity
-                        style={styles.avatarDeleteButton}
-                        onPress={handleDeleteAvatar}
-                        activeOpacity={0.8}
-                      >
-                        <Trash2 size={16} color="#ffffff" strokeWidth={2.5} />
-                      </TouchableOpacity>
-                    )}
-                  </>
-                )}
-              </>
-            )}
-          </View>
-
-          {editingSection === 'avatar' ? (
-            <TouchableOpacity
-              style={styles.cancelAvatarButton}
-              onPress={() => setEditingSection(null)}
-              activeOpacity={0.7}
-            >
-              <X size={16} color={colors.textSecondary} strokeWidth={2} />
-              <Text style={styles.cancelAvatarText}>Cancel</Text>
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity
-              style={styles.editAvatarButton}
-              onPress={() => setEditingSection('avatar')}
-              activeOpacity={0.7}
-            >
-              <Camera size={16} color={colors.primary} strokeWidth={2} />
-              <Text style={styles.editAvatarText}>Change Photo</Text>
-            </TouchableOpacity>
-          )}
+        {/* Header */}
+        <View style={styles.headerSection}>
+          <GradientText style={styles.headerTitle}>Edit Profile</GradientText>
+          <Text style={styles.headerSubtitle}>Update your personal information</Text>
         </View>
 
-        {/* Profile Form */}
-        {saveError && (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>{saveError}</Text>
-          </View>
-        )}
-
-        {/* Personal Information Card */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.sectionTitle}>Personal Information</Text>
-            {editingSection !== 'personal' && (
-              <TouchableOpacity
-                onPress={() => setEditingSection('personal')}
-                activeOpacity={0.7}
-              >
-                <Edit2 size={18} color={colors.primary} strokeWidth={2} />
-              </TouchableOpacity>
-            )}
-          </View>
-
-          {editingSection === 'personal' ? (
-            <View style={styles.editForm}>
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Full Name</Text>
-                <TextInput
-                  style={styles.input}
-                  value={editedUser.name}
-                  onChangeText={(text) => setEditedUser({ ...editedUser, name: text })}
-                  placeholder="Enter your full name"
-                  placeholderTextColor={colors.textMuted}
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Username</Text>
-                <TextInput
-                  style={styles.input}
-                  value={editedUser.username}
-                  onChangeText={(text) => setEditedUser({ ...editedUser, username: text })}
-                  placeholder="Choose a unique username"
-                  placeholderTextColor={colors.textMuted}
-                  autoCapitalize="none"
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Bio</Text>
-                <TextInput
-                  style={[styles.input, styles.textArea]}
-                  value={editedUser.bio}
-                  onChangeText={(text) => setEditedUser({ ...editedUser, bio: text })}
-                  placeholder="Tell us about yourself"
-                  placeholderTextColor={colors.textMuted}
-                  multiline
-                  numberOfLines={3}
-                />
-              </View>
-
-              <View style={styles.actionButtons}>
-                <TouchableOpacity
-                  style={[styles.button, styles.buttonSecondary]}
-                  onPress={() => handleCancelEdit('personal')}
-                  activeOpacity={0.7}
+        {/* ── Avatar ── */}
+        <View style={styles.section}>
+          <View style={styles.avatarRow}>
+            <TouchableOpacity
+              onPress={handlePickImage}
+              activeOpacity={0.85}
+              style={styles.avatarContainer}
+              disabled={avatarLoading}
+            >
+              {profile?.avatar_url ? (
+                <Image source={{ uri: profile.avatar_url }} style={styles.avatar} />
+              ) : (
+                <LinearGradient
+                  colors={brandGradient}
+                  start={brandGradientStart}
+                  end={brandGradientEnd}
+                  style={styles.avatar}
                 >
-                  <X size={18} color={colors.textSecondary} strokeWidth={2} />
-                  <Text style={styles.buttonSecondaryText}>Cancel</Text>
+                  <Text style={styles.avatarText}>
+                    {getInitials(profile?.name || editedUser.name || 'U')}
+                  </Text>
+                </LinearGradient>
+              )}
+              {/* Camera badge */}
+              <View style={styles.cameraBadge}>
+                <Camera size={14} color="#ffffff" strokeWidth={2.5} />
+              </View>
+            </TouchableOpacity>
+
+            <View style={styles.avatarMeta}>
+              <Text style={styles.avatarName}>{profile?.name || 'Your Name'}</Text>
+              {profile?.username ? (
+                <Text style={styles.avatarUsername}>@{profile.username}</Text>
+              ) : null}
+              <View style={{ flexDirection: 'row', gap: spacing[2], marginTop: spacing[2] }}>
+                <TouchableOpacity
+                  style={styles.photoButton}
+                  onPress={handlePickImage}
+                  activeOpacity={0.8}
+                >
+                  <Camera size={13} color={colors.primary} strokeWidth={2} />
+                  <Text style={styles.photoButtonText}>Change Photo</Text>
                 </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.buttonPrimaryContainer}
-                  onPress={() => handleSaveProfile('personal')}
-                  disabled={saveLoading}
-                  activeOpacity={0.7}
-                >
-                  <LinearGradient
-                    colors={['#3491ff', '#0062ff']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.buttonPrimaryGradient}
+                {profile?.avatar_url && (
+                  <TouchableOpacity
+                    style={[styles.photoButton, styles.photoButtonDanger]}
+                    onPress={handleDeleteAvatar}
+                    activeOpacity={0.8}
                   >
-                    {saveLoading ? (
-                      <ActivityIndicator color="#000000" size="small" />
-                    ) : (
-                      <>
-                        <Check size={18} color="#000000" strokeWidth={2} />
-                        <Text style={styles.buttonPrimaryText}>Save</Text>
-                      </>
-                    )}
-                  </LinearGradient>
-                </TouchableOpacity>
+                    <Trash2 size={13} color="#ef4444" strokeWidth={2} />
+                  </TouchableOpacity>
+                )}
               </View>
             </View>
-          ) : (
-            <View style={styles.infoSection}>
-              <View style={styles.infoItem}>
-                <View style={styles.infoContent}>
-                  <Text style={styles.infoLabel}>Full Name</Text>
-                  <Text style={styles.infoValue}>{profile?.name || 'Not set'}</Text>
-                </View>
-              </View>
-
-              {profile?.username && (
-                <View style={styles.infoItem}>
-                  <View style={styles.infoContent}>
-                    <Text style={styles.infoLabel}>Username</Text>
-                    <Text style={styles.infoValue}>@{profile.username}</Text>
-                  </View>
-                </View>
-              )}
-
-              {(profile?.bio || editedUser.bio) && (
-                <View style={styles.infoItem}>
-                  <View style={styles.infoContent}>
-                    <Text style={styles.infoLabel}>Bio</Text>
-                    <Text style={styles.infoValue}>{profile?.bio || editedUser.bio}</Text>
-                  </View>
-                </View>
-              )}
-            </View>
-          )}
+          </View>
         </View>
 
-        {/* Contact Information Card */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.sectionTitle}>Contact Information</Text>
-            {editingSection !== 'contact' && (
-              <TouchableOpacity
-                onPress={() => setEditingSection('contact')}
-                activeOpacity={0.7}
-              >
-                <Edit2 size={18} color={colors.primary} strokeWidth={2} />
-              </TouchableOpacity>
-            )}
+        {/* ── Error ── */}
+        {saveError ? (
+          <View style={styles.section}>
+            <View style={styles.errorBox}>
+              <Text style={styles.errorText}>{saveError}</Text>
+            </View>
           </View>
+        ) : null}
 
-          {editingSection === 'contact' ? (
-            <View style={styles.editForm}>
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Phone</Text>
-                <View style={styles.phoneInputContainer}>
-                  <Text style={styles.countryCodeText}>+91</Text>
+        {/* ── Personal Information ── */}
+        <View style={styles.section}>
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Text style={styles.cardTitle}>Personal Information</Text>
+              {!isEditing ? (
+                <TouchableOpacity onPress={() => setEditingSection('personal')} activeOpacity={0.7}>
+                  <Edit2 size={17} color={colors.primary} strokeWidth={2} />
+                </TouchableOpacity>
+              ) : null}
+            </View>
+
+            {editingSection === 'personal' ? (
+              <View style={styles.editForm}>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Full Name</Text>
                   <TextInput
-                    style={styles.phoneInput}
-                    value={editedUser.phone}
-                    onChangeText={(text) => {
-                      const cleaned = text.replace(/\D/g, '');
-                      setEditedUser({ ...editedUser, phone: cleaned });
-                    }}
-                    placeholder="Enter phone number"
+                    style={styles.input}
+                    value={editedUser.name}
+                    onChangeText={(t) => setEditedUser({ ...editedUser, name: t })}
+                    placeholder="Enter your full name"
                     placeholderTextColor={colors.textMuted}
-                    keyboardType="phone-pad"
-                    maxLength={10}
                   />
                 </View>
-              </View>
-
-              <View style={styles.actionButtons}>
-                <TouchableOpacity
-                  style={[styles.button, styles.buttonSecondary]}
-                  onPress={() => handleCancelEdit('contact')}
-                  activeOpacity={0.7}
-                >
-                  <X size={18} color={colors.textSecondary} strokeWidth={2} />
-                  <Text style={styles.buttonSecondaryText}>Cancel</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.buttonPrimaryContainer}
-                  onPress={() => handleSaveProfile('contact')}
-                  disabled={saveLoading}
-                  activeOpacity={0.7}
-                >
-                  <LinearGradient
-                    colors={['#3491ff', '#0062ff']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.buttonPrimaryGradient}
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Username</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={editedUser.username}
+                    onChangeText={(t) => setEditedUser({ ...editedUser, username: t })}
+                    placeholder="Choose a unique username"
+                    placeholderTextColor={colors.textMuted}
+                    autoCapitalize="none"
+                  />
+                </View>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Bio</Text>
+                  <TextInput
+                    style={[styles.input, styles.textArea]}
+                    value={editedUser.bio}
+                    onChangeText={(t) => setEditedUser({ ...editedUser, bio: t })}
+                    placeholder="Tell us about yourself"
+                    placeholderTextColor={colors.textMuted}
+                    multiline
+                    numberOfLines={3}
+                  />
+                </View>
+                <View style={styles.formActions}>
+                  <TouchableOpacity style={styles.cancelBtn} onPress={handleCancelEdit} activeOpacity={0.7}>
+                    <X size={15} color={colors.textSecondary} strokeWidth={2} />
+                    <Text style={styles.cancelBtnText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <GradientButton
+                    onPress={handleSaveProfile}
+                    loading={saveLoading}
+                    disabled={saveLoading}
+                    style={{ flex: 1 }}
                   >
-                    {saveLoading ? (
-                      <ActivityIndicator color="#000000" size="small" />
-                    ) : (
-                      <>
-                        <Check size={18} color="#000000" strokeWidth={2} />
-                        <Text style={styles.buttonPrimaryText}>Save</Text>
-                      </>
-                    )}
-                  </LinearGradient>
-                </TouchableOpacity>
-              </View>
-            </View>
-          ) : (
-            <View style={styles.infoSection}>
-              <View style={styles.infoItem}>
-                <View style={styles.infoContent}>
-                  <Text style={styles.infoLabel}>Email</Text>
-                  <Text style={styles.infoValue}>{profile?.email || user?.email}</Text>
+                    Save Changes
+                  </GradientButton>
                 </View>
               </View>
-
-              {editedUser.phone && (
-                <View style={styles.infoItem}>
-                  <View style={styles.infoContent}>
-                    <Text style={styles.infoLabel}>Phone</Text>
-                    <Text style={styles.infoValue}>
-                      {editedUser.phone.startsWith('+91') ? editedUser.phone : `+91${editedUser.phone}`}
-                    </Text>
-                  </View>
-                </View>
-              )}
-            </View>
-          )}
-        </View>
-
-        {/* Account Details Card */}
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Account Details</Text>
-          <View style={styles.infoSection}>
-            <View style={styles.infoItem}>
-              <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Member Since</Text>
-                <Text style={styles.infoValue}>
-                  {user?.created_at 
-                    ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
-                    : MOCK_USER.joinedDate}
-                </Text>
-              </View>
-            </View>
+            ) : (
+              <>
+                <InfoRow icon={<User size={15} color={colors.primary} strokeWidth={2} />} label="Full Name" value={profile?.name || 'Not set'} />
+                <View style={styles.rowDivider} />
+                <InfoRow icon={<User size={15} color={colors.primary} strokeWidth={2} />} label="Username" value={profile?.username ? `@${profile.username}` : 'Not set'} />
+                <View style={styles.rowDivider} />
+                <InfoRow icon={<User size={15} color={colors.textMuted} strokeWidth={2} />} label="Bio" value={profile?.bio || 'Not set'} />
+              </>
+            )}
           </View>
         </View>
 
-        {/* Delete Account Section */}
-        <View style={styles.dangerZone}>
-          <Text style={styles.dangerZoneTitle}>Danger Zone</Text>
-          <Text style={styles.dangerZoneDescription}>
-            Once you delete your account, there is no going back. Please be certain.
-          </Text>
-          <TouchableOpacity
-            style={styles.deleteButton}
-            onPress={handleDeleteAccount}
-            disabled={deleteLoading}
-            activeOpacity={0.7}
-          >
-            {deleteLoading ? (
-              <ActivityIndicator color="#ffffff" size="small" />
+        {/* ── Contact Information ── */}
+        <View style={styles.section}>
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Text style={styles.cardTitle}>Contact Information</Text>
+              {!isEditing ? (
+                <TouchableOpacity onPress={() => setEditingSection('contact')} activeOpacity={0.7}>
+                  <Edit2 size={17} color={colors.primary} strokeWidth={2} />
+                </TouchableOpacity>
+              ) : null}
+            </View>
+
+            {editingSection === 'contact' ? (
+              <View style={styles.editForm}>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Phone Number</Text>
+                  <View style={styles.phoneRow}>
+                    <View style={styles.countryCode}>
+                      <Text style={styles.countryCodeText}>+91</Text>
+                    </View>
+                    <TextInput
+                      style={[styles.input, { flex: 1, marginBottom: 0 }]}
+                      value={editedUser.phone}
+                      onChangeText={(t) => setEditedUser({ ...editedUser, phone: t.replace(/\D/g, '') })}
+                      placeholder="10-digit number"
+                      placeholderTextColor={colors.textMuted}
+                      keyboardType="phone-pad"
+                      maxLength={10}
+                    />
+                  </View>
+                </View>
+                <View style={styles.formActions}>
+                  <TouchableOpacity style={styles.cancelBtn} onPress={handleCancelEdit} activeOpacity={0.7}>
+                    <X size={15} color={colors.textSecondary} strokeWidth={2} />
+                    <Text style={styles.cancelBtnText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <GradientButton
+                    onPress={handleSaveProfile}
+                    loading={saveLoading}
+                    disabled={saveLoading}
+                    style={{ flex: 1 }}
+                  >
+                    Save Changes
+                  </GradientButton>
+                </View>
+              </View>
             ) : (
               <>
-                <Trash2 size={18} color="#ffffff" strokeWidth={2} />
-                <Text style={styles.deleteButtonText}>Delete Account</Text>
+                <InfoRow icon={<Mail size={15} color={colors.primary} strokeWidth={2} />} label="Email" value={profile?.email || user?.email || 'Not set'} />
+                <View style={styles.rowDivider} />
+                <InfoRow
+                  icon={<Phone size={15} color="#10b981" strokeWidth={2} />}
+                  label="Phone"
+                  value={
+                    editedUser.phone
+                      ? `+91 ${editedUser.phone}`
+                      : 'Not set'
+                  }
+                />
               </>
             )}
-          </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* ── Account Details ── */}
+        <View style={styles.section}>
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Text style={styles.cardTitle}>Account Details</Text>
+            </View>
+            <InfoRow
+              icon={<CalendarDays size={15} color="#f59e0b" strokeWidth={2} />}
+              label="Member Since"
+              value={
+                user?.created_at
+                  ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+                  : 'January 2024'
+              }
+            />
+          </View>
+        </View>
+
+        {/* ── Danger Zone ── */}
+        <View style={styles.section}>
+          <View style={styles.dangerCard}>
+            <Text style={styles.dangerTitle}>Danger Zone</Text>
+            <Text style={styles.dangerDesc}>
+              Permanently delete your account, data, tickets, and wallet. This cannot be undone.
+            </Text>
+            <TouchableOpacity
+              style={styles.deleteBtn}
+              onPress={handleDeleteAccount}
+              disabled={deleteLoading}
+              activeOpacity={0.8}
+            >
+              <Trash2 size={16} color="#ffffff" strokeWidth={2} />
+              <Text style={styles.deleteBtnText}>
+                {deleteLoading ? 'Deleting…' : 'Delete Account'}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </ScrollView>
     </View>
   );
 }
 
+// ─── Sub-component ────────────────────────────────────────────────────────────
+function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+  return (
+    <View style={styles.infoRow}>
+      <View style={styles.infoIconBox}>{icon}</View>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.infoLabel}>{label}</Text>
+        <Text style={styles.infoValue} numberOfLines={2}>{value}</Text>
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  centerContent: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: spacing[4],
-    fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  container: { flex: 1, backgroundColor: colors.background },
+
+  headerSection: {
     paddingHorizontal: spacing[6],
-    paddingTop: spacing[12],
-    paddingBottom: spacing[4],
-    backgroundColor: colors.background,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
+    paddingTop: HEADER_TOP_OFFSET,
+    paddingBottom: spacing[6],
   },
   headerTitle: {
-    fontSize: typography.fontSize.xl,
-    fontFamily: getFontFamily('bold'),
-    color: colors.text,
+    fontSize: typography.fontSize['3xl'],
+    fontFamily: typography.fontFamily.primary,
+    marginBottom: spacing[1],
   },
-  headerRight: {
-    width: 40,
+  headerSubtitle: {
+    fontSize: typography.fontSize.base,
+    color: colors.textSecondary,
+    fontFamily: typography.fontFamily.primary,
   },
-  scrollContent: {
-    padding: spacing[6],
-    paddingTop: spacing[4],
-    paddingBottom: spacing[10],
-    gap: spacing[4],
+
+  section: {
+    paddingHorizontal: spacing[6],
+    marginBottom: spacing[5],
   },
-  avatarSection: {
+
+  // Avatar
+  avatarRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: spacing[6],
+    gap: spacing[5],
+    backgroundColor: colors.card,
+    borderRadius: borderRadius.xl,
+    borderWidth: 1,
+    borderColor: colors.borderMuted,
+    padding: spacing[5],
+    ...shadows.md,
   },
   avatarContainer: {
     position: 'relative',
-    width: 120,
-    height: 120,
-    marginBottom: spacing[4],
+    width: 80,
+    height: 80,
   },
   avatar: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarImage: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: colors.backgroundSecondary,
-  },
   avatarText: {
-    fontSize: typography.fontSize['3xl'],
+    fontSize: typography.fontSize['2xl'],
+    fontFamily: getFontFamily('bold'),
+    color: '#000000',
+  },
+  cameraBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: colors.card,
+  },
+  avatarMeta: { flex: 1 },
+  avatarName: {
+    fontSize: typography.fontSize.lg,
     fontFamily: getFontFamily('bold'),
     color: colors.text,
   },
-  avatarEditOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 40,
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
-    borderBottomLeftRadius: 60,
-    borderBottomRightRadius: 60,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  avatarEditContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[2],
-  },
-  avatarEditText: {
-    fontSize: typography.fontSize.xs,
-    fontFamily: getFontFamily('bold'),
-    color: '#ffffff',
-  },
-  avatarLoadingOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    borderRadius: 60,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarLoadingContainer: {
-    alignItems: 'center',
-    gap: spacing[2],
-  },
-  avatarLoadingText: {
-    fontSize: typography.fontSize.xs,
-    fontFamily: getFontFamily('bold'),
-    color: '#ffffff',
-    marginTop: spacing[1],
-  },
-  avatarDeleteButton: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#ef4444',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 3,
-    borderColor: colors.background,
-    ...shadows.lg,
-  },
-  editAvatarButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[2],
-    paddingVertical: spacing[2],
-    paddingHorizontal: spacing[4],
-  },
-  editAvatarText: {
+  avatarUsername: {
     fontSize: typography.fontSize.sm,
+    color: colors.textMuted,
+    fontFamily: typography.fontFamily.primary,
+  },
+  photoButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[1],
+    paddingVertical: spacing[2],
+    paddingHorizontal: spacing[3],
+    backgroundColor: 'rgba(52,145,255,0.1)',
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: 'rgba(52,145,255,0.25)',
+  },
+  photoButtonText: {
+    fontSize: typography.fontSize.xs,
     fontFamily: getFontFamily('bold'),
     color: colors.primary,
   },
-  cancelAvatarButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[2],
-    paddingVertical: spacing[2],
-    paddingHorizontal: spacing[4],
+  photoButtonDanger: {
+    backgroundColor: 'rgba(239,68,68,0.08)',
+    borderColor: 'rgba(239,68,68,0.2)',
   },
-  cancelAvatarText: {
+
+  // Error
+  errorBox: {
+    backgroundColor: 'rgba(239,68,68,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(239,68,68,0.3)',
+    borderRadius: borderRadius.lg,
+    padding: spacing[4],
+  },
+  errorText: {
     fontSize: typography.fontSize.sm,
-    fontFamily: getFontFamily('bold'),
-    color: colors.textSecondary,
+    color: '#ef4444',
+    fontFamily: getFontFamily('medium'),
   },
+
+  // Card
   card: {
     backgroundColor: colors.card,
     borderRadius: borderRadius.xl,
-    padding: spacing[6],
     borderWidth: 1,
     borderColor: colors.borderMuted,
+    overflow: 'hidden',
     ...shadows.md,
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing[4],
+    paddingHorizontal: spacing[5],
+    paddingTop: spacing[5],
+    paddingBottom: spacing[4],
   },
-  sectionTitle: {
+  cardTitle: {
     fontSize: typography.fontSize.base,
     fontFamily: getFontFamily('bold'),
     color: colors.text,
   },
-  errorContainer: {
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.3)',
-    borderRadius: borderRadius.lg,
-    padding: spacing[3],
-    marginBottom: spacing[4],
-  },
-  errorText: {
-    fontSize: typography.fontSize.sm,
-    color: colors.error,
-  },
-  editForm: {
-    gap: spacing[4],
-  },
-  inputGroup: {
-    gap: spacing[2],
-  },
-  inputLabel: {
-    fontSize: typography.fontSize.sm,
-    fontFamily: getFontFamily('bold'),
-    color: colors.text,
-  },
-  input: {
-    backgroundColor: colors.background,
-    borderWidth: 1,
-    borderColor: colors.borderMuted,
-    borderRadius: borderRadius.lg,
-    padding: spacing[3],
-    fontSize: typography.fontSize.sm,
-    color: colors.text,
-  },
-  textArea: {
-    minHeight: 100,
-    textAlignVertical: 'top',
-  },
-  phoneInputContainer: {
+
+  // Info rows
+  infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.background,
-    borderWidth: 1,
-    borderColor: colors.borderMuted,
-    borderRadius: borderRadius.lg,
-    paddingLeft: spacing[3],
-  },
-  countryCodeText: {
-    fontSize: typography.fontSize.sm,
-    color: colors.text,
-    fontFamily: getFontFamily('bold'),
-    paddingRight: spacing[2],
-    borderRightWidth: 1,
-    borderRightColor: colors.borderMuted,
-  },
-  phoneInput: {
-    flex: 1,
-    padding: spacing[3],
-    fontSize: typography.fontSize.sm,
-    color: colors.text,
-  },
-  actionButtons: {
-    flexDirection: 'row',
     gap: spacing[3],
-    marginTop: spacing[2],
+    paddingHorizontal: spacing[5],
+    paddingVertical: spacing[4],
   },
-  button: {
-    flex: 1,
-    flexDirection: 'row',
+  infoIconBox: {
+    width: 34,
+    height: 34,
+    borderRadius: borderRadius.sm,
+    backgroundColor: 'rgba(52,145,255,0.1)',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing[2],
-    paddingVertical: spacing[3],
-    borderRadius: borderRadius.full,
-  },
-  buttonPrimaryContainer: {
-    flex: 1,
-    borderRadius: borderRadius.full,
-    overflow: 'hidden',
-  },
-  buttonPrimaryGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing[2],
-    paddingVertical: spacing[3],
-    paddingHorizontal: spacing[4],
-  },
-  buttonPrimaryText: {
-    fontSize: typography.fontSize.sm,
-    fontFamily: getFontFamily('bold'),
-    color: '#000000',
-  },
-  buttonSecondary: {
-    backgroundColor: colors.background,
-    borderWidth: 1,
-    borderColor: colors.borderMuted,
-  },
-  buttonSecondaryText: {
-    fontSize: typography.fontSize.sm,
-    fontFamily: getFontFamily('bold'),
-    color: colors.textSecondary,
-  },
-  infoSection: {
-    gap: spacing[3],
-  },
-  infoItem: {
-    paddingVertical: spacing[1],
-  },
-  infoContent: {
-    flex: 1,
   },
   infoLabel: {
     fontSize: typography.fontSize.xs,
     color: colors.textMuted,
-    marginBottom: spacing[1],
+    fontFamily: typography.fontFamily.primary,
+    marginBottom: 2,
   },
   infoValue: {
     fontSize: typography.fontSize.sm,
-    fontFamily: getFontFamily('bold'),
     color: colors.text,
+    fontFamily: getFontFamily('medium'),
   },
-  dangerZone: {
-    backgroundColor: 'rgba(239, 68, 68, 0.05)',
+  rowDivider: {
+    height: 1,
+    backgroundColor: colors.borderMuted,
+    marginHorizontal: spacing[5],
+  },
+
+  // Edit form
+  editForm: {
+    paddingHorizontal: spacing[5],
+    paddingBottom: spacing[5],
+    gap: spacing[4],
+  },
+  inputGroup: {},
+  inputLabel: {
+    fontSize: typography.fontSize.xs,
+    color: colors.textMuted,
+    fontFamily: getFontFamily('medium'),
+    marginBottom: spacing[2],
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+  input: {
+    backgroundColor: colors.background,
+    borderRadius: borderRadius.lg,
     borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.2)',
-    borderRadius: borderRadius.xl,
-    padding: spacing[6],
-    marginTop: spacing[4],
+    borderColor: colors.borderMuted,
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[3],
+    fontSize: typography.fontSize.sm,
+    color: colors.text,
+    fontFamily: getFontFamily('medium'),
   },
-  dangerZoneTitle: {
+  textArea: {
+    minHeight: 80,
+    textAlignVertical: 'top',
+  },
+  phoneRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+  },
+  countryCode: {
+    backgroundColor: colors.background,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.borderMuted,
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[3],
+  },
+  countryCodeText: {
+    fontSize: typography.fontSize.sm,
+    color: colors.textSecondary,
+    fontFamily: getFontFamily('medium'),
+  },
+  formActions: {
+    flexDirection: 'row',
+    gap: spacing[3],
+    marginTop: spacing[2],
+    alignItems: 'center',
+  },
+  cancelBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+    paddingVertical: spacing[3],
+    paddingHorizontal: spacing[4],
+    backgroundColor: colors.background,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.borderMuted,
+  },
+  cancelBtnText: {
+    fontSize: typography.fontSize.sm,
+    color: colors.textSecondary,
+    fontFamily: getFontFamily('medium'),
+  },
+
+  // Danger zone
+  dangerCard: {
+    backgroundColor: 'rgba(239,68,68,0.05)',
+    borderRadius: borderRadius.xl,
+    borderWidth: 1,
+    borderColor: 'rgba(239,68,68,0.2)',
+    padding: spacing[6],
+    gap: spacing[4],
+  },
+  dangerTitle: {
     fontSize: typography.fontSize.base,
     fontFamily: getFontFamily('bold'),
     color: '#ef4444',
-    marginBottom: spacing[2],
   },
-  dangerZoneDescription: {
+  dangerDesc: {
     fontSize: typography.fontSize.sm,
     color: colors.textSecondary,
     lineHeight: typography.lineHeight.relaxed * typography.fontSize.sm,
-    marginBottom: spacing[4],
   },
-  deleteButton: {
+  deleteBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     gap: spacing[2],
+    alignSelf: 'flex-start',
     backgroundColor: '#ef4444',
+    borderRadius: borderRadius.lg,
     paddingVertical: spacing[3],
-    paddingHorizontal: spacing[4],
-    borderRadius: borderRadius.full,
-    ...shadows.md,
+    paddingHorizontal: spacing[5],
   },
-  deleteButtonText: {
+  deleteBtnText: {
     fontSize: typography.fontSize.sm,
     fontFamily: getFontFamily('bold'),
     color: '#ffffff',

@@ -1,206 +1,281 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  RefreshControl,
+  Platform,
+  StatusBar,
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { useNavigation } from '@react-navigation/native';
-import { 
+import { LinearGradient } from 'expo-linear-gradient';
+import {
   Gift,
   Copy,
   Check,
   ChevronLeft,
   Users,
   TrendingUp,
+  Sparkles,
 } from 'lucide-react-native';
 import { useAuth } from '../context/AuthContext';
-import { colors, spacing, typography, borderRadius, shadows } from '../theme';
+import GradientText from '../components/GradientText';
+import Skeleton from '../components/Skeleton';
+import { colors, spacing, typography, borderRadius, shadows, brandGradient, brandGradientStart, brandGradientEnd } from '../theme';
 import { getFontFamily } from '../theme/fontHelpers';
-
-const MOCK_REFERRAL = {
-  totalReferrals: 8,
-  coinsEarned: 200,
-  pendingReferrals: 3,
-};
+import { getReferralInfo, getReferralRewardAmount, type ReferralInfo } from '../lib/api/wallet';
 
 export default function ReferralsScreen() {
   const navigation = useNavigation<any>();
   const { user } = useAuth();
   const [copied, setCopied] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [referralInfo, setReferralInfo] = useState<ReferralInfo | null>(null);
+  const [rewardAmount, setRewardAmount] = useState(25);
 
-  const getReferralCode = () => {
-    return user?.id?.slice(0, 8).toUpperCase() || 'UNIFESTO';
+  useEffect(() => {
+    if (user) {
+      loadReferralData();
+    } else {
+      setLoading(false);
+    }
+  }, [user]);
+
+  const loadReferralData = async () => {
+    try {
+      setLoading(true);
+      const [info, reward] = await Promise.all([
+        getReferralInfo(),
+        getReferralRewardAmount(),
+      ]);
+      setReferralInfo(info);
+      setRewardAmount(reward);
+    } catch (error) {
+      console.error('Error loading referral data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await loadReferralData();
+    setRefreshing(false);
   };
 
   const handleCopyReferral = async () => {
-    const referralCode = getReferralCode();
-    const referralLink = `https://unifesto.app/signup?ref=${referralCode}`;
-    await Clipboard.setStringAsync(referralLink);
+    if (!referralInfo) return;
+    await Clipboard.setStringAsync(referralInfo.link);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  return (
-    <View style={styles.container}>
-      {/* Custom Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-          activeOpacity={0.7}
-        >
-          <ChevronLeft size={24} color={colors.text} strokeWidth={2} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Referrals</Text>
-        <View style={styles.headerRight} />
+  const renderSkeleton = () => (
+    <>
+      {/* Hero card skeleton */}
+      <View style={styles.section}>
+        <View style={styles.heroCard}>
+          <Skeleton width={120} height={24} borderRadius={borderRadius.md} style={{ marginBottom: spacing[4] }} />
+          <Skeleton width={80} height={48} borderRadius={borderRadius.md} style={{ marginBottom: spacing[1] }} />
+          <Skeleton width={140} height={16} borderRadius={borderRadius.sm} />
+        </View>
       </View>
 
-      <ScrollView 
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {/* Hero Section */}
-        <View style={styles.heroCard}>
-          <Gift size={48} color={colors.primary} strokeWidth={1.5} />
-          <Text style={styles.heroTitle}>Invite Friends, Earn Rewards!</Text>
-          <Text style={styles.heroDescription}>
-            Share your unique referral code and earn bonus coins when your friends join and attend their first event.
-          </Text>
-        </View>
-
-        {/* Stats Cards */}
+      {/* Stats skeleton */}
+      <View style={styles.section}>
         <View style={styles.statsContainer}>
-          <View style={styles.statCard}>
-            <View style={styles.statIcon}>
-              <Users size={24} color={colors.primary} strokeWidth={2} />
+          {[1, 2, 3].map((i) => (
+            <View key={i} style={styles.statCard}>
+              <Skeleton width={48} height={48} borderRadius={24} style={{ marginBottom: spacing[3] }} />
+              <Skeleton width={40} height={24} borderRadius={borderRadius.sm} style={{ marginBottom: spacing[1] }} />
+              <Skeleton width={64} height={12} borderRadius={borderRadius.sm} />
             </View>
-            <Text style={styles.statValue}>{MOCK_REFERRAL.totalReferrals}</Text>
-            <Text style={styles.statLabel}>Total Referrals</Text>
-          </View>
-
-          <View style={styles.statCard}>
-            <View style={styles.statIcon}>
-              <TrendingUp size={24} color="#10b981" strokeWidth={2} />
-            </View>
-            <Text style={styles.statValue}>{MOCK_REFERRAL.coinsEarned}</Text>
-            <Text style={styles.statLabel}>Coins Earned</Text>
-          </View>
-
-          <View style={styles.statCard}>
-            <View style={styles.statIcon}>
-              <Gift size={24} color="#f59e0b" strokeWidth={2} />
-            </View>
-            <Text style={styles.statValue}>{MOCK_REFERRAL.pendingReferrals}</Text>
-            <Text style={styles.statLabel}>Pending</Text>
-          </View>
+          ))}
         </View>
 
-        {/* Referral Code Card */}
+        {/* Code card skeleton */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Your Referral Code</Text>
-          <Text style={styles.cardDescription}>
-            Share this code with your friends to get started
-          </Text>
-
-          <View style={styles.referralCodeContainer}>
-            <View style={styles.referralCodeBox}>
-              <Text style={styles.referralCode}>{getReferralCode()}</Text>
-            </View>
-            <TouchableOpacity
-              style={styles.copyButton}
-              onPress={handleCopyReferral}
-              activeOpacity={0.7}
-            >
-              {copied ? (
-                <>
-                  <Check size={20} color="#10b981" strokeWidth={2.5} />
-                  <Text style={styles.copiedText}>Copied!</Text>
-                </>
-              ) : (
-                <>
-                  <Copy size={20} color={colors.primary} strokeWidth={2.5} />
-                  <Text style={styles.copyText}>Copy</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.referralLink}>
-            <Text style={styles.referralLinkLabel}>Referral Link:</Text>
-            <Text style={styles.referralLinkText} numberOfLines={1}>
-              https://unifesto.app/signup?ref={getReferralCode()}
-            </Text>
-          </View>
+          <Skeleton width={140} height={18} borderRadius={borderRadius.sm} style={{ marginBottom: spacing[2] }} />
+          <Skeleton width={200} height={13} borderRadius={borderRadius.sm} style={{ marginBottom: spacing[5] }} />
+          <Skeleton width="100%" height={64} borderRadius={borderRadius.lg} style={{ marginBottom: spacing[3] }} />
+          <Skeleton width="100%" height={40} borderRadius={borderRadius.lg} />
         </View>
+      </View>
+
+      {/* How It Works skeleton */}
+      <View style={styles.section}>
+        <View style={styles.card}>
+          <Skeleton width={120} height={18} borderRadius={borderRadius.sm} style={{ marginBottom: spacing[4] }} />
+          {[1, 2, 3].map((i) => (
+            <View key={i} style={[styles.stepItem, { marginBottom: spacing[5] }]}>
+              <Skeleton width={32} height={32} borderRadius={16} />
+              <View style={styles.stepContent}>
+                <Skeleton width={120} height={14} borderRadius={borderRadius.sm} style={{ marginBottom: spacing[2] }} />
+                <Skeleton width="100%" height={11} borderRadius={borderRadius.sm} style={{ marginBottom: spacing[1] }} />
+                <Skeleton width="80%" height={11} borderRadius={borderRadius.sm} />
+              </View>
+            </View>
+          ))}
+        </View>
+      </View>
+
+      {/* Benefits skeleton */}
+      <View style={styles.section}>
+        <View style={styles.benefitsCard}>
+          <Skeleton width={140} height={18} borderRadius={borderRadius.sm} style={{ marginBottom: spacing[4] }} />
+          {[1, 2, 3, 4].map((i) => (
+            <View key={i} style={[styles.benefitItem, { marginBottom: spacing[3] }]}>
+              <Skeleton width={6} height={6} borderRadius={3} />
+              <Skeleton width="85%" height={14} borderRadius={borderRadius.sm} />
+            </View>
+          ))}
+        </View>
+      </View>
+    </>
+  );
+
+  return (
+    <View style={styles.container}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 100, paddingTop: spacing[6] }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }
+      >
+        {loading && !referralInfo ? (
+          renderSkeleton()
+        ) : (
+          <>
+            {/* Hero card — gradient like wallet balance card */}
+            <View style={styles.section}>
+              <LinearGradient
+                colors={brandGradient}
+                start={brandGradientStart}
+                end={brandGradientEnd}
+                style={styles.heroCard}
+              >
+                <View style={styles.heroHeader}>
+                  <Gift size={28} color="#000000" strokeWidth={2} />
+                  <Text style={styles.heroCardTitle}>Referral Program</Text>
+                </View>
+                <Text style={styles.heroBalance}>{rewardAmount}</Text>
+                <Text style={styles.heroCurrency}>Coins per referral</Text>
+              </LinearGradient>
+            </View>
+
+            {/* Stats + Code card */}
+            <View style={styles.section}>
+              {/* Stats */}
+              <View style={styles.statsContainer}>
+                <View style={styles.statCard}>
+                  <View style={styles.statIcon}>
+                    <Users size={22} color={colors.primary} strokeWidth={2} />
+                  </View>
+                  <Text style={styles.statValue}>{referralInfo?.total_referrals || 0}</Text>
+                  <Text style={styles.statLabel}>Total Referrals</Text>
+                </View>
+                <View style={styles.statCard}>
+                  <View style={[styles.statIcon, { backgroundColor: 'rgba(16,185,129,0.1)' }]}>
+                    <TrendingUp size={22} color="#10b981" strokeWidth={2} />
+                  </View>
+                  <Text style={styles.statValue}>{referralInfo?.total_rewards || 0}</Text>
+                  <Text style={styles.statLabel}>Coins Earned</Text>
+                </View>
+                <View style={styles.statCard}>
+                  <View style={[styles.statIcon, { backgroundColor: 'rgba(245,158,11,0.1)' }]}>
+                    <Sparkles size={22} color="#f59e0b" strokeWidth={2} />
+                  </View>
+                  <Text style={styles.statValue}>{referralInfo?.pending_referrals || 0}</Text>
+                  <Text style={styles.statLabel}>Pending</Text>
+                </View>
+              </View>
+
+              {/* Referral Code card */}
+              <View style={styles.card}>
+                <Text style={styles.cardTitle}>Your Referral Code</Text>
+                <Text style={styles.cardDescription}>
+                  Share this code with friends to start earning
+                </Text>
+
+                <View style={styles.referralCodeRow}>
+                  <View style={styles.referralCodeBox}>
+                    <Text style={styles.referralCodeLabel}>Your Code</Text>
+                    <Text style={styles.referralCode}>{referralInfo?.code || '—'}</Text>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.copyButton}
+                    onPress={handleCopyReferral}
+                    activeOpacity={0.7}
+                  >
+                    {copied ? (
+                      <Check size={20} color="#10b981" strokeWidth={2.5} />
+                    ) : (
+                      <Copy size={20} color={colors.primary} strokeWidth={2.5} />
+                    )}
+                  </TouchableOpacity>
+                </View>
+
+                <View style={styles.referralLink}>
+                  <Text style={styles.referralLinkLabel}>Referral Link</Text>
+                  <Text style={styles.referralLinkText} numberOfLines={1}>
+                    {referralInfo?.link || '—'}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </>
+        )}
 
         {/* How It Works */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>How It Works</Text>
-          
-          <View style={styles.stepsList}>
-            <View style={styles.stepItem}>
-              <View style={styles.stepNumber}>
-                <Text style={styles.stepNumberText}>1</Text>
-              </View>
-              <View style={styles.stepContent}>
-                <Text style={styles.stepTitle}>Share Your Code</Text>
-                <Text style={styles.stepDescription}>
-                  Send your referral code to friends via social media, email, or messaging apps
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.stepItem}>
-              <View style={styles.stepNumber}>
-                <Text style={styles.stepNumberText}>2</Text>
-              </View>
-              <View style={styles.stepContent}>
-                <Text style={styles.stepTitle}>Friend Signs Up</Text>
-                <Text style={styles.stepDescription}>
-                  Your friend creates an account using your referral code
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.stepItem}>
-              <View style={styles.stepNumber}>
-                <Text style={styles.stepNumberText}>3</Text>
-              </View>
-              <View style={styles.stepContent}>
-                <Text style={styles.stepTitle}>Both Earn Rewards</Text>
-                <Text style={styles.stepDescription}>
-                  When they attend their first event, you both receive bonus coins!
-                </Text>
+        {!loading && (
+          <View style={styles.section}>
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>How It Works</Text>
+              <View style={styles.stepsList}>
+                {[
+                  { n: '1', title: 'Share Your Code', desc: 'Send your referral code via social media, email, or messaging apps' },
+                  { n: '2', title: 'Friend Signs Up', desc: 'Your friend creates an account using your referral code' },
+                  { n: '3', title: 'Both Earn Rewards', desc: `You receive ${rewardAmount} coins and your friend gets a welcome bonus!` },
+                ].map(({ n, title, desc }) => (
+                  <View key={n} style={styles.stepItem}>
+                    <View style={styles.stepNumber}>
+                      <Text style={styles.stepNumberText}>{n}</Text>
+                    </View>
+                    <View style={styles.stepContent}>
+                      <Text style={styles.stepTitle}>{title}</Text>
+                      <Text style={styles.stepDescription}>{desc}</Text>
+                    </View>
+                  </View>
+                ))}
               </View>
             </View>
           </View>
-        </View>
+        )}
 
-        {/* Benefits Card */}
-        <View style={styles.benefitsCard}>
-          <Text style={styles.benefitsTitle}>Referral Benefits</Text>
-          <View style={styles.benefitsList}>
-            <View style={styles.benefitItem}>
-              <View style={styles.benefitBullet} />
-              <Text style={styles.benefitText}>Earn 25 coins for each successful referral</Text>
-            </View>
-            <View style={styles.benefitItem}>
-              <View style={styles.benefitBullet} />
-              <Text style={styles.benefitText}>Your friend gets 25 welcome bonus coins</Text>
-            </View>
-            <View style={styles.benefitItem}>
-              <View style={styles.benefitBullet} />
-              <Text style={styles.benefitText}>No limit on referrals - invite unlimited friends</Text>
-            </View>
-            <View style={styles.benefitItem}>
-              <View style={styles.benefitBullet} />
-              <Text style={styles.benefitText}>Track your referrals in real-time</Text>
+        {/* Benefits */}
+        {!loading && (
+          <View style={styles.section}>
+            <View style={styles.benefitsCard}>
+              <Text style={styles.cardTitle}>Referral Benefits</Text>
+              {[
+                `Earn ${rewardAmount} coins for each successful referral`,
+                `Your friend gets ${rewardAmount} welcome bonus coins`,
+                'No limit on referrals — invite unlimited friends',
+                'Track your referrals in real-time',
+              ].map((text, i) => (
+                <View key={i} style={styles.benefitItem}>
+                  <View style={styles.benefitBullet} />
+                  <Text style={styles.benefitText}>{text}</Text>
+                </View>
+              ))}
             </View>
           </View>
-        </View>
+        )}
       </ScrollView>
     </View>
   );
@@ -211,57 +286,42 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  header: {
+
+  section: {
+    paddingHorizontal: spacing[6],
+    marginBottom: spacing[6],
+  },
+
+  // Hero card — matches walletCard style
+  heroCard: {
+    padding: spacing[8],
+    borderRadius: borderRadius.xl,
+    ...shadows.lg,
+  },
+  heroHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing[6],
-    paddingTop: spacing[12],
-    paddingBottom: spacing[4],
-    backgroundColor: colors.background,
+    gap: spacing[2],
+    marginBottom: spacing[4],
   },
-  backButton: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    fontSize: typography.fontSize.xl,
+  heroCardTitle: {
+    fontSize: typography.fontSize.base,
     fontFamily: getFontFamily('bold'),
-    color: colors.text,
+    color: '#000000',
   },
-  headerRight: {
-    width: 40,
-  },
-  scrollContent: {
-    padding: spacing[6],
-    paddingTop: spacing[4],
-  },
-  heroCard: {
-    backgroundColor: colors.card,
-    borderRadius: borderRadius.xl,
-    padding: spacing[8],
-    borderWidth: 1,
-    borderColor: colors.borderMuted,
-    alignItems: 'center',
-    marginBottom: spacing[6],
-    ...shadows.md,
-  },
-  heroTitle: {
-    fontSize: typography.fontSize['2xl'],
+  heroBalance: {
+    fontSize: 48,
     fontFamily: getFontFamily('bold'),
-    color: colors.text,
-    marginTop: spacing[4],
-    marginBottom: spacing[2],
-    textAlign: 'center',
+    color: '#000000',
+    marginBottom: spacing[1],
   },
-  heroDescription: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: typography.lineHeight.relaxed * typography.fontSize.sm,
+  heroCurrency: {
+    fontSize: typography.fontSize.base,
+    color: 'rgba(0,0,0,0.7)',
+    fontFamily: typography.fontFamily.primary,
   },
+
+  // Stats
   statsContainer: {
     flexDirection: 'row',
     gap: spacing[3],
@@ -272,8 +332,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     borderRadius: borderRadius.xl,
     padding: spacing[4],
-    borderWidth: 1,
-    borderColor: colors.borderMuted,
     alignItems: 'center',
     ...shadows.sm,
   },
@@ -281,7 +339,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: 'rgba(52, 145, 255, 0.1)',
+    backgroundColor: 'rgba(52,145,255,0.1)',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing[3],
@@ -297,14 +355,15 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     textAlign: 'center',
   },
+
+  // Card — borderless, deep shadow matching ProfileScreen
   card: {
     backgroundColor: colors.card,
-    borderRadius: borderRadius.xl,
+    borderRadius: borderRadius['2xl'],
     padding: spacing[6],
-    borderWidth: 1,
-    borderColor: colors.borderMuted,
     marginBottom: spacing[6],
-    ...shadows.md,
+    overflow: 'hidden',
+    ...shadows.lg,
   },
   cardTitle: {
     fontSize: typography.fontSize.lg,
@@ -315,51 +374,46 @@ const styles = StyleSheet.create({
   cardDescription: {
     fontSize: typography.fontSize.sm,
     color: colors.textSecondary,
+    fontFamily: typography.fontFamily.primary,
     marginBottom: spacing[5],
   },
-  referralCodeContainer: {
+
+  // Referral code
+  referralCodeRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: spacing[3],
     marginBottom: spacing[4],
   },
   referralCodeBox: {
     flex: 1,
-    backgroundColor: 'rgba(52, 145, 255, 0.1)',
+    backgroundColor: 'rgba(52,145,255,0.1)',
     borderRadius: borderRadius.lg,
     padding: spacing[4],
     borderWidth: 1,
-    borderColor: 'rgba(52, 145, 255, 0.3)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderColor: 'rgba(52,145,255,0.3)',
+  },
+  referralCodeLabel: {
+    fontSize: typography.fontSize.xs,
+    color: colors.textSecondary,
+    fontFamily: typography.fontFamily.primary,
+    marginBottom: spacing[1],
   },
   referralCode: {
-    fontSize: typography.fontSize['2xl'],
+    fontSize: typography.fontSize.xl,
     fontFamily: getFontFamily('bold'),
     color: colors.primary,
-    letterSpacing: 3,
+    letterSpacing: 2,
   },
   copyButton: {
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[3],
+    width: 48,
+    height: 48,
     borderRadius: borderRadius.lg,
-    backgroundColor: 'rgba(52, 145, 255, 0.1)',
+    backgroundColor: 'rgba(52,145,255,0.1)',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(52, 145, 255, 0.3)',
-    minWidth: 80,
-  },
-  copyText: {
-    fontSize: typography.fontSize.xs,
-    fontFamily: getFontFamily('bold'),
-    color: colors.primary,
-    marginTop: spacing[1],
-  },
-  copiedText: {
-    fontSize: typography.fontSize.xs,
-    fontFamily: getFontFamily('bold'),
-    color: '#10b981',
-    marginTop: spacing[1],
+    borderColor: 'rgba(52,145,255,0.3)',
   },
   referralLink: {
     backgroundColor: colors.background,
@@ -377,6 +431,8 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.xs,
     color: colors.textSecondary,
   },
+
+  // Steps
   stepsList: {
     gap: spacing[5],
     marginTop: spacing[4],
@@ -412,20 +468,14 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     lineHeight: typography.lineHeight.relaxed * typography.fontSize.xs,
   },
+
+  // Benefits
   benefitsCard: {
-    backgroundColor: 'rgba(52, 145, 255, 0.05)',
+    backgroundColor: 'rgba(52,145,255,0.05)',
     borderRadius: borderRadius.xl,
     padding: spacing[6],
     borderWidth: 1,
-    borderColor: 'rgba(52, 145, 255, 0.1)',
-  },
-  benefitsTitle: {
-    fontSize: typography.fontSize.lg,
-    fontFamily: getFontFamily('bold'),
-    color: colors.text,
-    marginBottom: spacing[4],
-  },
-  benefitsList: {
+    borderColor: 'rgba(52,145,255,0.1)',
     gap: spacing[3],
   },
   benefitItem: {

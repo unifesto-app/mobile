@@ -47,7 +47,6 @@ class FirebaseAnalyticsService {
     try {
       await analytics().logEvent(eventName, params);
     } catch (error) {
-      console.error('Error logging analytics event:', error);
     }
   }
 
@@ -65,7 +64,6 @@ class FirebaseAnalyticsService {
         screen_class: screenClass || screenName,
       });
     } catch (error) {
-      console.error('Error logging screen view:', error);
     }
   }
 
@@ -79,7 +77,6 @@ class FirebaseAnalyticsService {
     try {
       await analytics().setUserId(userId);
     } catch (error) {
-      console.error('Error setting user ID:', error);
     }
   }
 
@@ -94,7 +91,6 @@ class FirebaseAnalyticsService {
     try {
       await analytics().setUserProperty(name, value);
     } catch (error) {
-      console.error('Error setting user property:', error);
     }
   }
 
@@ -111,7 +107,6 @@ class FirebaseAnalyticsService {
       );
       await Promise.all(promises);
     } catch (error) {
-      console.error('Error setting user properties:', error);
     }
   }
 
@@ -125,7 +120,6 @@ class FirebaseAnalyticsService {
     try {
       await analytics().setAnalyticsCollectionEnabled(enabled);
     } catch (error) {
-      console.error('Error setting analytics collection:', error);
     }
   }
 
@@ -138,7 +132,6 @@ class FirebaseAnalyticsService {
     try {
       await analytics().resetAnalyticsData();
     } catch (error) {
-      console.error('Error resetting analytics data:', error);
     }
   }
 

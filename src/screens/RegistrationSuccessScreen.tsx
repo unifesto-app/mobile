@@ -41,7 +41,6 @@ export default function RegistrationSuccessScreen() {
         const eventData = await getEventById(eventId);
         setEvent(eventData);
       } catch (error) {
-        console.error('Error loading event:', error);
       } finally {
         setLoading(false);
       }
@@ -74,7 +73,6 @@ export default function RegistrationSuccessScreen() {
       // In a real app, you'd use Clipboard from @react-native-clipboard/clipboard
       // For now, just show an alert or toast
     } catch (error) {
-      console.error('Failed to copy:', error);
     }
   };
   

@@ -72,7 +72,6 @@ export default function EventsScreen() {
         setPage(pageNum);
       }
     } catch (error) {
-      console.error('Error loading events:', error);
     } finally {
       setLoading(false);
       setRefreshing(false);

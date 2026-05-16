@@ -47,7 +47,6 @@ export default function LegalScreen() {
 
   const handleOpenLink = (url: string, title: string) => {
     Linking.openURL(url).catch(() => {
-      console.error('Failed to open URL:', url);
     });
   };
 

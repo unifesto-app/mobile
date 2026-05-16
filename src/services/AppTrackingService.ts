@@ -30,7 +30,6 @@ class AppTrackingService {
       const { status } = await Tracking.getTrackingPermissionsAsync();
       return status;
     } catch (error) {
-      console.error('[AppTracking] Error getting tracking status:', error);
       return 'undetermined';
     }
   }
@@ -50,14 +49,11 @@ class AppTrackingService {
       const { status } = await Tracking.requestTrackingPermissionsAsync();
       
       if (status === 'granted') {
-        console.log('[AppTracking] Tracking permission granted');
         return true;
       } else {
-        console.log('[AppTracking] Tracking permission denied or restricted:', status);
         return false;
       }
     } catch (error) {
-      console.error('[AppTracking] Error requesting tracking permission:', error);
       return false;
     }
   }

@@ -2,14 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { TouchableOpacity, Image, View, StyleSheet, Text } from 'react-native';
-import { Home, Search, Ticket, HeadphonesIcon, ArrowLeft, User } from 'lucide-react-native';
+import { TouchableOpacity, Image, View, StyleSheet, Text, Linking, Platform, StatusBar } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Home, Search, Ticket, ArrowLeft } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import CustomHeader from '../components/CustomHeader';
 import { useAuth } from '../context/AuthContext';
 import { getProfile, Profile } from '../lib/api/profile';
 import { getFontFamily } from '../theme/fontHelpers';
 import { navigationRef } from './NavigationService';
+import { linking } from './LinkingConfiguration';
+import { getEventIdFromSlug, getOrganizationIdFromSlug } from '../lib/api/deepLinking';
+import * as SystemUI from 'expo-system-ui';
+import * as NavigationBar from 'expo-navigation-bar';
 
 // Auth Screens
 import AuthLoadingScreen from '../screens/AuthLoadingScreen';
@@ -36,70 +41,78 @@ import WalletScreen from '../screens/WalletScreen';
 
 // Profile Sub-Screens
 import AccountScreen from '../screens/AccountScreen';
-import PreferencesScreen from '../screens/PreferencesScreen';
-import SettingsScreen from '../screens/SettingsScreen';
-import ChangeWalletPasscodeScreen from '../screens/ChangeWalletPasscodeScreen';
+import NotificationsScreen from '../screens/NotificationsScreen';
+import PermissionsScreen from '../screens/PermissionsScreen';
+import AppearanceScreen from '../screens/AppearanceScreen';
 import ReferralsScreen from '../screens/ReferralsScreen';
-import LegalScreen from '../screens/LegalScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
+const makeHeaderOptions = (navigation: any, title: string) => ({
+  headerShown: true,
+  title,
+  headerStyle: {
+    backgroundColor: '#000000',
+  },
+  headerShadowVisible: true,
+  headerTitleStyle: {
+    fontSize: 18,
+    fontFamily: getFontFamily('600'),
+    color: '#ffffff',
+  },
+  headerTintColor: '#3491ff',
+  headerLeft: () => (
+    <TouchableOpacity
+      onPress={() => navigation.goBack()}
+      style={{ marginLeft: 6 }}
+    >
+      <ArrowLeft size={24} color="#3491ff" strokeWidth={2} />
+    </TouchableOpacity>
+  ),
+});
+
+// ── Main Tab Navigator ────────────────────────────────────────────────────────
 function MainTabs() {
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
   const [profile, setProfile] = useState<Profile | null>(null);
 
   useEffect(() => {
     const loadProfile = async () => {
       if (user) {
         const userProfile = await getProfile();
-        if (userProfile) {
-          setProfile(userProfile);
-        }
+        if (userProfile) setProfile(userProfile);
       }
     };
-
     loadProfile();
   }, [user]);
 
-  const getInitials = (name: string) => {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase();
-  };
+  const getInitials = (name: string) =>
+    name.split(' ').map((n) => n[0]).join('').toUpperCase();
 
   const renderProfileIcon = (color: string, focused: boolean) => {
     if (profile?.avatar_url) {
-      // Use actual avatar
       return (
-        <View style={[
-          styles.profileIconContainer,
-          focused && styles.profileIconContainerActive
-        ]}>
-          <Image
-            source={{ uri: profile.avatar_url }}
-            style={styles.profileIcon}
-          />
-        </View>
-      );
-    } else {
-      // Use gradient with initials
-      return (
-        <View style={[
-          styles.profileIconContainer,
-          focused && styles.profileIconContainerActive
-        ]}>
-          <LinearGradient
-            colors={['#3491ff', '#0062ff']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.profileIconGradient}
-          >
-            <Text style={styles.profileIconText}>
-              {getInitials(profile?.name || 'U')}
-            </Text>
-          </LinearGradient>
+        <View style={[styles.profileIconContainer, focused && styles.profileIconContainerActive]}>
+          <Image source={{ uri: profile.avatar_url }} style={styles.profileIcon} />
         </View>
       );
     }
+    return (
+      <View style={[styles.profileIconContainer, focused && styles.profileIconContainerActive]}>
+        <LinearGradient
+          colors={['#3491ff', '#0062ff']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.profileIconGradient}
+        >
+          <Text style={styles.profileIconText}>
+            {getInitials(profile?.name || 'U')}
+          </Text>
+        </LinearGradient>
+      </View>
+    );
   };
 
   return (
@@ -108,365 +121,212 @@ function MainTabs() {
         tabBarActiveTintColor: '#3491ff',
         tabBarInactiveTintColor: '#64748b',
         tabBarStyle: {
-          backgroundColor: '#000000',
-          borderTopWidth: 1,
-          borderTopColor: 'rgba(30, 58, 138, 0.6)',
-          paddingBottom: 20,
-          paddingTop: 16,
-          height: 80,
+          position: 'absolute',
+          backgroundColor: 'transparent',
+          borderTopWidth: 0,
+          elevation: 0,
+          height: 80 + (Platform.OS === 'android' ? insets.bottom : 0),
+        },
+        tabBarBackground: () => (
+          <LinearGradient
+            colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.6)', 'rgba(0,0,0,0.9)', '#000000']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={StyleSheet.absoluteFill}
+          />
+        ),
+        tabBarItemStyle: {
+          paddingBottom: Platform.OS === 'ios' ? 0 : 8 + insets.bottom,
+          paddingTop: 20,
         },
         tabBarShowLabel: false,
+        headerTransparent: true,
+        headerShadowVisible: false,
         header: () => <CustomHeader />,
       }}
     >
       <Tab.Screen
         name="Home"
         component={HomeScreen}
-        options={{
-          tabBarIcon: ({ color, size }) => <Home size={26} color={color} strokeWidth={2} />,
-        }}
+        options={{ tabBarIcon: ({ color }) => <Home size={26} color={color} strokeWidth={2} /> }}
       />
       <Tab.Screen
         name="Discover"
         component={DiscoverScreen}
-        options={{
-          tabBarIcon: ({ color, size }) => <Search size={26} color={color} strokeWidth={2} />,
-        }}
+        options={{ tabBarIcon: ({ color }) => <Search size={26} color={color} strokeWidth={2} /> }}
       />
       <Tab.Screen
         name="Tickets"
         component={TicketsScreen}
-        options={{
-          tabBarIcon: ({ color, size }) => <Ticket size={26} color={color} strokeWidth={2} />,
-        }}
+        options={{ tabBarIcon: ({ color }) => <Ticket size={26} color={color} strokeWidth={2} /> }}
       />
       <Tab.Screen
         name="Profile"
         component={ProfileScreen}
-        options={{
-          tabBarIcon: ({ color, focused }) => renderProfileIcon(color, focused),
-        }}
+        options={{ tabBarIcon: ({ color, focused }) => renderProfileIcon(color, focused) }}
       />
     </Tab.Navigator>
   );
 }
 
+// ── Root Stack Navigator ──────────────────────────────────────────────────────
 export default function AppNavigator() {
+  const insets = useSafeAreaInsets();
+  
+  // Set Android system navigation bar to black and disable translucent status bar
+  useEffect(() => {
+    if (Platform.OS === 'android') {
+      // SystemUI.setBackgroundColorAsync('#000000'); // Commented out - requires rebuild without edge-to-edge
+      
+      NavigationBar.setBackgroundColorAsync('#000000');
+      NavigationBar.setButtonStyleAsync('light');
+      
+      StatusBar.setTranslucent(false);
+      StatusBar.setBackgroundColor('#000000');
+      StatusBar.setBarStyle('light-content');
+    }
+  }, []);
+
+  // Handle deep links with slug-to-ID conversion
+  useEffect(() => {
+    const handleDeepLink = async (event: { url: string }) => {
+      const url = event.url;
+
+      let path = url;
+      for (const prefix of linking.prefixes || []) {
+        if (url.startsWith(prefix)) {
+          path = url.substring(prefix.length);
+          break;
+        }
+      }
+
+      const eventMatch = path.match(/^\/events\/([^/?]+)/);
+      if (eventMatch) {
+        const slugOrId = eventMatch[1];
+        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slugOrId);
+        if (!isUUID) {
+          const eventId = await getEventIdFromSlug(slugOrId);
+          if (eventId && navigationRef.current) {
+            (navigationRef.current as any).navigate('EventDetail', { eventId });
+            return;
+          }
+        } else if (navigationRef.current) {
+          (navigationRef.current as any).navigate('EventDetail', { eventId: slugOrId });
+          return;
+        }
+      }
+
+      const orgMatch = path.match(/^\/org\/([^/?]+)/);
+      if (orgMatch) {
+        const slugOrId = orgMatch[1];
+        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slugOrId);
+        if (!isUUID) {
+          const organizationId = await getOrganizationIdFromSlug(slugOrId);
+          if (organizationId && navigationRef.current) {
+            (navigationRef.current as any).navigate('OrganizationDetail', { organizationId });
+            return;
+          }
+        } else if (navigationRef.current) {
+          (navigationRef.current as any).navigate('OrganizationDetail', { organizationId: slugOrId });
+          return;
+        }
+      }
+    };
+
+    Linking.getInitialURL().then((url) => { if (url) handleDeepLink({ url }); });
+    const subscription = Linking.addEventListener('url', handleDeepLink);
+    return () => subscription.remove();
+  }, []);
+
   return (
-    <NavigationContainer ref={navigationRef}>
+    <NavigationContainer ref={navigationRef} linking={linking}>
       <Stack.Navigator
-        screenOptions={{
-          headerShown: false,
-        }}
+        screenOptions={{ headerShown: false }}
         initialRouteName="AuthLoading"
       >
-        {/* Auth Flow */}
-        <Stack.Screen 
-          name="AuthLoading" 
-          component={AuthLoadingScreen}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen 
-          name="Login" 
-          component={LoginScreen}
-          options={{ 
-            headerShown: false,
-            gestureEnabled: false, // Disable swipe gesture
-          }}
-        />
-        <Stack.Screen 
-          name="SignUp" 
-          component={SignUpScreen}
-          options={{ 
-            headerShown: false,
-            gestureEnabled: false, // Disable swipe gesture
-          }}
-        />
-        <Stack.Screen 
-          name="UsernameSetup" 
-          component={UsernameSetupScreen}
-          options={{ 
-            headerShown: false,
-            gestureEnabled: false, // Prevent going back
-          }}
-        />
+        {/* ── Auth Flow ── */}
+        <Stack.Screen name="AuthLoading" component={AuthLoadingScreen} />
+        <Stack.Screen name="Login" component={LoginScreen} options={{ gestureEnabled: false }} />
+        <Stack.Screen name="SignUp" component={SignUpScreen} options={{ gestureEnabled: false }} />
+        <Stack.Screen name="UsernameSetup" component={UsernameSetupScreen} options={{ gestureEnabled: false }} />
 
-        {/* Public Screens - Accessible without authentication */}
-        <Stack.Screen 
-          name="Events" 
+        {/* ── Main App ── */}
+        <Stack.Screen name="MainApp" component={MainTabs} options={{ gestureEnabled: false }} />
+        <Stack.Screen name="EventRegistration" component={EventRegistrationScreen} options={{ gestureEnabled: false }} />
+        <Stack.Screen name="RegistrationSuccess" component={RegistrationSuccessScreen} />
+
+        {/* ── Screens with native header ── */}
+        <Stack.Screen
+          name="Events"
           component={EventsScreen}
-          options={({ navigation }) => ({
-            headerShown: true,
-            title: 'Events',
-            headerStyle: {
-              backgroundColor: '#000000',
-              borderBottomWidth: 1,
-              borderBottomColor: 'rgba(52, 145, 255, 0.3)',
-            },
-            headerTitleStyle: {
-              fontSize: 18,
-              fontFamily: getFontFamily('600'),
-              color: '#ffffff',
-            },
-            headerTintColor: '#3491ff',
-            headerLeft: () => (
-              <TouchableOpacity 
-                onPress={() => navigation.goBack()}
-                style={{ marginLeft: 6 }}
-              >
-                <ArrowLeft size={24} color="#3491ff" strokeWidth={2} />
-              </TouchableOpacity>
-            ),
-          })}
+          options={({ navigation }) => makeHeaderOptions(navigation, 'Events')}
         />
-
-        {/* Main App */}
-        <Stack.Screen 
-          name="MainApp" 
-          component={MainTabs}
-          options={{ 
-            headerShown: false,
-            gestureEnabled: false, // Disable swipe back to login
-          }}
-        />
-        <Stack.Screen 
-          name="EventDetail" 
+        <Stack.Screen
+          name="EventDetail"
           component={EventDetailScreen}
-          options={({ navigation }) => ({
-            headerShown: true,
-            title: 'Event Details',
-            headerStyle: {
-              backgroundColor: '#000000',
-              borderBottomWidth: 1,
-              borderBottomColor: 'rgba(52, 145, 255, 0.3)',
-            },
-            headerTitleStyle: {
-              fontSize: 18,
-              fontFamily: getFontFamily('600'),
-              color: '#ffffff',
-            },
-            headerTintColor: '#3491ff',
-            headerLeft: () => (
-              <TouchableOpacity 
-                onPress={() => navigation.goBack()}
-                style={{ marginLeft: 6 }}
-              >
-                <ArrowLeft size={24} color="#3491ff" strokeWidth={2} />
-              </TouchableOpacity>
-            ),
-          })}
+          options={({ navigation }) => makeHeaderOptions(navigation, 'Event Details')}
         />
-        <Stack.Screen 
-          name="TicketDetail" 
+        <Stack.Screen
+          name="TicketDetail"
           component={TicketDetailScreen}
-          options={({ navigation }) => ({
-            headerShown: true,
-            title: 'Ticket Details',
-            headerStyle: {
-              backgroundColor: '#000000',
-              borderBottomWidth: 1,
-              borderBottomColor: 'rgba(52, 145, 255, 0.3)',
-            },
-            headerTitleStyle: {
-              fontSize: 18,
-              fontFamily: getFontFamily('600'),
-              color: '#ffffff',
-            },
-            headerTintColor: '#3491ff',
-            headerLeft: () => (
-              <TouchableOpacity 
-                onPress={() => navigation.goBack()}
-                style={{ marginLeft: 6 }}
-              >
-                <ArrowLeft size={24} color="#3491ff" strokeWidth={2} />
-              </TouchableOpacity>
-            ),
-          })}
+          options={({ navigation }) => makeHeaderOptions(navigation, 'Ticket Details')}
         />
-        <Stack.Screen 
-          name="OrganizationsList" 
+        <Stack.Screen
+          name="OrganizationsList"
           component={OrganizationsListScreen}
-          options={({ navigation }) => ({
-            headerShown: true,
-            title: 'Organizations',
-            headerStyle: {
-              backgroundColor: '#000000',
-              borderBottomWidth: 1,
-              borderBottomColor: 'rgba(52, 145, 255, 0.3)',
-            },
-            headerTitleStyle: {
-              fontSize: 18,
-              fontFamily: getFontFamily('600'),
-              color: '#ffffff',
-            },
-            headerTintColor: '#3491ff',
-            headerLeft: () => (
-              <TouchableOpacity 
-                onPress={() => navigation.goBack()}
-                style={{ marginLeft: 6 }}
-              >
-                <ArrowLeft size={24} color="#3491ff" strokeWidth={2} />
-              </TouchableOpacity>
-            ),
-          })}
+          options={({ navigation }) => makeHeaderOptions(navigation, 'Organizations')}
         />
-        <Stack.Screen 
-          name="OrganizationDetail" 
+        <Stack.Screen
+          name="OrganizationDetail"
           component={OrganizationDetailScreen}
-          options={({ navigation }) => ({
-            headerShown: true,
-            title: 'Organization Details',
-            headerStyle: {
-              backgroundColor: '#000000',
-              borderBottomWidth: 1,
-              borderBottomColor: 'rgba(52, 145, 255, 0.3)',
-            },
-            headerTitleStyle: {
-              fontSize: 18,
-              fontFamily: getFontFamily('600'),
-              color: '#ffffff',
-            },
-            headerTintColor: '#3491ff',
-            headerLeft: () => (
-              <TouchableOpacity 
-                onPress={() => navigation.goBack()}
-                style={{ marginLeft: 6 }}
-              >
-                <ArrowLeft size={24} color="#3491ff" strokeWidth={2} />
-              </TouchableOpacity>
-            ),
-          })}
+          options={({ navigation }) => makeHeaderOptions(navigation, 'Organization')}
         />
-        <Stack.Screen 
-          name="Profile" 
+        <Stack.Screen
+          name="Profile"
           component={ProfileScreen}
-          options={({ navigation }) => ({
-            headerShown: true,
-            title: 'Profile',
-            headerStyle: {
-              backgroundColor: '#000000',
-              borderBottomWidth: 1,
-              borderBottomColor: 'rgba(52, 145, 255, 0.3)',
-            },
-            headerTitleStyle: {
-              fontSize: 18,
-              fontFamily: getFontFamily('600'),
-              color: '#ffffff',
-            },
-            headerTintColor: '#3491ff',
-            headerLeft: () => (
-              <TouchableOpacity 
-                onPress={() => navigation.goBack()}
-                style={{ marginLeft: 6 }}
-              >
-                <ArrowLeft size={24} color="#3491ff" strokeWidth={2} />
-              </TouchableOpacity>
-            ),
-          })}
+          options={({ navigation }) => makeHeaderOptions(navigation, 'Profile')}
         />
-        <Stack.Screen 
-          name="EventRegistration" 
-          component={EventRegistrationScreen}
-          options={{
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen 
-          name="RegistrationSuccess" 
-          component={RegistrationSuccessScreen}
-          options={{
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen 
-          name="Support" 
+        <Stack.Screen
+          name="Support"
           component={SupportScreen}
-          options={({ navigation }) => ({
-            headerShown: true,
-            title: 'Support',
-            headerStyle: {
-              backgroundColor: '#000000',
-              borderBottomWidth: 1,
-              borderBottomColor: 'rgba(52, 145, 255, 0.3)',
-            },
-            headerTitleStyle: {
-              fontSize: 18,
-              fontFamily: getFontFamily('600'),
-              color: '#ffffff',
-            },
-            headerTintColor: '#3491ff',
-            headerLeft: () => (
-              <TouchableOpacity 
-                onPress={() => navigation.goBack()}
-                style={{ marginLeft: 6 }}
-              >
-                <ArrowLeft size={24} color="#3491ff" strokeWidth={2} />
-              </TouchableOpacity>
-            ),
-          })}
+          options={({ navigation }) => makeHeaderOptions(navigation, 'Support')}
         />
-        <Stack.Screen 
-          name="Wallet" 
+        <Stack.Screen
+          name="Wallet"
           component={WalletScreen}
-          options={({ navigation }) => ({
-            headerShown: true,
-            title: 'Wallet & Referrals',
-            headerStyle: {
-              backgroundColor: '#000000',
-              borderBottomWidth: 1,
-              borderBottomColor: 'rgba(52, 145, 255, 0.3)',
-            },
-            headerTitleStyle: {
-              fontSize: 18,
-              fontFamily: getFontFamily('600'),
-              color: '#ffffff',
-            },
-            headerTintColor: '#3491ff',
-            headerLeft: () => (
-              <TouchableOpacity 
-                onPress={() => navigation.goBack()}
-                style={{ marginLeft: 6 }}
-              >
-                <ArrowLeft size={24} color="#3491ff" strokeWidth={2} />
-              </TouchableOpacity>
-            ),
-          })}
+          options={({ navigation }) => makeHeaderOptions(navigation, 'Wallet')}
         />
-        <Stack.Screen 
-          name="Account" 
+        <Stack.Screen
+          name="Account"
           component={AccountScreen}
-          options={{ headerShown: false }}
+          options={({ navigation }) => makeHeaderOptions(navigation, 'Edit Profile')}
         />
-        <Stack.Screen 
-          name="Preferences" 
-          component={PreferencesScreen}
-          options={{ headerShown: false }}
+        <Stack.Screen
+          name="Notifications"
+          component={NotificationsScreen}
+          options={({ navigation }) => makeHeaderOptions(navigation, 'Notifications')}
         />
-        <Stack.Screen 
-          name="Settings" 
-          component={SettingsScreen}
-          options={{ headerShown: false }}
+        <Stack.Screen
+          name="Permissions"
+          component={PermissionsScreen}
+          options={({ navigation }) => makeHeaderOptions(navigation, 'Permissions')}
         />
-        <Stack.Screen 
-          name="ChangeWalletPasscode" 
-          component={ChangeWalletPasscodeScreen}
-          options={{ headerShown: false }}
+        <Stack.Screen
+          name="Appearance"
+          component={AppearanceScreen}
+          options={({ navigation }) => makeHeaderOptions(navigation, 'Appearance')}
         />
-        <Stack.Screen 
-          name="Referrals" 
+        <Stack.Screen
+          name="Referrals"
           component={ReferralsScreen}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen 
-          name="Legal" 
-          component={LegalScreen}
-          options={{ headerShown: false }}
+          options={({ navigation }) => makeHeaderOptions(navigation, 'Referrals')}
         />
       </Stack.Navigator>
     </NavigationContainer>
   );
 }
 
+// ── Styles ────────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   profileIconContainer: {
     width: 28,

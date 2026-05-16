@@ -1,0 +1,199 @@
+import React from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+} from 'react-native';
+import { Moon, Sun, Monitor, Palette, Check } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import GlassyButton from '../components/GlassyButton';
+import {
+  colors,
+  spacing,
+  typography,
+  borderRadius,
+  shadows,
+  brandGradient,
+  brandGradientStart,
+  brandGradientEnd,
+} from '../theme';
+import { getFontFamily } from '../theme/fontHelpers';
+
+const THEMES = [
+  {
+    key: 'dark',
+    label: 'Dark',
+    description: 'Easy on the eyes, always on',
+    icon: <Moon size={16} color={colors.primary} strokeWidth={2} />,
+    active: true,
+    disabled: false,
+  },
+  {
+    key: 'light',
+    label: 'Light',
+    description: 'Coming soon',
+    icon: <Sun size={16} color={colors.textMuted} strokeWidth={2} />,
+    active: false,
+    disabled: true,
+  },
+  {
+    key: 'system',
+    label: 'System Default',
+    description: 'Coming soon',
+    icon: <Monitor size={16} color={colors.textMuted} strokeWidth={2} />,
+    active: false,
+    disabled: true,
+  },
+];
+
+export default function AppearanceScreen() {
+  return (
+    <View style={styles.container}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {/* Theme */}
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>Theme</Text>
+          <View style={styles.card}>
+            {THEMES.map((theme, index) => (
+              <View key={theme.key}>
+                <TouchableOpacity
+                  style={[styles.row, theme.disabled && styles.rowDisabled]}
+                  activeOpacity={theme.disabled ? 1 : 0.7}
+                  disabled={theme.disabled}
+                >
+                  <GlassyButton size={36} variant="dark" shape="square" disabled>
+                    {theme.icon}
+                  </GlassyButton>
+                  <View style={styles.rowText}>
+                    <Text style={[styles.rowLabel, theme.disabled && styles.rowLabelDisabled]}>
+                      {theme.label}
+                    </Text>
+                    <Text style={[styles.rowDesc, theme.disabled && styles.rowDescDisabled]}>
+                      {theme.description}
+                    </Text>
+                  </View>
+                  {theme.active && (
+                    <LinearGradient
+                      colors={brandGradient}
+                      start={brandGradientStart}
+                      end={brandGradientEnd}
+                      style={styles.checkCircle}
+                    >
+                      <Check size={12} color="#000" strokeWidth={3} />
+                    </LinearGradient>
+                  )}
+                </TouchableOpacity>
+                {index < THEMES.length - 1 && <View style={styles.divider} />}
+              </View>
+            ))}
+          </View>
+        </View>
+
+        {/* Info */}
+        <View style={styles.section}>
+          <View style={styles.infoCard}>
+            <Palette size={18} color={colors.primary} strokeWidth={2} />
+            <Text style={styles.infoText}>
+              More appearance options are coming in a future update.
+            </Text>
+          </View>
+        </View>
+      </ScrollView>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  scrollContent: {
+    paddingTop: spacing[6],
+    paddingBottom: 100,
+  },
+  section: {
+    paddingHorizontal: spacing[6],
+    marginBottom: spacing[6],
+  },
+  sectionLabel: {
+    fontSize: typography.fontSize.xs,
+    fontFamily: getFontFamily('bold'),
+    color: colors.textMuted,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    marginBottom: spacing[3],
+    paddingLeft: spacing[1],
+  },
+  // Matches ProfileScreen card — borderless, deep shadow
+  card: {
+    backgroundColor: colors.card,
+    borderRadius: borderRadius['2xl'],
+    overflow: 'hidden',
+    ...shadows.lg,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[3],
+    gap: spacing[3],
+  },
+  rowDisabled: {
+    opacity: 0.45,
+  },
+  rowText: { flex: 1 },
+  rowLabel: {
+    fontSize: typography.fontSize.base,
+    fontFamily: getFontFamily('semibold'),
+    color: colors.text,
+    marginBottom: 2,
+  },
+  rowLabelDisabled: {
+    color: colors.textMuted,
+  },
+  rowDesc: {
+    fontSize: typography.fontSize.xs,
+    color: colors.textMuted,
+    fontFamily: getFontFamily('normal'),
+  },
+  rowDescDisabled: {
+    color: colors.textMuted,
+  },
+  // Inset divider matching ProfileScreen
+  divider: {
+    height: 1,
+    backgroundColor: colors.borderMuted,
+    marginLeft: 72,
+    marginRight: spacing[4],
+  },
+  checkCircle: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  infoCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing[3],
+    backgroundColor: 'rgba(52,145,255,0.05)',
+    borderRadius: borderRadius.xl,
+    borderWidth: 1,
+    borderColor: 'rgba(52,145,255,0.15)',
+    padding: spacing[5],
+  },
+  infoText: {
+    flex: 1,
+    fontSize: typography.fontSize.sm,
+    color: colors.textSecondary,
+    fontFamily: getFontFamily('normal'),
+    lineHeight: typography.lineHeight.relaxed * typography.fontSize.sm,
+  },
+});

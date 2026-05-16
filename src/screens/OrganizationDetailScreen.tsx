@@ -15,8 +15,8 @@ import GradientText from '../components/GradientText';
 import Footer from '../components/Footer';
 import { colors, spacing, typography, borderRadius, shadows, brandGradient } from '../theme';
 import { getFontFamily } from '../theme/fontHelpers';
-import { getOrganizationById, getOrganizationEvents, Organization } from '../lib/api/organizations';
-import { Event } from '../lib/api/events';
+import { getOrganizationById, getOrganizationEvents, getSubOrganizations, Organization } from '../lib/api/organizations';
+import { Event, getEventCardPrice } from '../lib/api/events';
 
 const ORG_TYPE_LABELS: Record<string, string> = {
   university: 'University',
@@ -33,6 +33,8 @@ export default function OrganizationDetailScreen() {
   const { organizationId } = route.params;
   
   const [organization, setOrganization] = useState<Organization | null>(null);
+  const [parentOrg, setParentOrg] = useState<Organization | null>(null);
+  const [subOrgs, setSubOrgs] = useState<Organization[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -43,17 +45,39 @@ export default function OrganizationDetailScreen() {
   const loadOrganizationData = async () => {
     try {
       setLoading(true);
-      const [orgData, eventsData] = await Promise.all([
-        getOrganizationById(organizationId),
-        getOrganizationEvents(organizationId, 1, 20),
-      ]);
+      const orgData = await getOrganizationById(organizationId);
+      
+      if (!orgData) {
+        setLoading(false);
+        return;
+      }
       
       setOrganization(orgData);
+      
+      // Load events, parent org (if sub-org), and sub-orgs (if parent) in parallel
+      const promises: Promise<any>[] = [
+        getOrganizationEvents(organizationId, 1, 20),
+      ];
+      
+      // If this org has a parent, load the parent
+      if (orgData.parent_org_id) {
+        promises.push(getOrganizationById(orgData.parent_org_id));
+      } else {
+        promises.push(Promise.resolve(null));
+      }
+      
+      // Load sub-organizations
+      promises.push(getSubOrganizations(organizationId));
+      
+      const [eventsData, parentOrgData, subOrgsData] = await Promise.all(promises);
+      
       setEvents(eventsData?.events || []);
+      setParentOrg(parentOrgData);
+      setSubOrgs(subOrgsData?.organizations || []);
     } catch (error) {
-      console.error('[OrganizationDetail] Error loading data:', error);
-      // Set empty arrays on error to show empty state
+      console.error('Error loading organization:', error);
       setEvents([]);
+      setSubOrgs([]);
     } finally {
       setLoading(false);
     }
@@ -83,7 +107,7 @@ export default function OrganizationDetailScreen() {
   
   return (
     <View style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingTop: 0 }}>
         {/* Hero Section - Banner only */}
         {organization.banner_url ? (
           <Image
@@ -232,6 +256,82 @@ export default function OrganizationDetailScreen() {
             )}
           </View>
 
+          {/* Parent Organization (if this is a sub-org) */}
+          {parentOrg && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Part of</Text>
+              <TouchableOpacity
+                style={styles.parentOrgCard}
+                onPress={() => navigation.push('OrganizationDetail', { organizationId: parentOrg.id })}
+                activeOpacity={0.7}
+              >
+                <View style={styles.parentOrgContent}>
+                  {parentOrg.logo_url ? (
+                    <Image
+                      source={{ uri: parentOrg.logo_url }}
+                      style={styles.parentOrgLogo}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <View style={[styles.parentOrgLogo, styles.parentOrgLogoPlaceholder]}>
+                      <Text style={styles.parentOrgLogoText}>
+                        {parentOrg.name.charAt(0).toUpperCase()}
+                      </Text>
+                    </View>
+                  )}
+                  <View style={styles.parentOrgInfo}>
+                    <Text style={styles.parentOrgName}>{parentOrg.name}</Text>
+                    <Text style={styles.parentOrgType}>
+                      {ORG_TYPE_LABELS[parentOrg.type || 'other'] || 'Organization'}
+                    </Text>
+                  </View>
+                </View>
+                <Text style={styles.parentOrgArrow}>→</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Sub-Organizations (if this is a parent org) */}
+          {subOrgs.length > 0 && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>
+                Sub-Organizations ({subOrgs.length})
+              </Text>
+              <View style={styles.subOrgsGrid}>
+                {subOrgs.map((subOrg) => (
+                  <TouchableOpacity
+                    key={subOrg.id}
+                    style={styles.subOrgCard}
+                    onPress={() => navigation.push('OrganizationDetail', { organizationId: subOrg.id })}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.subOrgContent}>
+                      {subOrg.logo_url ? (
+                        <Image
+                          source={{ uri: subOrg.logo_url }}
+                          style={styles.subOrgLogo}
+                          resizeMode="cover"
+                        />
+                      ) : (
+                        <View style={[styles.subOrgLogo, styles.subOrgLogoPlaceholder]}>
+                          <Text style={styles.subOrgLogoText}>
+                            {subOrg.name.charAt(0).toUpperCase()}
+                          </Text>
+                        </View>
+                      )}
+                      <View style={styles.subOrgInfo}>
+                        <Text style={styles.subOrgName} numberOfLines={1}>{subOrg.name}</Text>
+                        <Text style={styles.subOrgType}>
+                          {ORG_TYPE_LABELS[subOrg.type || 'other'] || 'Organization'}
+                        </Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          )}
+
           {/* Events Section */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
@@ -239,55 +339,90 @@ export default function OrganizationDetailScreen() {
             </View>
             {events.length > 0 ? (
               <View style={styles.eventsGrid}>
-                {events.map((event) => (
-                  <TouchableOpacity
-                    key={event.id}
-                    style={styles.eventCard}
-                    onPress={() => navigation.navigate('EventDetail', { eventId: event.id })}
-                    activeOpacity={0.9}
-                  >
-                    <View style={styles.eventHeader}>
-                      <View style={styles.categoryBadge}>
-                        <Text style={styles.categoryBadgeText}>
-                          {event.category}
-                        </Text>
-                      </View>
-                      {event.is_trending && (
-                        <View style={styles.trendingBadge}>
-                          <Text style={styles.trendingBadgeText}>🔥</Text>
-                        </View>
+                {events.map((event) => {
+                  const imageUrl = event.banner_url || event.thumbnail_url || event.image_url;
+                  const eventDate = new Date(event.start_date);
+                  const formattedDate = eventDate.toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                  });
+                  
+                  return (
+                    <TouchableOpacity
+                      key={event.id}
+                      style={styles.eventCard}
+                      onPress={() => navigation.navigate('EventDetail', { eventId: event.id })}
+                      activeOpacity={0.9}
+                    >
+                      {/* Event Image/Poster */}
+                      {imageUrl ? (
+                        <Image
+                          source={{ uri: imageUrl }}
+                          style={styles.eventImage}
+                          resizeMode="cover"
+                        />
+                      ) : (
+                        <LinearGradient
+                          colors={['#667eea', '#764ba2']}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 1, y: 1 }}
+                          style={styles.eventImage}
+                        />
                       )}
-                    </View>
-                    <Text style={styles.eventTitle} numberOfLines={1}>
-                      {event.title}
-                    </Text>
-                    <Text style={styles.eventOrganizer} numberOfLines={1}>
-                      {organization.name}
-                    </Text>
-                    <View style={styles.eventMeta}>
-                      <View style={styles.eventMetaItem}>
-                        <Calendar size={12} color={colors.textMuted} strokeWidth={2} />
-                        <Text style={styles.eventMetaText}>
-                          {new Date(event.start_date).toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                          })}
-                        </Text>
+                      
+                      {/* Badges on image */}
+                      <View style={styles.eventImageBadges}>
+                        {event.is_trending && (
+                          <View style={styles.trendingBadge}>
+                            <Text style={styles.trendingBadgeText}>🔥 Trending</Text>
+                          </View>
+                        )}
+                        {event.is_featured && (
+                          <View style={styles.featuredBadge}>
+                            <Text style={styles.featuredBadgeText}>⭐ Featured</Text>
+                          </View>
+                        )}
                       </View>
-                      {event.max_attendees && (
-                        <View style={styles.eventMetaItem}>
-                          <Users size={12} color={colors.textMuted} strokeWidth={2} />
-                          <Text style={styles.eventMetaText}>{event.max_attendees}</Text>
+                      
+                      {/* Event Details */}
+                      <View style={styles.eventDetails}>
+                        <View style={styles.categoryBadge}>
+                          <Text style={styles.categoryBadgeText}>
+                            {event.category || 'Event'}
+                          </Text>
                         </View>
-                      )}
-                    </View>
-                    {event.is_free && (
-                      <View style={styles.freeBadge}>
-                        <Text style={styles.freeBadgeText}>Free</Text>
+                        
+                        <Text style={styles.eventTitle} numberOfLines={2}>
+                          {event.title}
+                        </Text>
+                        
+                        <View style={styles.eventMeta}>
+                          <View style={styles.eventMetaItem}>
+                            <Calendar size={14} color={colors.textMuted} strokeWidth={2} />
+                            <Text style={styles.eventMetaText}>{formattedDate}</Text>
+                          </View>
+                          {event.max_attendees && (
+                            <View style={styles.eventMetaItem}>
+                              <Users size={14} color={colors.textMuted} strokeWidth={2} />
+                              <Text style={styles.eventMetaText}>{event.max_attendees}</Text>
+                            </View>
+                          )}
+                        </View>
+                        
+                        {/* Footer with price */}
+                        <View style={styles.eventFooter}>
+                          <Text style={styles.eventPrice}>
+                            {getEventCardPrice(event)}
+                          </Text>
+                          <View style={styles.viewButton}>
+                            <Text style={styles.viewButtonText}>View →</Text>
+                          </View>
+                        </View>
                       </View>
-                    )}
-                  </TouchableOpacity>
-                ))}
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
             ) : (
               <View style={styles.emptyState}>
@@ -504,11 +639,24 @@ const styles = StyleSheet.create({
   },
   eventCard: {
     backgroundColor: colors.card,
-    borderRadius: borderRadius.lg,
-    padding: spacing[5],
+    borderRadius: borderRadius.xl,
     borderWidth: 1,
     borderColor: colors.borderMuted,
-    position: 'relative',
+    overflow: 'hidden',
+    ...shadows.md,
+  },
+  eventImage: {
+    width: '100%',
+    height: 160,
+  },
+  eventImageBadges: {
+    position: 'absolute',
+    top: spacing[3],
+    right: spacing[3],
+    gap: spacing[2],
+  },
+  eventDetails: {
+    padding: spacing[4],
   },
   eventHeader: {
     flexDirection: 'row',
@@ -523,26 +671,48 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.md,
     borderWidth: 1,
     borderColor: 'rgba(52, 145, 255, 0.3)',
+    alignSelf: 'flex-start',
+    marginBottom: spacing[3],
   },
   categoryBadgeText: {
     fontSize: typography.fontSize.xs,
     color: colors.primary,
     fontFamily: getFontFamily('bold'),
+    textTransform: 'uppercase',
+    letterSpacing: typography.letterSpacing.wider,
   },
   trendingBadge: {
-    backgroundColor: 'rgba(255, 215, 0, 0.1)',
+    backgroundColor: 'rgba(255, 215, 0, 0.15)',
     paddingHorizontal: spacing[2],
     paddingVertical: spacing[1],
-    borderRadius: borderRadius.sm,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 215, 0, 0.3)',
   },
   trendingBadgeText: {
     fontSize: typography.fontSize.xs,
+    color: '#ffd700',
+    fontFamily: getFontFamily('bold'),
+  },
+  featuredBadge: {
+    backgroundColor: 'rgba(52, 145, 255, 0.15)',
+    paddingHorizontal: spacing[2],
+    paddingVertical: spacing[1],
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: 'rgba(52, 145, 255, 0.3)',
+  },
+  featuredBadgeText: {
+    fontSize: typography.fontSize.xs,
+    color: colors.primary,
+    fontFamily: getFontFamily('bold'),
   },
   eventTitle: {
     fontSize: typography.fontSize.base,
     color: colors.text,
-    marginBottom: spacing[2],
+    marginBottom: spacing[3],
     fontFamily: typography.fontFamily.primary,
+    lineHeight: typography.fontSize.base * 1.4,
   },
   eventOrganizer: {
     fontSize: typography.fontSize.xs,
@@ -552,6 +722,7 @@ const styles = StyleSheet.create({
   eventMeta: {
     flexDirection: 'row',
     gap: spacing[4],
+    marginBottom: spacing[4],
   },
   eventMetaItem: {
     flexDirection: 'row',
@@ -561,6 +732,30 @@ const styles = StyleSheet.create({
   eventMetaText: {
     fontSize: typography.fontSize.xs,
     color: colors.textMuted,
+  },
+  eventFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: spacing[3],
+    borderTopWidth: 1,
+    borderTopColor: colors.borderMuted,
+  },
+  eventPrice: {
+    fontSize: typography.fontSize.base,
+    fontFamily: getFontFamily('bold'),
+    color: colors.text,
+  },
+  viewButton: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[2],
+    borderRadius: borderRadius.full,
+  },
+  viewButtonText: {
+    fontSize: typography.fontSize.xs,
+    fontFamily: getFontFamily('bold'),
+    color: '#000000',
   },
   freeBadge: {
     position: 'absolute',
@@ -590,5 +785,101 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.sm,
     color: colors.textMuted,
     textAlign: 'center',
+  },
+  // Parent Organization styles
+  parentOrgCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.card,
+    borderRadius: borderRadius.xl,
+    padding: spacing[4],
+    borderWidth: 1,
+    borderColor: colors.borderMuted,
+    ...shadows.sm,
+  },
+  parentOrgContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[3],
+    flex: 1,
+  },
+  parentOrgLogo: {
+    width: 48,
+    height: 48,
+    borderRadius: borderRadius.md,
+    overflow: 'hidden',
+  },
+  parentOrgLogoPlaceholder: {
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  parentOrgLogoText: {
+    fontSize: typography.fontSize.lg,
+    fontFamily: getFontFamily('bold'),
+    color: '#000000',
+  },
+  parentOrgInfo: {
+    flex: 1,
+  },
+  parentOrgName: {
+    fontSize: typography.fontSize.base,
+    fontFamily: getFontFamily('bold'),
+    color: colors.text,
+    marginBottom: spacing[1],
+  },
+  parentOrgType: {
+    fontSize: typography.fontSize.xs,
+    color: colors.textMuted,
+  },
+  parentOrgArrow: {
+    fontSize: typography.fontSize.xl,
+    color: colors.textMuted,
+  },
+  // Sub-Organizations styles
+  subOrgsGrid: {
+    gap: spacing[3],
+  },
+  subOrgCard: {
+    backgroundColor: colors.card,
+    borderRadius: borderRadius.lg,
+    padding: spacing[4],
+    borderWidth: 1,
+    borderColor: colors.borderMuted,
+  },
+  subOrgContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[3],
+  },
+  subOrgLogo: {
+    width: 40,
+    height: 40,
+    borderRadius: borderRadius.md,
+    overflow: 'hidden',
+  },
+  subOrgLogoPlaceholder: {
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  subOrgLogoText: {
+    fontSize: typography.fontSize.base,
+    fontFamily: getFontFamily('bold'),
+    color: '#000000',
+  },
+  subOrgInfo: {
+    flex: 1,
+  },
+  subOrgName: {
+    fontSize: typography.fontSize.sm,
+    fontFamily: getFontFamily('bold'),
+    color: colors.text,
+    marginBottom: spacing[1],
+  },
+  subOrgType: {
+    fontSize: typography.fontSize.xs,
+    color: colors.textMuted,
   },
 });

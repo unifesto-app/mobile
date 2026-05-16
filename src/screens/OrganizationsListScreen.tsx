@@ -73,7 +73,6 @@ export default function OrganizationsListScreen() {
       setHasMore((response.organizations || []).length === 20);
       setPage(pageNum);
     } catch (error) {
-      console.error('[OrganizationsList] Error loading organizations:', error);
       if (reset) {
         setOrganizations([]);
       }
@@ -130,13 +129,15 @@ export default function OrganizationsListScreen() {
   if (loading) {
     return (
       <View style={styles.container}>
-        <ScrollView showsVerticalScrollIndicator={false}>
-          {/* Header */}
-          <View style={styles.header}>
-            <GradientText style={styles.headerTitle}>Organizations</GradientText>
-            <Text style={styles.headerSubtitle}>
-              Discover clubs, communities, and organizations
-            </Text>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingTop: spacing[6] }}>
+          {/* Search Bar Skeleton */}
+          <View style={styles.searchSection}>
+            <Skeleton width="100%" height={48} borderRadius={borderRadius.lg} style={{ marginBottom: spacing[5] }} />
+            <View style={{ flexDirection: 'row', gap: spacing[2] }}>
+              <Skeleton width={80} height={32} borderRadius={borderRadius.full} />
+              <Skeleton width={100} height={32} borderRadius={borderRadius.full} />
+              <Skeleton width={90} height={32} borderRadius={borderRadius.full} />
+            </View>
           </View>
 
           {/* Skeleton Cards */}
@@ -173,14 +174,8 @@ export default function OrganizationsListScreen() {
           />
         }
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <GradientText style={styles.headerTitle}>Organizations</GradientText>
-          <Text style={styles.headerSubtitle}>
-            Discover clubs, communities, and organizations
-          </Text>
-
-          {/* Search Bar */}
+        {/* Search Bar */}
+        <View style={styles.searchSection}>
           <View style={styles.searchContainer}>
             <Search size={20} color={colors.textMuted} strokeWidth={2} />
             <TextInput
@@ -350,20 +345,10 @@ const styles = StyleSheet.create({
     fontFamily: getFontFamily('normal'),
     color: colors.textMuted,
   },
-  header: {
+  searchSection: {
     paddingHorizontal: spacing[6],
-    paddingTop: spacing[8],
-    paddingBottom: spacing[6],
-  },
-  headerTitle: {
-    fontSize: typography.fontSize['3xl'],
-    marginBottom: spacing[2],
-    fontFamily: typography.fontFamily.primary,
-  },
-  headerSubtitle: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
-    marginBottom: spacing[6],
+    paddingTop: spacing[6],
+    paddingBottom: spacing[4],
   },
   searchContainer: {
     flexDirection: 'row',

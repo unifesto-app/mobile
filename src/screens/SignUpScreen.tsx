@@ -126,7 +126,7 @@ export default function SignUpScreen({ navigation }: SignUpScreenProps) {
     Alert.alert(
       'Success!',
       message,
-      [{ text: 'OK', onPress: () => navigation.navigate('Login') }]
+      [{ text: 'OK', onPress: () => navigation.navigate('MainApp') }]
     );
   };
 
@@ -323,16 +323,7 @@ export default function SignUpScreen({ navigation }: SignUpScreenProps) {
             </LinearGradient>
           </TouchableOpacity>
 
-          {/* Login Link */}
-          <View style={styles.loginContainer}>
-            <Text style={styles.loginText}>Already have an account? </Text>
-            <TouchableOpacity 
-              onPress={() => navigation.navigate('Login')}
-              disabled={isLoading}
-            >
-              <Text style={styles.loginLink}>Sign In</Text>
-            </TouchableOpacity>
-          </View>
+          {/* Removed Login Link - Users can access login from home */}
 
           {/* Terms */}
           <Text style={styles.termsText}>

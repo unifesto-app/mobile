@@ -57,7 +57,6 @@ class OneSignalService {
     if (!this.checkAvailability()) return;
 
     if (this.isInitialized) {
-      console.warn('OneSignal already initialized');
       return;
     }
 
@@ -78,7 +77,6 @@ class OneSignalService {
       // Setup push subscription observer
       this.setupPushSubscriptionObserver();
     } catch (error) {
-      console.error('OneSignal initialization error:', error);
     }
   }
 
@@ -98,7 +96,6 @@ class OneSignalService {
         }
       });
     } catch (error) {
-      console.error('Error setting up push subscription observer:', error);
     }
   }
 
@@ -113,7 +110,6 @@ class OneSignalService {
       const granted = await OneSignal.Notifications.requestPermission(true);
       return granted;
     } catch (error) {
-      console.error('Error requesting notification permission:', error);
       return false;
     }
   }
@@ -128,7 +124,6 @@ class OneSignalService {
     try {
       return OneSignal.Notifications.hasPermission();
     } catch (error) {
-      console.error('Error checking notification permission:', error);
       return false;
     }
   }
@@ -144,7 +139,6 @@ class OneSignalService {
     try {
       OneSignal.login(externalId);
     } catch (error) {
-      console.error('Error logging in OneSignal user:', error);
     }
   }
 
@@ -158,7 +152,6 @@ class OneSignalService {
     try {
       OneSignal.logout();
     } catch (error) {
-      console.error('Error logging out OneSignal user:', error);
     }
   }
 
@@ -172,7 +165,6 @@ class OneSignalService {
     try {
       OneSignal.User.addEmail(email);
     } catch (error) {
-      console.error('Error setting OneSignal email:', error);
     }
   }
 
@@ -186,7 +178,6 @@ class OneSignalService {
     try {
       OneSignal.User.removeEmail(email);
     } catch (error) {
-      console.error('Error removing OneSignal email:', error);
     }
   }
 
@@ -200,7 +191,6 @@ class OneSignalService {
     try {
       OneSignal.User.addSms(smsNumber);
     } catch (error) {
-      console.error('Error setting OneSignal SMS:', error);
     }
   }
 
@@ -214,7 +204,6 @@ class OneSignalService {
     try {
       OneSignal.User.removeSms(smsNumber);
     } catch (error) {
-      console.error('Error removing OneSignal SMS:', error);
     }
   }
 
@@ -228,7 +217,6 @@ class OneSignalService {
     try {
       OneSignal.User.addTags(tags);
     } catch (error) {
-      console.error('Error setting OneSignal tags:', error);
     }
   }
 
@@ -242,7 +230,6 @@ class OneSignalService {
     try {
       OneSignal.User.removeTags(tagKeys);
     } catch (error) {
-      console.error('Error removing OneSignal tags:', error);
     }
   }
 
@@ -256,7 +243,6 @@ class OneSignalService {
     try {
       return OneSignal.User.pushSubscription.id || null;
     } catch (error) {
-      console.error('Error getting push subscription ID:', error);
       return null;
     }
   }
@@ -270,7 +256,6 @@ class OneSignalService {
     try {
       OneSignal.User.pushSubscription.optIn();
     } catch (error) {
-      console.error('Error opting in to push:', error);
     }
   }
 
@@ -283,7 +268,6 @@ class OneSignalService {
     try {
       OneSignal.User.pushSubscription.optOut();
     } catch (error) {
-      console.error('Error opting out of push:', error);
     }
   }
 
@@ -297,7 +281,6 @@ class OneSignalService {
     try {
       OneSignal.Notifications.addEventListener('click', handler);
     } catch (error) {
-      console.error('Error adding notification click listener:', error);
     }
   }
 
@@ -311,7 +294,6 @@ class OneSignalService {
     try {
       OneSignal.Notifications.addEventListener('foregroundWillDisplay', handler);
     } catch (error) {
-      console.error('Error adding notification foreground listener:', error);
     }
   }
 
@@ -325,7 +307,6 @@ class OneSignalService {
     try {
       OneSignal.Notifications.addEventListener('permissionChange', handler);
     } catch (error) {
-      console.error('Error adding permission change listener:', error);
     }
   }
 }

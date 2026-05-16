@@ -22,26 +22,21 @@ export interface Org {
 
 // Placeholder functions - return empty data until API is implemented
 export function getAllOrgs(): Org[] {
-  console.warn('[Organizations] Using placeholder - Organizations API not yet implemented');
   return [];
 }
 
 export function getOrgById(id: string): Org | undefined {
-  console.warn('[Organizations] Using placeholder - Organizations API not yet implemented');
   return undefined;
 }
 
 export function getSubOrgs(parentId: string): Org[] {
-  console.warn('[Organizations] Using placeholder - Organizations API not yet implemented');
   return [];
 }
 
 export function getOrgsByType(type: string): Org[] {
-  console.warn('[Organizations] Using placeholder - Organizations API not yet implemented');
   return [];
 }
 
 export function getEventsByOrgTree(orgId: string): any[] {
-  console.warn('[Organizations] Using placeholder - Organizations API not yet implemented');
   return [];
 }

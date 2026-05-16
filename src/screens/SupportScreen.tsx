@@ -146,59 +146,43 @@ export default function SupportScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Hero Section */}
-        <LinearGradient
-          colors={['rgba(52, 145, 255, 0.1)', 'transparent']}
-          style={styles.heroSection}
-        >
-          <View style={styles.heroContent}>
-            <Text style={styles.heroSubtitle}>Support Center</Text>
-            <GradientText style={styles.heroTitle}>
-              How can we{'\n'}help you?
-            </GradientText>
-            <Text style={styles.heroDescription}>
-              Find answers, create support tickets, or get in touch with our team.
-            </Text>
-
-            {/* Tabs */}
-            <View style={styles.tabsContainer}>
-              <TouchableOpacity
-                style={[styles.tab, activeTab === 'faq' && styles.tabActive]}
-                onPress={() => setActiveTab('faq')}
-              >
-                <Text style={[styles.tabText, activeTab === 'faq' && styles.tabTextActive]}>
-                  FAQ
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.tab, activeTab === 'contact' && styles.tabActive]}
-                onPress={() => setActiveTab('contact')}
-              >
-                <Text style={[styles.tabText, activeTab === 'contact' && styles.tabTextActive]}>
-                  Contact Us
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Search Bar for FAQ */}
-            {activeTab === 'faq' && (
-              <View style={styles.searchContainer}>
-                <HelpCircle size={20} color={colors.textMuted} strokeWidth={2} />
-                <TextInput
-                  style={styles.searchInput}
-                  placeholder="Search for help..."
-                  placeholderTextColor={colors.textMuted}
-                  value={searchQuery}
-                  onChangeText={setSearchQuery}
-                />
-              </View>
-            )}
-          </View>
-        </LinearGradient>
-
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingTop: spacing[6], paddingBottom: spacing[8] }}>
         {/* Content */}
         <View style={styles.contentContainer}>
+          {/* Tabs */}
+          <View style={styles.tabsContainer}>
+            <TouchableOpacity
+              style={[styles.tab, activeTab === 'faq' && styles.tabActive]}
+              onPress={() => setActiveTab('faq')}
+            >
+              <Text style={[styles.tabText, activeTab === 'faq' && styles.tabTextActive]}>
+                FAQ
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.tab, activeTab === 'contact' && styles.tabActive]}
+              onPress={() => setActiveTab('contact')}
+            >
+              <Text style={[styles.tabText, activeTab === 'contact' && styles.tabTextActive]}>
+                Contact Us
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Search Bar for FAQ */}
+          {activeTab === 'faq' && (
+            <View style={styles.searchContainer}>
+              <HelpCircle size={20} color={colors.textMuted} strokeWidth={2} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search for help..."
+                placeholderTextColor={colors.textMuted}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+              />
+            </View>
+          )}
+
           {/* FAQ Tab */}
           {activeTab === 'faq' && (
             <View style={styles.faqContainer}>
@@ -380,37 +364,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  // Hero Section
-  heroSection: {
-    paddingHorizontal: spacing[6],
-    paddingTop: spacing[12],
-    paddingBottom: spacing[8],
-  },
-  heroContent: {
-    alignItems: 'center',
-  },
-  heroSubtitle: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textMuted,
-    fontFamily: typography.fontFamily.bold,
-    letterSpacing: typography.letterSpacing.wider,
-    textTransform: 'uppercase',
-    marginBottom: spacing[2],
-  },
-  heroTitle: {
-    fontSize: typography.fontSize['4xl'],
-    textAlign: 'center',
-    marginBottom: spacing[4],
-    fontFamily: typography.fontFamily.primary,
-  },
-  heroDescription: {
-    fontSize: typography.fontSize.base,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: typography.lineHeight.relaxed * typography.fontSize.base,
-    marginBottom: spacing[8],
-    maxWidth: 320,
-  },
   // Tabs
   tabsContainer: {
     flexDirection: 'row',
@@ -418,6 +371,7 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.full,
     padding: spacing[1],
     marginBottom: spacing[6],
+    marginTop: spacing[6],
     borderWidth: 1,
     borderColor: colors.borderMuted,
   },

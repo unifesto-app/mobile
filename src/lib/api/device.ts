@@ -15,14 +15,12 @@ const activeRequests = new Set<AbortController>();
  */
 const getAuthHeaders = async (): Promise<{ 'Authorization': string; 'Content-Type': string } | null> => {
   if (!supabase) {
-    console.error('Supabase not configured');
     return null;
   }
 
   const { data: { session }, error } = await supabase.auth.getSession();
   
   if (error) {
-    console.error('Error getting session:', error);
     return null;
   }
   
@@ -51,13 +49,11 @@ export const cancelAllDeviceRequests = () => {
  * The AuthContext will handle session validation and logout if needed.
  */
 const handleUnauthorized = async (message?: string) => {
-  console.warn('Unauthorized response from device API:', message);
   
   // Cancel pending requests to avoid repeated 401s
   try {
     cancelAllDeviceRequests();
   } catch (e) {
-    console.warn('Error cancelling device requests:', e);
   }
 
   // Check if session is actually invalid before logging out
@@ -72,7 +68,6 @@ const handleUnauthorized = async (message?: string) => {
       }
     }
   } catch (e) {
-    console.warn('Error checking session after 401:', e);
   }
 
   throw new Error(message ? `Unauthorized - ${message}` : 'Unauthorized');
@@ -99,11 +94,9 @@ export const generateDeviceFingerprint = async (): Promise<string> => {
         if (idForVendor) {
           deviceId = idForVendor;
         } else {
-          console.warn('iOS vendor ID returned null, using fallback');
           deviceId = Constants.sessionId || 'unknown';
         }
       } catch (error) {
-        console.warn('Error getting iOS vendor ID:', error);
         deviceId = Constants.sessionId || 'unknown';
       }
     } else if (Platform.OS === 'android') {
@@ -113,11 +106,9 @@ export const generateDeviceFingerprint = async (): Promise<string> => {
         if (androidId && androidId !== 'unknown') {
           deviceId = androidId;
         } else {
-          console.warn('Android ID unavailable, using fallback');
           deviceId = Constants.sessionId || 'unknown';
         }
       } catch (error) {
-        console.warn('Error getting Android ID:', error);
         deviceId = Constants.sessionId || 'unknown';
       }
     } else {
@@ -125,7 +116,6 @@ export const generateDeviceFingerprint = async (): Promise<string> => {
       deviceId = Constants.sessionId || 'unknown';
     }
   } catch (error) {
-    console.warn('Error in generateDeviceFingerprint:', error);
     deviceId = Constants.sessionId || 'unknown';
   }
   
@@ -171,10 +161,8 @@ export const getDeviceInfo = async () => {
         }
       }
     } catch (error) {
-      console.warn('Error accessing OneSignal:', error);
     }
   } catch (error) {
-    console.warn('Error getting OneSignal token:', error);
   }
   
   // If OneSignal token not available, generate a unique token
@@ -219,7 +207,6 @@ export const generateDeviceToken = async (): Promise<string> => {
         deviceId = Constants.sessionId || 'unknown';
       }
     } catch (error) {
-      console.warn('Error getting device ID for token:', error);
       // Fall back to session ID if device-specific ID unavailable
       deviceId = Constants.sessionId || Math.random().toString(36).substr(2, 9);
     }
@@ -238,7 +225,6 @@ export const generateDeviceToken = async (): Promise<string> => {
     
     return token;
   } catch (error) {
-    console.error('Error generating device token:', error);
     // Last-resort fallback token
     const fallback = `token-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     return fallback;
@@ -287,7 +273,6 @@ export const registerDevice = async (retries = 3): Promise<any> => {
     const data = await response.json();
     return data.device;
   } catch (error) {
-    console.error('Error registering device:', error);
     throw error;
   }
 };
@@ -319,7 +304,6 @@ export const getUserDevices = async (retries = 1): Promise<any[]> => {
 
       if (!response.ok) {
         const errorText = await response.text().catch(() => undefined);
-        console.error('Failed to fetch devices:', response.status, errorText);
 
         // Handle 401 - might be a race condition, retry once
         if (response.status === 401 && retries > 0) {
@@ -345,7 +329,6 @@ export const getUserDevices = async (retries = 1): Promise<any[]> => {
       return [];
     }
     
-    console.error('Error fetching devices:', error);
     throw error;
   }
 };
@@ -377,7 +360,6 @@ export const removeDevice = async (deviceId: string): Promise<void> => {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        console.error('Failed to remove device:', errorData);
 
         // Handle 401 - user session is invalid
         if (response.status === 401) {
@@ -397,7 +379,6 @@ export const removeDevice = async (deviceId: string): Promise<void> => {
       return;
     }
     
-    console.error('Error removing device:', error);
     throw error;
   }
 };
@@ -432,7 +413,6 @@ export const logoutOtherDevices = async (currentDeviceId: string): Promise<numbe
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        console.error('Failed to logout other devices:', errorData);
 
         // Handle 401 - user session is invalid
         if (response.status === 401) {
@@ -453,7 +433,6 @@ export const logoutOtherDevices = async (currentDeviceId: string): Promise<numbe
       return 0;
     }
     
-    console.error('Error logging out other devices:', error);
     throw error;
   }
 };
@@ -477,7 +456,6 @@ export const checkDeviceStatus = async (): Promise<boolean> => {
     
     return true;
   } catch (error) {
-    console.error('Error checking device status:', error);
     // On error, assume device is active to avoid false logouts
     return true;
   }

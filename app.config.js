@@ -1,11 +1,14 @@
 const withModularHeaders = require('./plugins/withModularHeaders');
+// const withAndroidEdgeToEdge = require('./plugins/withAndroidEdgeToEdge');
+// const withAndroidEdgeToEdgeStyles = require('./plugins/withAndroidStyles');
+const withFirebaseDisableAutoInit = require('./plugins/withFirebaseDisableAutoInit');
 
 module.exports = () => {
   const config = {
     name: "Unifesto",
     slug: "unifesto",
     version: "1.0.0",
-    orientation: "portrait",
+    orientation: "default",
     userInterfaceStyle: "dark",
     scheme: "unifesto",
     icon: "./assets/app-icon-transparent.png",
@@ -33,8 +36,19 @@ module.exports = () => {
         NSCameraUsageDescription: "We need camera access to let you take photos for your profile picture. For example, you can capture a new photo directly when updating your profile avatar.",
         NSPhotoLibraryUsageDescription: "Unifesto needs access to your photo library to select photos for your profile picture.",
         NSPhotoLibraryAddUsageDescription: "Unifesto needs permission to save event tickets and QR codes to your photo library.",
-        NSUserNotificationsUsageDescription: "We need permission to send you notifications about event updates, ticket confirmations, and important announcements. For example, you'll receive a notification when your event registration is confirmed or when an event you're attending is about to start."
+        NSUserNotificationsUsageDescription: "We need permission to send you notifications about event updates, ticket confirmations, and important announcements. For example, you'll receive a notification when your event registration is confirmed or when an event you're attending is about to start.",
+        NSLocationWhenInUseUsageDescription: "Unifesto uses your location to help you discover nearby events and provide location-based event recommendations. Your location data is only used while you're using the app and is never shared with third parties.",
+        // Firebase auto-initialization disabled for ATT compliance
+        FirebaseAppDelegateProxyEnabled: false,
+        FirebaseAnalyticsCollectionEnabled: false,
+        FirebaseAnalyticsCollectionDeactivated: true,
+        FirebaseScreenReportingEnabled: false,
       },
+      associatedDomains: [
+        "applinks:unifesto.app",
+        "applinks:www.unifesto.app",
+        "applinks:auth.unifesto.app"
+      ],
       appClip: {
         bundleIdentifier: "com.unifesto.app.Clip"
       },
@@ -66,6 +80,26 @@ module.exports = () => {
           data: [
             {
               scheme: "https",
+              host: "unifesto.app",
+              pathPrefix: "/events"
+            },
+            {
+              scheme: "https",
+              host: "unifesto.app",
+              pathPrefix: "/org"
+            },
+            {
+              scheme: "https",
+              host: "www.unifesto.app",
+              pathPrefix: "/events"
+            },
+            {
+              scheme: "https",
+              host: "www.unifesto.app",
+              pathPrefix: "/org"
+            },
+            {
+              scheme: "https",
               host: "auth.unifesto.app",
               pathPrefix: "/auth/callback"
             }
@@ -89,6 +123,11 @@ module.exports = () => {
         }
       ]
     },
+    androidStatusBar: {
+      translucent: false,
+      backgroundColor: "#000000",
+      barStyle: "light-content"
+    },
     web: {
       bundler: "metro",
       favicon: "./assets/app-icon-transparent.png"
@@ -111,7 +150,8 @@ module.exports = () => {
           mode: "development"
         }
       ],
-      "@react-native-firebase/app"
+      "@react-native-firebase/app",
+      "expo-dev-client"
     ],
     extra: {
       eas: {
@@ -120,6 +160,11 @@ module.exports = () => {
     }
   };
   
-  // Apply the custom plugin and return the modified config
-  return withModularHeaders(config);
+  // Apply custom plugins and return the modified config
+  let modifiedConfig = withModularHeaders(config);
+  // Disabled edge-to-edge plugins to fix status bar overlap on Android
+  // modifiedConfig = withAndroidEdgeToEdge(modifiedConfig);
+  // modifiedConfig = withAndroidEdgeToEdgeStyles(modifiedConfig);
+  modifiedConfig = withFirebaseDisableAutoInit(modifiedConfig);
+  return modifiedConfig;
 };

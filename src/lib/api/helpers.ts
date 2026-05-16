@@ -8,14 +8,12 @@ import { Session } from '@supabase/supabase-js';
 export async function getAuthSession(): Promise<Session | null> {
   try {
     if (!supabase) {
-      console.error('[API] Supabase not configured');
       return null;
     }
 
     const { data: { session }, error } = await supabase.auth.getSession();
     
     if (error) {
-      console.error('[API] Session error:', error.message);
       
       // If refresh token is invalid or not found, sign out the user
       if (
@@ -23,9 +21,8 @@ export async function getAuthSession(): Promise<Session | null> {
         error.message?.includes('Invalid Refresh Token') ||
         error.message?.includes('refresh_token_not_found')
       ) {
-        console.log('[API] Invalid refresh token detected, signing out...');
-        await supabase.auth.signOut().catch(err => {
-          console.error('[API] Error during sign out:', err);
+        await supabase.auth.signOut().catch(() => {
+          // Silent error handling
         });
       }
       
@@ -33,13 +30,11 @@ export async function getAuthSession(): Promise<Session | null> {
     }
     
     if (!session) {
-      console.error('[API] No active session');
       return null;
     }
 
     return session;
   } catch (error) {
-    console.error('[API] Unexpected error getting session:', error);
     return null;
   }
 }
@@ -71,7 +66,6 @@ export async function makeAuthenticatedRequest(
 
     return response;
   } catch (error) {
-    console.error('[API] Request error:', error);
     return null;
   }
 }
