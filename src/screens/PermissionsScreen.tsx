@@ -16,7 +16,6 @@ import {
   RefreshCw,
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
-import * as TrackingTransparency from 'expo-tracking-transparency';
 import GlassyButton from '../components/GlassyButton';
 import { colors, spacing, typography, borderRadius, shadows } from '../theme';
 import { getFontFamily } from '../theme/fontHelpers';
@@ -59,14 +58,6 @@ export default function PermissionsScreen() {
       icon: <ImageIcon size={16} color="#ec4899" strokeWidth={2} />,
       status: 'undetermined',
     },
-    {
-      key: 'tracking',
-      label: 'App Tracking',
-      description: 'Personalise your event recommendations',
-      icon: <Eye size={16} color="#8b5cf6" strokeWidth={2} />,
-      status: 'undetermined',
-      iosOnly: true,
-    },
   ]);
   const [checking, setChecking] = useState(true);
 
@@ -85,24 +76,10 @@ export default function PermissionsScreen() {
         : libResult.status === 'denied' ? 'denied'
         : 'undetermined';
 
-    let trackStatus: PermStatus = 'undetermined';
-    if (Platform.OS === 'ios') {
-      try {
-        const trackResult = await TrackingTransparency.getTrackingPermissionsAsync();
-        trackStatus =
-          trackResult.status === 'granted' ? 'granted'
-            : trackResult.status === 'denied' ? 'denied'
-            : 'undetermined';
-      } catch {
-        trackStatus = 'undetermined';
-      }
-    }
-
     setPerms((prev) =>
       prev.map((p) => {
         if (p.key === 'camera') return { ...p, status: camStatus };
         if (p.key === 'mediaLibrary') return { ...p, status: libStatus };
-        if (p.key === 'tracking') return { ...p, status: trackStatus };
         return p;
       })
     );

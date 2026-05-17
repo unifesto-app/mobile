@@ -19,7 +19,7 @@ import { colors, spacing, typography, borderRadius, shadows, brandGradient, bran
 import { getMyRegisteredEvents } from '../lib/api/events';
 import { getFontFamily } from '../theme/fontHelpers';
 
-const HEADER_TOP_OFFSET = Platform.OS === 'ios' ? 150 : 130;
+const HEADER_TOP_OFFSET = Platform.OS === 'ios' ? 150 : 100;
 
 const TABS = ['Upcoming', 'Past'];
 

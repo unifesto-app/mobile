@@ -23,7 +23,7 @@ import {
   PRICE_FILTERS
 } from '../lib/constants';
 
-const HEADER_TOP_OFFSET = Platform.OS === 'ios' ? 150 : 130;
+const HEADER_TOP_OFFSET = Platform.OS === 'ios' ? 150 : 100;
 
 export default function DiscoverScreen() {
   const navigation = useNavigation<any>();

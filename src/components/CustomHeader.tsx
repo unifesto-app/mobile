@@ -2,6 +2,7 @@ import React from 'react';
 import { View, StyleSheet, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import UnifestoAppLogo from './UnifestoAppLogo';
 import LiquidMetalLogo from './LiquidMetalLogo';
 import { spacing } from '../theme';
 
@@ -22,7 +23,9 @@ export default function CustomHeader() {
       <View style={{ height: insets.top }} />
       {/* Logo row */}
       <View style={styles.content}>
-        <LiquidMetalLogo size={Platform.OS === 'android' ? 30 : 34} />
+        <View style={{ alignItems: 'center' }}>
+          <LiquidMetalLogo height={Platform.OS === 'android' ? 30 : 35} width={Platform.OS === 'android' ? 71 : 80} />
+        </View>
       </View>
       {/* Gradient tail below logo */}
       <View style={{ height: 24 }} />

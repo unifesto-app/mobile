@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import GradientText from './GradientText';
+import UnifestoAppWordmark from './UnifestoAppWordmark';
 import { colors, spacing, typography } from '../theme';
 import { getFontFamily } from '../theme/fontHelpers';
 
@@ -17,12 +17,10 @@ export default function Footer() {
           style={styles.divider}
         />
       </View>
-      
+
       <View style={styles.footer}>
-        <GradientText style={styles.footerHashtag}>
-          #UnifestoAtYourCampus
-        </GradientText>
-        <Text style={styles.footerVersion}>Version 1.0</Text>
+        <UnifestoAppWordmark width={150} height={50} />
+        <Text style={styles.footerVersion}>Version 1.0.1</Text>
       </View>
     </View>
   );
@@ -45,17 +43,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[6],
     paddingBottom: spacing[16],
     alignItems: 'center',
-    gap: spacing[3],
   },
-  footerHashtag: {
-    fontSize: typography.fontSize.lg,
-    fontFamily: getFontFamily('bold'),
-    letterSpacing: typography.letterSpacing.wide,
-  },
+
   footerVersion: {
     fontSize: typography.fontSize.xs,
     color: colors.textMuted,
     fontFamily: typography.fontFamily.primary,
-    opacity: 0.6,
   },
 });

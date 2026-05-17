@@ -70,7 +70,7 @@ const MOCK_USER = {
 };
 
 // Space needed to clear the transparent gradient header
-const HEADER_TOP_OFFSET = Platform.OS === 'ios' ? 100 : 90;
+const HEADER_TOP_OFFSET = Platform.OS === 'ios' ? 100 : 80;
 
 interface ProfileScreenProps {
   navigation?: any;
@@ -130,7 +130,7 @@ export default function ProfileScreen({ navigation: navProp }: ProfileScreenProp
               await signOut();
               navigation.reset({
                 index: 0,
-                routes: [{ name: 'Login' as never }],
+                routes: [{ name: 'MainApp' as never }],
               });
             } catch (error) {
               Alert.alert('Error', 'Failed to sign out. Please try again.');

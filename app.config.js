@@ -2,12 +2,13 @@ const withModularHeaders = require('./plugins/withModularHeaders');
 // const withAndroidEdgeToEdge = require('./plugins/withAndroidEdgeToEdge');
 // const withAndroidEdgeToEdgeStyles = require('./plugins/withAndroidStyles');
 const withFirebaseDisableAutoInit = require('./plugins/withFirebaseDisableAutoInit');
+const withRemoveOrientationRestrictions = require('./plugins/withRemoveOrientationRestrictions');
 
 module.exports = () => {
   const config = {
     name: "Unifesto",
     slug: "unifesto",
-    version: "1.0.0",
+    version: "1.0.1",
     orientation: "default",
     userInterfaceStyle: "dark",
     scheme: "unifesto",
@@ -32,7 +33,6 @@ module.exports = () => {
       },
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
-        NSUserTrackingUsageDescription: "We use tracking to provide personalized event recommendations and improve your experience. Your data is never sold to third parties.",
         NSCameraUsageDescription: "We need camera access to let you take photos for your profile picture. For example, you can capture a new photo directly when updating your profile avatar.",
         NSPhotoLibraryUsageDescription: "Unifesto needs access to your photo library to select photos for your profile picture.",
         NSPhotoLibraryAddUsageDescription: "Unifesto needs permission to save event tickets and QR codes to your photo library.",
@@ -90,6 +90,11 @@ module.exports = () => {
             },
             {
               scheme: "https",
+              host: "unifesto.app",
+              pathPrefix: "/signup"
+            },
+            {
+              scheme: "https",
               host: "www.unifesto.app",
               pathPrefix: "/events"
             },
@@ -97,6 +102,11 @@ module.exports = () => {
               scheme: "https",
               host: "www.unifesto.app",
               pathPrefix: "/org"
+            },
+            {
+              scheme: "https",
+              host: "www.unifesto.app",
+              pathPrefix: "/signup"
             },
             {
               scheme: "https",
@@ -121,10 +131,19 @@ module.exports = () => {
             "DEFAULT"
           ]
         }
-      ]
+      ],
+      // Suppress Android 15 edge-to-edge deprecation warnings
+      // These are from React Native/Expo libraries, not our code
+      compileSdkVersion: 35,
+      targetSdkVersion: 35,
+      buildToolsVersion: "35.0.0"
     },
     androidStatusBar: {
       translucent: false,
+      backgroundColor: "#000000",
+      barStyle: "light-content"
+    },
+    androidNavigationBar: {
       backgroundColor: "#000000",
       barStyle: "light-content"
     },
@@ -143,7 +162,6 @@ module.exports = () => {
         }
       ],
       "expo-web-browser",
-      "expo-tracking-transparency",
       [
         "onesignal-expo-plugin",
         {
@@ -159,12 +177,13 @@ module.exports = () => {
       }
     }
   };
-  
+
   // Apply custom plugins and return the modified config
   let modifiedConfig = withModularHeaders(config);
   // Disabled edge-to-edge plugins to fix status bar overlap on Android
   // modifiedConfig = withAndroidEdgeToEdge(modifiedConfig);
   // modifiedConfig = withAndroidEdgeToEdgeStyles(modifiedConfig);
   modifiedConfig = withFirebaseDisableAutoInit(modifiedConfig);
+  modifiedConfig = withRemoveOrientationRestrictions(modifiedConfig);
   return modifiedConfig;
 };

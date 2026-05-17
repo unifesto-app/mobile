@@ -12,7 +12,6 @@
 
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import AppTrackingService from './AppTrackingService';
 import FirebaseAnalyticsService from './FirebaseAnalyticsService';
 import OneSignalService from './OneSignalService';
 
@@ -73,24 +72,8 @@ class ConsentManager {
         return;
       }
 
-      // Step 2: No saved consent - request ATT permission
-      if (Platform.OS === 'ios') {
-        // On iOS, request ATT permission
-        const status = await AppTrackingService.getTrackingStatus();
-        
-        if (status === 'undetermined') {
-          // Show ATT prompt
-          const granted = await AppTrackingService.requestTrackingPermission();
-          this.consentStatus = granted ? 'granted' : 'denied';
-        } else {
-          // User already responded to ATT prompt
-          this.consentStatus = status as ConsentStatus;
-        }
-      } else {
-        // On Android, tracking is allowed by default (no ATT requirement)
-        // But we still respect user's choice if they opt out in settings
-        this.consentStatus = 'granted';
-      }
+      // Tracking is allowed by default since no ATT requirement
+      this.consentStatus = 'granted';
 
       // Step 3: Save consent state
       await this.saveConsent(this.consentStatus);
@@ -165,36 +148,11 @@ class ConsentManager {
     };
   }
 
-  /**
-   * Request tracking permission (can be called again from settings)
-   */
   async requestPermission(): Promise<boolean> {
-    if (Platform.OS !== 'ios') {
-      // On Android, always granted
-      return true;
-    }
-
-    try {
-      const status = await AppTrackingService.getTrackingStatus();
-      
-      if (status === 'undetermined') {
-        const granted = await AppTrackingService.requestTrackingPermission();
-        this.consentStatus = granted ? 'granted' : 'denied';
-        await this.saveConsent(this.consentStatus);
-        
-        if (granted) {
-          await this.initializeTrackingSDKs();
-        }
-        
-        return granted;
-      }
-      
-      // Already determined
-      return status === 'granted';
-    } catch (error) {
-      console.error('[ConsentManager] Error requesting permission:', error);
-      return false;
-    }
+    this.consentStatus = 'granted';
+    await this.saveConsent(this.consentStatus);
+    await this.initializeTrackingSDKs();
+    return true;
   }
 
   /**
@@ -304,12 +262,7 @@ class ConsentManager {
    * Returns true if status is undetermined and we haven't shown explainer
    */
   async shouldShowPrePrompt(): Promise<boolean> {
-    if (Platform.OS !== 'ios') {
-      return false;
-    }
-
-    const status = await AppTrackingService.getTrackingStatus();
-    return status === 'undetermined';
+    return false;
   }
 }
 

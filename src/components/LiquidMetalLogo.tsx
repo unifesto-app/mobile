@@ -4,11 +4,14 @@ import MaskedView from '@react-native-masked-view/masked-view';
 import { LinearGradient } from 'expo-linear-gradient';
 import { typography, gradientTextColors } from '../theme';
 
+import UnifestoAppLogo from './UnifestoAppLogo';
+
 interface LiquidMetalLogoProps {
-  size?: number;
+  width?: number;
+  height?: number;
 }
 
-export default function LiquidMetalLogo({ size = 34 }: LiquidMetalLogoProps) {
+export default function LiquidMetalLogo({ width = 160, height = 90 }: LiquidMetalLogoProps) {
   const shimmerAnim = useRef(new Animated.Value(0)).current;
   const waveAnim = useRef(new Animated.Value(0)).current;
   const glowAnim = useRef(new Animated.Value(0)).current;
@@ -89,55 +92,19 @@ export default function LiquidMetalLogo({ size = 34 }: LiquidMetalLogoProps) {
     outputRange: [0.8, 1],
   });
 
-  const logoText = Platform.OS === 'android' ? ' unifesto' : 'unifesto';
-
   return (
     <Animated.View
       style={[
         styles.container,
         {
+          width,
+          height,
           transform: [{ scale }],
           opacity: glowOpacity,
         },
       ]}
     >
-      <MaskedView
-        maskElement={
-          <Text
-            style={[
-              styles.logo,
-              {
-                fontSize: size,
-                lineHeight: size * 1.5,
-              },
-            ]}
-          >
-            {logoText}
-          </Text>
-        }
-      >
-        <Animated.View>
-          <LinearGradient
-            colors={[gradientTextColors.start, gradientTextColors.end]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.gradient}
-          >
-            <Text
-              style={[
-                styles.logo,
-                {
-                  fontSize: size,
-                  lineHeight: size * 1.5,
-                  opacity: 0,
-                },
-              ]}
-            >
-              {logoText}
-            </Text>
-          </LinearGradient>
-        </Animated.View>
-      </MaskedView>
+      <UnifestoAppLogo width={width} height={height} />
     </Animated.View>
   );
 }

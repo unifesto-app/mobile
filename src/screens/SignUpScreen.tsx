@@ -19,18 +19,20 @@ import { colors, spacing, typography, borderRadius, shadows } from '../theme';
 import { getFontFamily } from '../theme/fontHelpers';
 
 interface SignUpScreenProps {
+  route?: any;
   navigation: any;
 }
 
-export default function SignUpScreen({ navigation }: SignUpScreenProps) {
+export default function SignUpScreen({ route, navigation }: SignUpScreenProps) {
   const { signUp, isConfigured, user, session } = useAuth();
+  const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     phone: '',
     password: '',
     confirmPassword: '',
-    referralCode: '',
+    referralCode: route?.params?.ref || '',
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -40,7 +42,6 @@ export default function SignUpScreen({ navigation }: SignUpScreenProps) {
   // Listen for auth state changes and navigate when logged in
   useEffect(() => {
     if (user && session) {
-      // User is authenticated, navigate to main app
       navigation.reset({
         index: 0,
         routes: [{ name: 'MainApp' }],
@@ -53,9 +54,32 @@ export default function SignUpScreen({ navigation }: SignUpScreenProps) {
     setError('');
   };
 
-  const validateForm = () => {
-    if (!formData.name || !formData.email || !formData.phone || !formData.password || !formData.confirmPassword) {
-      setError('Please fill in all fields');
+  const validateStep1 = () => {
+    if (!formData.name || !formData.email || !formData.phone) {
+      setError('Please fill in all basic information');
+      return false;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setError('Please enter a valid email address');
+      return false;
+    }
+
+    // Phone should be exactly 10 digits
+    const phoneRegex = /^[0-9]{10}$/;
+    if (!phoneRegex.test(formData.phone)) {
+      setError('Please enter a valid 10-digit phone number');
+      return false;
+    }
+
+    setError('');
+    return true;
+  };
+
+  const validateStep2 = () => {
+    if (!formData.password || !formData.confirmPassword) {
+      setError('Please enter and confirm your password');
       return false;
     }
 
@@ -69,24 +93,23 @@ export default function SignUpScreen({ navigation }: SignUpScreenProps) {
       return false;
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-      setError('Please enter a valid email address');
-      return false;
-    }
-
-    // Phone should be exactly 10 digits (we're storing without +91)
-    const phoneRegex = /^[0-9]{10}$/;
-    if (!phoneRegex.test(formData.phone)) {
-      setError('Please enter a valid 10-digit phone number');
-      return false;
-    }
-
+    setError('');
     return true;
   };
 
+  const handleNextStep = () => {
+    if (validateStep1()) {
+      setCurrentStep(2);
+    }
+  };
+
+  const handlePrevStep = () => {
+    setCurrentStep(1);
+    setError('');
+  };
+
   const handleSignUp = async () => {
-    if (!validateForm()) return;
+    if (!validateStep2()) return;
 
     if (!isConfigured) {
       setError('Authentication is not configured. Please set up Supabase environment variables.');
@@ -95,21 +118,20 @@ export default function SignUpScreen({ navigation }: SignUpScreenProps) {
 
     setIsLoading(true);
     setError('');
-    
+
     // Add +91 prefix to phone
     const phoneWithPrefix = '+91' + formData.phone;
-    
-    // Pass referral code to signUp - it will be applied automatically after session is established
+
     const { error: signUpError } = await signUp(
-      formData.email, 
-      formData.password, 
+      formData.email,
+      formData.password,
       {
         name: formData.name,
         phone: phoneWithPrefix,
       },
       formData.referralCode.trim() || undefined
     );
-    
+
     if (signUpError) {
       setIsLoading(false);
       setError(signUpError.message || 'Sign up failed. Please try again.');
@@ -117,12 +139,11 @@ export default function SignUpScreen({ navigation }: SignUpScreenProps) {
     }
 
     setIsLoading(false);
-    
-    // Show success message
-    const message = formData.referralCode.trim() 
+
+    const message = formData.referralCode.trim()
       ? 'Account created successfully! Your referral code will be applied automatically. Please check your email to verify your account.'
       : 'Account created successfully. Please check your email to verify your account.';
-    
+
     Alert.alert(
       'Success!',
       message,
@@ -131,11 +152,10 @@ export default function SignUpScreen({ navigation }: SignUpScreenProps) {
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container} 
+    <KeyboardAvoidingView
+      style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      {/* Back to Home Button */}
       <TouchableOpacity
         style={styles.backButton}
         onPress={() => navigation.navigate('MainApp')}
@@ -147,185 +167,213 @@ export default function SignUpScreen({ navigation }: SignUpScreenProps) {
         </View>
       </TouchableOpacity>
 
-      <ScrollView 
+      <ScrollView
         contentContainerStyle={styles.scrollContainer}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
         <View style={styles.header}>
           <GradientText style={styles.title}>Create Account</GradientText>
           <Text style={styles.subtitle}>Join Unifesto and discover amazing events</Text>
         </View>
 
-        {/* Error Message */}
+        {/* Step Indicator */}
+        <View style={styles.stepIndicatorContainer}>
+          <View style={[styles.stepDot, currentStep >= 1 && styles.stepDotActive]} />
+          <View style={[styles.stepLine, currentStep >= 2 && styles.stepLineActive]} />
+          <View style={[styles.stepDot, currentStep >= 2 && styles.stepDotActive]} />
+        </View>
+        <Text style={styles.stepText}>Step {currentStep} of 2</Text>
+
         {error ? (
           <View style={styles.errorContainer}>
             <Text style={styles.errorText}>{error}</Text>
           </View>
         ) : null}
 
-        {/* Sign Up Form */}
         <View style={styles.formContainer}>
-          {/* Name Input */}
-          <View style={styles.inputContainer}>
-            <View style={styles.inputWrapper}>
-              <User size={20} color={colors.textMuted} strokeWidth={2} />
-              <TextInput
-                style={styles.input}
-                placeholder="Full Name"
-                placeholderTextColor={colors.textMuted}
-                value={formData.name}
-                onChangeText={(value) => handleInputChange('name', value)}
-                autoCapitalize="words"
-                autoCorrect={false}
-                editable={!isLoading}
-              />
-            </View>
-          </View>
+          {currentStep === 1 ? (
+            <>
+              {/* Step 1 Fields */}
+              <View style={styles.inputContainer}>
+                <View style={styles.inputWrapper}>
+                  <User size={20} color={colors.textMuted} strokeWidth={2} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Full Name"
+                    placeholderTextColor={colors.textMuted}
+                    value={formData.name}
+                    onChangeText={(value) => handleInputChange('name', value)}
+                    autoCapitalize="words"
+                    autoCorrect={false}
+                    editable={!isLoading}
+                  />
+                </View>
+              </View>
 
-          {/* Email Input */}
-          <View style={styles.inputContainer}>
-            <View style={styles.inputWrapper}>
-              <Mail size={20} color={colors.textMuted} strokeWidth={2} />
-              <TextInput
-                style={styles.input}
-                placeholder="Email address"
-                placeholderTextColor={colors.textMuted}
-                value={formData.email}
-                onChangeText={(value) => handleInputChange('email', value)}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                editable={!isLoading}
-              />
-            </View>
-          </View>
+              <View style={styles.inputContainer}>
+                <View style={styles.inputWrapper}>
+                  <Mail size={20} color={colors.textMuted} strokeWidth={2} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Email address"
+                    placeholderTextColor={colors.textMuted}
+                    value={formData.email}
+                    onChangeText={(value) => handleInputChange('email', value)}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    editable={!isLoading}
+                  />
+                </View>
+              </View>
 
-          {/* Phone Input */}
-          <View style={styles.inputContainer}>
-            <View style={styles.inputWrapper}>
-              <Phone size={20} color={colors.textMuted} strokeWidth={2} />
-              <Text style={styles.countryCode}>+91</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Phone Number"
-                placeholderTextColor={colors.textMuted}
-                value={formData.phone}
-                onChangeText={(value) => {
-                  // Remove any non-digit characters
-                  const cleaned = value.replace(/\D/g, '');
-                  handleInputChange('phone', cleaned);
-                }}
-                keyboardType="phone-pad"
-                autoCorrect={false}
-                editable={!isLoading}
-                maxLength={10}
-              />
-            </View>
-          </View>
+              <View style={styles.inputContainer}>
+                <View style={styles.inputWrapper}>
+                  <Phone size={20} color={colors.textMuted} strokeWidth={2} />
+                  <Text style={styles.countryCode}>+91</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Phone Number"
+                    placeholderTextColor={colors.textMuted}
+                    value={formData.phone}
+                    onChangeText={(value) => {
+                      const cleaned = value.replace(/\D/g, '');
+                      handleInputChange('phone', cleaned);
+                    }}
+                    keyboardType="phone-pad"
+                    autoCorrect={false}
+                    editable={!isLoading}
+                    maxLength={10}
+                  />
+                </View>
+              </View>
 
-          {/* Password Input */}
-          <View style={styles.inputContainer}>
-            <View style={styles.inputWrapper}>
-              <Lock size={20} color={colors.textMuted} strokeWidth={2} />
-              <TextInput
-                style={[styles.input, styles.passwordInput]}
-                placeholder="Password"
-                placeholderTextColor={colors.textMuted}
-                value={formData.password}
-                onChangeText={(value) => handleInputChange('password', value)}
-                secureTextEntry={!showPassword}
-                autoCapitalize="none"
-                autoCorrect={false}
-                editable={!isLoading}
-              />
               <TouchableOpacity
-                onPress={() => setShowPassword(!showPassword)}
-                style={styles.eyeButton}
-                disabled={isLoading}
+                style={styles.signUpButton}
+                onPress={handleNextStep}
+                activeOpacity={0.8}
               >
-                {showPassword ? (
-                  <EyeOff size={20} color={colors.textMuted} strokeWidth={2} />
-                ) : (
-                  <Eye size={20} color={colors.textMuted} strokeWidth={2} />
-                )}
+                <LinearGradient
+                  colors={['#3491ff', '#0062ff']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.signUpButtonGradient}
+                >
+                  <Text style={styles.signUpButtonText}>Continue</Text>
+                </LinearGradient>
               </TouchableOpacity>
-            </View>
-          </View>
+            </>
+          ) : (
+            <>
+              {/* Step 2 Fields */}
+              <View style={styles.inputContainer}>
+                <View style={styles.inputWrapper}>
+                  <Lock size={20} color={colors.textMuted} strokeWidth={2} />
+                  <TextInput
+                    style={[styles.input, styles.passwordInput]}
+                    placeholder="Password"
+                    placeholderTextColor={colors.textMuted}
+                    value={formData.password}
+                    onChangeText={(value) => handleInputChange('password', value)}
+                    secureTextEntry={!showPassword}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    editable={!isLoading}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowPassword(!showPassword)}
+                    style={styles.eyeButton}
+                    disabled={isLoading}
+                  >
+                    {showPassword ? (
+                      <EyeOff size={20} color={colors.textMuted} strokeWidth={2} />
+                    ) : (
+                      <Eye size={20} color={colors.textMuted} strokeWidth={2} />
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
 
-          {/* Confirm Password Input */}
-          <View style={styles.inputContainer}>
-            <View style={styles.inputWrapper}>
-              <Lock size={20} color={colors.textMuted} strokeWidth={2} />
-              <TextInput
-                style={[styles.input, styles.passwordInput]}
-                placeholder="Confirm Password"
-                placeholderTextColor={colors.textMuted}
-                value={formData.confirmPassword}
-                onChangeText={(value) => handleInputChange('confirmPassword', value)}
-                secureTextEntry={!showConfirmPassword}
-                autoCapitalize="none"
-                autoCorrect={false}
-                editable={!isLoading}
-              />
-              <TouchableOpacity
-                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                style={styles.eyeButton}
-                disabled={isLoading}
-              >
-                {showConfirmPassword ? (
-                  <EyeOff size={20} color={colors.textMuted} strokeWidth={2} />
-                ) : (
-                  <Eye size={20} color={colors.textMuted} strokeWidth={2} />
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
+              <View style={styles.inputContainer}>
+                <View style={styles.inputWrapper}>
+                  <Lock size={20} color={colors.textMuted} strokeWidth={2} />
+                  <TextInput
+                    style={[styles.input, styles.passwordInput]}
+                    placeholder="Confirm Password"
+                    placeholderTextColor={colors.textMuted}
+                    value={formData.confirmPassword}
+                    onChangeText={(value) => handleInputChange('confirmPassword', value)}
+                    secureTextEntry={!showConfirmPassword}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    editable={!isLoading}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                    style={styles.eyeButton}
+                    disabled={isLoading}
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff size={20} color={colors.textMuted} strokeWidth={2} />
+                    ) : (
+                      <Eye size={20} color={colors.textMuted} strokeWidth={2} />
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
 
-          {/* Referral Code Input (Optional) */}
-          <View style={styles.inputContainer}>
-            <View style={styles.inputWrapper}>
-              <Gift size={20} color={colors.textMuted} strokeWidth={2} />
-              <TextInput
-                style={styles.input}
-                placeholder="Referral Code (Optional)"
-                placeholderTextColor={colors.textMuted}
-                value={formData.referralCode}
-                onChangeText={(value) => handleInputChange('referralCode', value.toUpperCase())}
-                autoCapitalize="characters"
-                autoCorrect={false}
-                editable={!isLoading}
-              />
-            </View>
-            <Text style={styles.referralHint}>
-              Have a referral code? Enter it to earn bonus coins!
-            </Text>
-          </View>
+              <View style={styles.inputContainer}>
+                <View style={styles.inputWrapper}>
+                  <Gift size={20} color={colors.textMuted} strokeWidth={2} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Referral Code (Optional)"
+                    placeholderTextColor={colors.textMuted}
+                    value={formData.referralCode}
+                    onChangeText={(value) => handleInputChange('referralCode', value.toUpperCase())}
+                    autoCapitalize="characters"
+                    autoCorrect={false}
+                    editable={!isLoading}
+                  />
+                </View>
+                <Text style={styles.referralHint}>
+                  Have a referral code? Enter it to earn bonus coins!
+                </Text>
+              </View>
 
-          {/* Sign Up Button */}
-          <TouchableOpacity
-            style={styles.signUpButton}
-            onPress={handleSignUp}
-            disabled={isLoading}
-            activeOpacity={0.8}
-          >
-            <LinearGradient
-              colors={['#3491ff', '#0062ff']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.signUpButtonGradient}
-            >
-              {isLoading ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <Text style={styles.signUpButtonText}>Create Account</Text>
-              )}
-            </LinearGradient>
-          </TouchableOpacity>
+              <View style={styles.buttonRow}>
+                <TouchableOpacity
+                  style={styles.backStepButton}
+                  onPress={handlePrevStep}
+                  disabled={isLoading}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.backStepButtonText}>Back</Text>
+                </TouchableOpacity>
 
-          {/* Removed Login Link - Users can access login from home */}
+                <TouchableOpacity
+                  style={styles.nextButton}
+                  onPress={handleSignUp}
+                  disabled={isLoading}
+                  activeOpacity={0.8}
+                >
+                  <LinearGradient
+                    colors={['#3491ff', '#0062ff']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={styles.signUpButtonGradient}
+                  >
+                    {isLoading ? (
+                      <ActivityIndicator color="#FFFFFF" />
+                    ) : (
+                      <Text style={styles.signUpButtonText}>Create Account</Text>
+                    )}
+                  </LinearGradient>
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
 
-          {/* Terms */}
           <Text style={styles.termsText}>
             By creating an account, you agree to our Terms of Service and Privacy Policy
           </Text>
@@ -371,7 +419,7 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: spacing[8],
+    marginBottom: spacing[6],
   },
   title: {
     fontSize: typography.fontSize['4xl'],
@@ -384,6 +432,38 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: typography.lineHeight.relaxed * typography.fontSize.base,
+  },
+  stepIndicatorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing[3],
+  },
+  stepDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.borderMuted,
+  },
+  stepDotActive: {
+    backgroundColor: colors.primary,
+  },
+  stepLine: {
+    width: 32,
+    height: 2,
+    backgroundColor: colors.borderMuted,
+    marginHorizontal: spacing[2],
+    borderRadius: 1,
+  },
+  stepLineActive: {
+    backgroundColor: colors.primary,
+  },
+  stepText: {
+    fontSize: typography.fontSize.sm,
+    color: colors.textMuted,
+    textAlign: 'center',
+    marginBottom: spacing[6],
+    fontFamily: getFontFamily('medium'),
   },
   errorContainer: {
     backgroundColor: 'rgba(239, 68, 68, 0.1)',
@@ -456,20 +536,32 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontFamily: typography.fontFamily.primary,
   },
-  loginContainer: {
+  buttonRow: {
     flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+    gap: spacing[4],
+    marginTop: spacing[2],
     marginBottom: spacing[6],
   },
-  loginText: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
+  backStepButton: {
+    flex: 1,
+    borderRadius: borderRadius.xl,
+    borderWidth: 1,
+    borderColor: colors.borderMuted,
+    backgroundColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 48,
   },
-  loginLink: {
-    fontSize: typography.fontSize.sm,
-    color: colors.primary,
-    fontFamily: typography.fontFamily.bold,
+  backStepButtonText: {
+    fontSize: typography.fontSize.base,
+    color: colors.text,
+    fontFamily: typography.fontFamily.primary,
+  },
+  nextButton: {
+    flex: 2,
+    borderRadius: borderRadius.xl,
+    overflow: 'hidden',
+    ...shadows.lg,
   },
   termsText: {
     fontSize: typography.fontSize.xs,

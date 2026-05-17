@@ -172,15 +172,17 @@ function MainTabs() {
 // ── Root Stack Navigator ──────────────────────────────────────────────────────
 export default function AppNavigator() {
   const insets = useSafeAreaInsets();
-  
-  // Set Android system navigation bar to black and disable translucent status bar
+
+  // Set Android system navigation bar and status bar
   useEffect(() => {
     if (Platform.OS === 'android') {
-      // SystemUI.setBackgroundColorAsync('#000000'); // Commented out - requires rebuild without edge-to-edge
-      
-      NavigationBar.setBackgroundColorAsync('#000000');
-      NavigationBar.setButtonStyleAsync('light');
-      
+
+      // Set navigation bar (Ignored/warnings on Android 15+ edge-to-edge)
+      // NavigationBar.setBackgroundColorAsync('#000000').catch(() => { });
+      // NavigationBar.setButtonStyleAsync('light').catch(() => { });
+      SystemUI.setBackgroundColorAsync('#000000').catch(() => { });
+
+      // Set status bar
       StatusBar.setTranslucent(false);
       StatusBar.setBackgroundColor('#000000');
       StatusBar.setBarStyle('light-content');

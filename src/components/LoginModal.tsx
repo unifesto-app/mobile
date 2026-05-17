@@ -14,13 +14,14 @@ import {
   Dimensions,
   PanResponder,
   Linking,
+  ScrollView,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Eye, EyeOff, Mail, Lock, X } from 'lucide-react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useAuth } from '../context/AuthContext';
-import GradientText from './GradientText';
+import UnifestoAppLogo from './UnifestoAppLogo';
 import GlassyButton from './GlassyButton';
 import { colors, spacing, typography, borderRadius, shadows } from '../theme';
 
@@ -40,38 +41,11 @@ export default function LoginModal({ visible, onClose, onSuccess }: LoginModalPr
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [showEmailForm, setShowEmailForm] = useState(false);
+  const [emailStep, setEmailStep] = useState<1 | 2>(1);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [slideAnim] = useState(new Animated.Value(SCREEN_HEIGHT));
 
-  // Pan responder for swipe down to close
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: (_, gestureState) => {
-        // Only respond to vertical swipes
-        return Math.abs(gestureState.dy) > Math.abs(gestureState.dx) && gestureState.dy > 0;
-      },
-      onPanResponderMove: (_, gestureState) => {
-        if (gestureState.dy > 0) {
-          slideAnim.setValue(gestureState.dy);
-        }
-      },
-      onPanResponderRelease: (_, gestureState) => {
-        if (gestureState.dy > 100 || gestureState.vy > 0.5) {
-          // Swipe down threshold met, close modal
-          handleClose();
-        } else {
-          // Snap back to position
-          Animated.spring(slideAnim, {
-            toValue: 0,
-            useNativeDriver: true,
-            tension: 65,
-            friction: 11,
-          }).start();
-        }
-      },
-    })
-  ).current;
+
 
   // Listen for auth state changes and close modal when logged in
   useEffect(() => {
@@ -106,6 +80,7 @@ export default function LoginModal({ visible, onClose, onSuccess }: LoginModalPr
     setShowEmailForm(false);
     setShowForgotPassword(false);
     setShowPassword(false);
+    setEmailStep(1);
     onClose();
   };
 
@@ -131,6 +106,43 @@ export default function LoginModal({ visible, onClose, onSuccess }: LoginModalPr
     } else {
       handleClose();
       onSuccess?.();
+    }
+  };
+
+  const handleEmailNext = async () => {
+    if (!email) {
+      setError('Please enter your email address');
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError('Please enter a valid email address');
+      return;
+    }
+
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL || 'https://api.unifesto.app'}/auth/check-email?email=${encodeURIComponent(email)}`);
+      if (!response.ok) {
+        throw new Error('Failed to check email');
+      }
+      const data = await response.json();
+
+      if (!data.exists) {
+        setError('No account found with this email. Please sign up first.');
+        setIsLoading(false);
+        return;
+      }
+
+      setEmailStep(2);
+    } catch (err) {
+      // Allow proceeding if the check fails (e.g. backend down)
+      setEmailStep(2);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -228,42 +240,274 @@ export default function LoginModal({ visible, onClose, onSuccess }: LoginModalPr
       animationType="none"
       onRequestClose={handleClose}
     >
-      <View style={styles.overlay}>
-        <TouchableOpacity
-          style={styles.backdrop}
-          activeOpacity={1}
-          onPress={handleClose}
-        />
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <View style={styles.overlay}>
+          <TouchableOpacity
+            style={styles.backdrop}
+            activeOpacity={1}
+            onPress={handleClose}
+          />
 
-        <Animated.View
-          style={[
-            styles.modalContainer,
-            {
-              transform: [{ translateY: slideAnim }],
-            },
-          ]}
-          {...panResponder.panHandlers}
-        >
-          {/* Liquid Glass Effect */}
-          {Platform.OS === 'ios' ? (
-            <BlurView intensity={80} tint="dark" style={styles.blurContainer}>
-              <LinearGradient
-                colors={['rgba(0, 0, 0, 0)', 'rgba(0, 0, 0, 0)']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.glassGradient}
-              >
-                <KeyboardAvoidingView
-                  behavior="padding"
-                  style={styles.keyboardView}
+          <Animated.View
+            style={[
+              styles.modalContainer,
+              {
+                transform: [{ translateY: slideAnim }],
+              },
+            ]}
+          >
+            {/* Liquid Glass Effect */}
+            {Platform.OS === 'ios' ? (
+              <BlurView intensity={80} tint="dark" style={styles.blurContainer}>
+                <LinearGradient
+                  colors={['rgba(0, 0, 0, 0)', 'rgba(0, 0, 0, 0)']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.glassGradient}
+                >
+                  <ScrollView
+                    bounces={false}
+                    keyboardShouldPersistTaps="handled"
+                    showsVerticalScrollIndicator={false}
+                  >
+                    <View style={styles.contentContainer}>
+                      {/* Close Button */}
+                      <TouchableOpacity style={styles.closeButton} onPress={handleClose} disabled={isLoading}>
+                        <View style={styles.closeButtonBlur}>
+                          <X size={20} color={colors.text} strokeWidth={2} />
+                        </View>
+                      </TouchableOpacity>
+
+                      {/* Logo */}
+                      <View style={styles.logoContainer}>
+                        <UnifestoAppLogo width={100} height={45} />
+                      </View>
+
+                      {/* Header */}
+                      <View style={styles.header}>
+                        <Text style={styles.title}>Welcome Back</Text>
+                        <Text style={styles.subtitle}>Sign in to continue</Text>
+                      </View>
+
+                      {/* Error Message */}
+                      {error ? (
+                        <View style={styles.errorContainer}>
+                          <Text style={styles.errorText}>{error}</Text>
+                        </View>
+                      ) : null}
+
+                      {/* Social Login Buttons */}
+                      {!showEmailForm && !showForgotPassword && (
+                        <View style={styles.socialButtonsContainer}>
+                          {/* Continue with Email Button */}
+                          <TouchableOpacity
+                            style={styles.emailButton}
+                            onPress={() => setShowEmailForm(true)}
+                            disabled={isLoading}
+                            activeOpacity={0.8}
+                          >
+                            <View style={styles.emailButtonContent}>
+                              <Mail size={20} color={colors.text} strokeWidth={2} />
+                              <Text style={styles.emailButtonText}>Continue with Email</Text>
+                            </View>
+                          </TouchableOpacity>
+
+                          {/* Apple and Google Buttons Row */}
+                          <View style={styles.socialButtonsRow}>
+                            {/* Apple Sign In Button (iOS only) */}
+                            {isAppleAuthAvailable && (
+                              <TouchableOpacity
+                                style={styles.socialButton}
+                                onPress={handleAppleLogin}
+                                disabled={isLoading}
+                                activeOpacity={0.8}
+                              >
+                                <View style={styles.socialButtonContent}>
+                                  <AppleLogo />
+                                  <Text style={styles.socialButtonText}>Apple</Text>
+                                </View>
+                              </TouchableOpacity>
+                            )}
+
+                            {/* Google Login Button */}
+                            <TouchableOpacity
+                              style={styles.socialButton}
+                              onPress={handleGoogleLogin}
+                              disabled={isLoading}
+                              activeOpacity={0.8}
+                            >
+                              <View style={styles.socialButtonContent}>
+                                <GoogleLogo />
+                                <Text style={styles.socialButtonText}>Google</Text>
+                              </View>
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      )}
+
+                      {/* Login Form (shown when email is clicked or forgot password) */}
+                      {(showEmailForm || showForgotPassword) && (
+                        <View style={styles.formContainer}>
+                          {/* Email Input */}
+                          <View style={styles.inputContainer}>
+                            <View style={styles.inputWrapper}>
+                              <Mail size={20} color={colors.textMuted} strokeWidth={2} />
+                              <TextInput
+                                style={styles.input}
+                                placeholder="Email address"
+                                placeholderTextColor={colors.textMuted}
+                                value={email}
+                                onChangeText={(text) => {
+                                  setEmail(text);
+                                  setError('');
+                                }}
+                                keyboardType="email-address"
+                                autoCapitalize="none"
+                                autoCorrect={false}
+                                editable={!isLoading && emailStep === 1}
+                              />
+                            </View>
+                          </View>
+
+                          {/* Password Input (only for login step 2) */}
+                          {!showForgotPassword && emailStep === 2 && (
+                            <View style={styles.inputContainer}>
+                              <View style={styles.inputWrapper}>
+                                <Lock size={20} color={colors.textMuted} strokeWidth={2} />
+                                <TextInput
+                                  style={[styles.input, styles.passwordInput]}
+                                  placeholder="Password"
+                                  placeholderTextColor={colors.textMuted}
+                                  value={password}
+                                  onChangeText={(text) => {
+                                    setPassword(text);
+                                    setError('');
+                                  }}
+                                  secureTextEntry={!showPassword}
+                                  autoCapitalize="none"
+                                  autoCorrect={false}
+                                  editable={!isLoading}
+                                />
+                                <TouchableOpacity
+                                  style={styles.eyeButton}
+                                  onPress={() => setShowPassword(!showPassword)}
+                                  disabled={isLoading}
+                                >
+                                  {showPassword
+                                    ? <EyeOff size={20} color={colors.textMuted} strokeWidth={2} />
+                                    : <Eye size={20} color={colors.textMuted} strokeWidth={2} />}
+                                </TouchableOpacity>
+                              </View>
+                            </View>
+                          )}
+
+                          {/* Forgot Password Link */}
+                          {!showForgotPassword && emailStep === 2 && (
+                            <TouchableOpacity
+                              style={styles.forgotPassword}
+                              onPress={() => setShowForgotPassword(true)}
+                              disabled={isLoading}
+                            >
+                              <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+                            </TouchableOpacity>
+                          )}
+
+                          {/* Action Button */}
+                          <TouchableOpacity
+                            style={styles.loginButton}
+                            onPress={showForgotPassword ? handleForgotPassword : (emailStep === 1 ? handleEmailNext : handleLogin)}
+                            disabled={isLoading}
+                            activeOpacity={0.8}
+                          >
+                            <LinearGradient
+                              colors={['#3491ff', '#0062ff']}
+                              start={{ x: 0, y: 0 }}
+                              end={{ x: 1, y: 0 }}
+                              style={styles.loginButtonGradient}
+                            >
+                              {isLoading ? (
+                                <ActivityIndicator color="#FFFFFF" />
+                              ) : (
+                                <Text style={styles.loginButtonText}>
+                                  {showForgotPassword ? 'Send Reset Link' : (emailStep === 1 ? 'Continue' : 'Sign In')}
+                                </Text>
+                              )}
+                            </LinearGradient>
+                          </TouchableOpacity>
+
+                          {/* Back to Login (for forgot password) */}
+                          {showForgotPassword && (
+                            <TouchableOpacity
+                              style={styles.backToLogin}
+                              onPress={() => {
+                                setShowForgotPassword(false);
+                                setError('');
+                              }}
+                              disabled={isLoading}
+                            >
+                              <Text style={styles.backToLoginText}>Back to Sign In</Text>
+                            </TouchableOpacity>
+                          )}
+
+                          {/* Back to Options / Previous step */}
+                          {!showForgotPassword && (
+                            <TouchableOpacity
+                              style={styles.backToLogin}
+                              onPress={() => {
+                                if (emailStep === 2) {
+                                  setEmailStep(1);
+                                  setError('');
+                                } else {
+                                  setShowEmailForm(false);
+                                  setError('');
+                                }
+                              }}
+                              disabled={isLoading}
+                            >
+                              <Text style={styles.backToLoginText}>{emailStep === 2 ? 'Back' : 'Back to Options'}</Text>
+                            </TouchableOpacity>
+                          )}
+                        </View>
+                      )}
+
+                      {/* Privacy and Terms */}
+                      <View style={styles.footer}>
+                        <Text style={styles.footerText}>
+                          By continuing, you agree to our{' '}
+                          <TouchableOpacity onPress={() => Linking.openURL('https://unifesto.app/terms')}>
+                            <Text style={styles.footerLink}>Terms of Service</Text>
+                          </TouchableOpacity>
+                          {' '}and{' '}
+                          <TouchableOpacity onPress={() => Linking.openURL('https://unifesto.app/privacy')}>
+                            <Text style={styles.footerLink}>Privacy Policy</Text>
+                          </TouchableOpacity>
+                        </Text>
+                      </View>
+                    </View>
+                  </ScrollView>
+                </LinearGradient>
+              </BlurView>
+            ) : (
+              <View style={[styles.blurContainer, styles.androidBlurFallback]}>
+                <ScrollView
+                  bounces={false}
+                  keyboardShouldPersistTaps="handled"
+                  showsVerticalScrollIndicator={false}
                 >
                   <View style={styles.contentContainer}>
-                    {/* Handle Bar */}
-                    <View style={styles.handleBar} />
+                    {/* Close Button */}
+                    <TouchableOpacity style={styles.closeButton} onPress={handleClose} disabled={isLoading}>
+                      <View style={styles.closeButtonBlur}>
+                        <X size={20} color={colors.text} strokeWidth={2} />
+                      </View>
+                    </TouchableOpacity>
 
                     {/* Logo */}
                     <View style={styles.logoContainer}>
-                      <GradientText style={styles.logoText}>unifesto</GradientText>
+                      <UnifestoAppLogo width={100} height={45} />
                     </View>
 
                     {/* Header */}
@@ -282,7 +526,6 @@ export default function LoginModal({ visible, onClose, onSuccess }: LoginModalPr
                     {/* Social Login Buttons */}
                     {!showEmailForm && !showForgotPassword && (
                       <View style={styles.socialButtonsContainer}>
-                        {/* Continue with Email Button */}
                         <TouchableOpacity
                           style={styles.emailButton}
                           onPress={() => setShowEmailForm(true)}
@@ -294,10 +537,7 @@ export default function LoginModal({ visible, onClose, onSuccess }: LoginModalPr
                             <Text style={styles.emailButtonText}>Continue with Email</Text>
                           </View>
                         </TouchableOpacity>
-
-                        {/* Apple and Google Buttons Row */}
                         <View style={styles.socialButtonsRow}>
-                          {/* Apple Sign In Button (iOS only) */}
                           {isAppleAuthAvailable && (
                             <TouchableOpacity
                               style={styles.socialButton}
@@ -311,8 +551,6 @@ export default function LoginModal({ visible, onClose, onSuccess }: LoginModalPr
                               </View>
                             </TouchableOpacity>
                           )}
-
-                          {/* Google Login Button */}
                           <TouchableOpacity
                             style={styles.socialButton}
                             onPress={handleGoogleLogin}
@@ -328,10 +566,9 @@ export default function LoginModal({ visible, onClose, onSuccess }: LoginModalPr
                       </View>
                     )}
 
-                    {/* Login Form (shown when email is clicked or forgot password) */}
+                    {/* Login Form */}
                     {(showEmailForm || showForgotPassword) && (
                       <View style={styles.formContainer}>
-                        {/* Email Input */}
                         <View style={styles.inputContainer}>
                           <View style={styles.inputWrapper}>
                             <Mail size={20} color={colors.textMuted} strokeWidth={2} />
@@ -340,20 +577,15 @@ export default function LoginModal({ visible, onClose, onSuccess }: LoginModalPr
                               placeholder="Email address"
                               placeholderTextColor={colors.textMuted}
                               value={email}
-                              onChangeText={(text) => {
-                                setEmail(text);
-                                setError('');
-                              }}
+                              onChangeText={(text) => { setEmail(text); setError(''); }}
                               keyboardType="email-address"
                               autoCapitalize="none"
                               autoCorrect={false}
-                              editable={!isLoading}
+                              editable={!isLoading && emailStep === 1}
                             />
                           </View>
                         </View>
-
-                        {/* Password Input (only for login) */}
-                        {!showForgotPassword && (
+                        {!showForgotPassword && emailStep === 2 && (
                           <View style={styles.inputContainer}>
                             <View style={styles.inputWrapper}>
                               <Lock size={20} color={colors.textMuted} strokeWidth={2} />
@@ -362,94 +594,56 @@ export default function LoginModal({ visible, onClose, onSuccess }: LoginModalPr
                                 placeholder="Password"
                                 placeholderTextColor={colors.textMuted}
                                 value={password}
-                                onChangeText={(text) => {
-                                  setPassword(text);
-                                  setError('');
-                                }}
+                                onChangeText={(text) => { setPassword(text); setError(''); }}
                                 secureTextEntry={!showPassword}
                                 autoCapitalize="none"
                                 autoCorrect={false}
                                 editable={!isLoading}
                               />
-                              <GlassyButton
-                                size={36}
+                              <TouchableOpacity
+                                style={styles.eyeButton}
                                 onPress={() => setShowPassword(!showPassword)}
                                 disabled={isLoading}
-                                variant="dark"
                               >
                                 {showPassword
-                                  ? <EyeOff size={16} color={colors.textMuted} strokeWidth={2} />
-                                  : <Eye size={16} color={colors.textMuted} strokeWidth={2} />}
-                              </GlassyButton>
+                                  ? <EyeOff size={20} color={colors.textMuted} strokeWidth={2} />
+                                  : <Eye size={20} color={colors.textMuted} strokeWidth={2} />}
+                              </TouchableOpacity>
                             </View>
                           </View>
                         )}
-
-                        {/* Forgot Password Link */}
-                        {!showForgotPassword && (
-                          <TouchableOpacity
-                            style={styles.forgotPassword}
-                            onPress={() => setShowForgotPassword(true)}
-                            disabled={isLoading}
-                          >
+                        {!showForgotPassword && emailStep === 2 && (
+                          <TouchableOpacity style={styles.forgotPassword} onPress={() => setShowForgotPassword(true)} disabled={isLoading}>
                             <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
                           </TouchableOpacity>
                         )}
-
-                        {/* Action Button */}
-                        <TouchableOpacity
-                          style={styles.loginButton}
-                          onPress={showForgotPassword ? handleForgotPassword : handleLogin}
-                          disabled={isLoading}
-                          activeOpacity={0.8}
-                        >
-                          <LinearGradient
-                            colors={['#3491ff', '#0062ff']}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 0 }}
-                            style={styles.loginButtonGradient}
-                          >
-                            {isLoading ? (
-                              <ActivityIndicator color="#FFFFFF" />
-                            ) : (
-                              <Text style={styles.loginButtonText}>
-                                {showForgotPassword ? 'Send Reset Link' : 'Sign In'}
-                              </Text>
-                            )}
+                        <TouchableOpacity style={styles.loginButton} onPress={showForgotPassword ? handleForgotPassword : (emailStep === 1 ? handleEmailNext : handleLogin)} disabled={isLoading} activeOpacity={0.8}>
+                          <LinearGradient colors={['#3491ff', '#0062ff']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.loginButtonGradient}>
+                            {isLoading ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.loginButtonText}>{showForgotPassword ? 'Send Reset Link' : (emailStep === 1 ? 'Continue' : 'Sign In')}</Text>}
                           </LinearGradient>
                         </TouchableOpacity>
-
-                        {/* Back to Login (for forgot password) */}
                         {showForgotPassword && (
-                          <TouchableOpacity
-                            style={styles.backToLogin}
-                            onPress={() => {
-                              setShowForgotPassword(false);
-                              setError('');
-                            }}
-                            disabled={isLoading}
-                          >
+                          <TouchableOpacity style={styles.backToLogin} onPress={() => { setShowForgotPassword(false); setError(''); }} disabled={isLoading}>
                             <Text style={styles.backToLoginText}>Back to Sign In</Text>
                           </TouchableOpacity>
                         )}
-
-                        {/* Back to Options */}
                         {!showForgotPassword && (
-                          <TouchableOpacity
-                            style={styles.backToLogin}
-                            onPress={() => {
+                          <TouchableOpacity style={styles.backToLogin} onPress={() => {
+                            if (emailStep === 2) {
+                              setEmailStep(1);
+                              setError('');
+                            } else {
                               setShowEmailForm(false);
                               setError('');
-                            }}
-                            disabled={isLoading}
-                          >
-                            <Text style={styles.backToLoginText}>Back to Options</Text>
+                            }
+                          }} disabled={isLoading}>
+                            <Text style={styles.backToLoginText}>{emailStep === 2 ? 'Back' : 'Back to Options'}</Text>
                           </TouchableOpacity>
                         )}
                       </View>
                     )}
 
-                    {/* Privacy and Terms */}
+                    {/* Footer */}
                     <View style={styles.footer}>
                       <Text style={styles.footerText}>
                         By continuing, you agree to our{' '}
@@ -463,169 +657,12 @@ export default function LoginModal({ visible, onClose, onSuccess }: LoginModalPr
                       </Text>
                     </View>
                   </View>
-                </KeyboardAvoidingView>
-              </LinearGradient>
-            </BlurView>
-          ) : (
-            <View style={[styles.blurContainer, styles.androidBlurFallback]}>
-              <KeyboardAvoidingView
-                behavior="height"
-                style={styles.keyboardView}
-              >
-                <View style={styles.contentContainer}>
-                  {/* Handle Bar */}
-                  <View style={styles.handleBar} />
-
-                  {/* Logo */}
-                  <View style={styles.logoContainer}>
-                    <GradientText style={styles.logoText}>unifesto</GradientText>
-                  </View>
-
-                  {/* Header */}
-                  <View style={styles.header}>
-                    <Text style={styles.title}>Welcome Back</Text>
-                    <Text style={styles.subtitle}>Sign in to continue</Text>
-                  </View>
-
-                  {/* Error Message */}
-                  {error ? (
-                    <View style={styles.errorContainer}>
-                      <Text style={styles.errorText}>{error}</Text>
-                    </View>
-                  ) : null}
-
-                  {/* Social Login Buttons */}
-                  {!showEmailForm && !showForgotPassword && (
-                    <View style={styles.socialButtonsContainer}>
-                      <TouchableOpacity
-                        style={styles.emailButton}
-                        onPress={() => setShowEmailForm(true)}
-                        disabled={isLoading}
-                        activeOpacity={0.8}
-                      >
-                        <View style={styles.emailButtonContent}>
-                          <Mail size={20} color={colors.text} strokeWidth={2} />
-                          <Text style={styles.emailButtonText}>Continue with Email</Text>
-                        </View>
-                      </TouchableOpacity>
-                      <View style={styles.socialButtonsRow}>
-                        {isAppleAuthAvailable && (
-                          <TouchableOpacity
-                            style={styles.socialButton}
-                            onPress={handleAppleLogin}
-                            disabled={isLoading}
-                            activeOpacity={0.8}
-                          >
-                            <View style={styles.socialButtonContent}>
-                              <AppleLogo />
-                              <Text style={styles.socialButtonText}>Apple</Text>
-                            </View>
-                          </TouchableOpacity>
-                        )}
-                        <TouchableOpacity
-                          style={styles.socialButton}
-                          onPress={handleGoogleLogin}
-                          disabled={isLoading}
-                          activeOpacity={0.8}
-                        >
-                          <View style={styles.socialButtonContent}>
-                            <GoogleLogo />
-                            <Text style={styles.socialButtonText}>Google</Text>
-                          </View>
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  )}
-
-                  {/* Login Form */}
-                  {(showEmailForm || showForgotPassword) && (
-                    <View style={styles.formContainer}>
-                      <View style={styles.inputContainer}>
-                        <View style={styles.inputWrapper}>
-                          <Mail size={20} color={colors.textMuted} strokeWidth={2} />
-                          <TextInput
-                            style={styles.input}
-                            placeholder="Email address"
-                            placeholderTextColor={colors.textMuted}
-                            value={email}
-                            onChangeText={(text) => { setEmail(text); setError(''); }}
-                            keyboardType="email-address"
-                            autoCapitalize="none"
-                            autoCorrect={false}
-                            editable={!isLoading}
-                          />
-                        </View>
-                      </View>
-                      {!showForgotPassword && (
-                        <View style={styles.inputContainer}>
-                          <View style={styles.inputWrapper}>
-                            <Lock size={20} color={colors.textMuted} strokeWidth={2} />
-                            <TextInput
-                              style={[styles.input, styles.passwordInput]}
-                              placeholder="Password"
-                              placeholderTextColor={colors.textMuted}
-                              value={password}
-                              onChangeText={(text) => { setPassword(text); setError(''); }}
-                              secureTextEntry={!showPassword}
-                              autoCapitalize="none"
-                              autoCorrect={false}
-                              editable={!isLoading}
-                            />
-                            <GlassyButton
-                              size={36}
-                              onPress={() => setShowPassword(!showPassword)}
-                              disabled={isLoading}
-                              variant="dark"
-                            >
-                              {showPassword
-                                ? <EyeOff size={16} color={colors.textMuted} strokeWidth={2} />
-                                : <Eye size={16} color={colors.textMuted} strokeWidth={2} />}
-                            </GlassyButton>
-                          </View>
-                        </View>
-                      )}
-                      {!showForgotPassword && (
-                        <TouchableOpacity style={styles.forgotPassword} onPress={() => setShowForgotPassword(true)} disabled={isLoading}>
-                          <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-                        </TouchableOpacity>
-                      )}
-                      <TouchableOpacity style={styles.loginButton} onPress={showForgotPassword ? handleForgotPassword : handleLogin} disabled={isLoading} activeOpacity={0.8}>
-                        <LinearGradient colors={['#3491ff', '#0062ff']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.loginButtonGradient}>
-                          {isLoading ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.loginButtonText}>{showForgotPassword ? 'Send Reset Link' : 'Sign In'}</Text>}
-                        </LinearGradient>
-                      </TouchableOpacity>
-                      {showForgotPassword && (
-                        <TouchableOpacity style={styles.backToLogin} onPress={() => { setShowForgotPassword(false); setError(''); }} disabled={isLoading}>
-                          <Text style={styles.backToLoginText}>Back to Sign In</Text>
-                        </TouchableOpacity>
-                      )}
-                      {!showForgotPassword && (
-                        <TouchableOpacity style={styles.backToLogin} onPress={() => { setShowEmailForm(false); setError(''); }} disabled={isLoading}>
-                          <Text style={styles.backToLoginText}>Back to Options</Text>
-                        </TouchableOpacity>
-                      )}
-                    </View>
-                  )}
-
-                  {/* Footer */}
-                  <View style={styles.footer}>
-                    <Text style={styles.footerText}>
-                      By continuing, you agree to our{' '}
-                      <TouchableOpacity onPress={() => Linking.openURL('https://unifesto.app/terms')}>
-                        <Text style={styles.footerLink}>Terms of Service</Text>
-                      </TouchableOpacity>
-                      {' '}and{' '}
-                      <TouchableOpacity onPress={() => Linking.openURL('https://unifesto.app/privacy')}>
-                        <Text style={styles.footerLink}>Privacy Policy</Text>
-                      </TouchableOpacity>
-                    </Text>
-                  </View>
-                </View>
-              </KeyboardAvoidingView>
-            </View>
-          )}
-        </Animated.View>
-      </View>
+                </ScrollView>
+              </View>
+            )}
+          </Animated.View>
+        </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -671,6 +708,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     padding: spacing[4],
     paddingBottom: spacing[6],
+    paddingTop: Platform.OS === 'android' ? 60 : 80,
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
@@ -678,6 +716,8 @@ const styles = StyleSheet.create({
   modalContainer: {
     borderRadius: borderRadius['3xl'],
     overflow: 'hidden',
+    maxHeight: '100%',
+    flexShrink: 1,
   },
   blurContainer: {
     borderRadius: borderRadius['3xl'],
@@ -728,13 +768,9 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     alignItems: 'flex-start',
-    marginTop: Platform.OS === 'android' ? spacing[2] : spacing[5],
+    marginTop: Platform.OS === 'android' ? spacing[3] : spacing[8],
     marginBottom: Platform.OS === 'android' ? spacing[2] : spacing[4],
-  },
-  logoText: {
-    fontSize: typography.fontSize['4xl'],
-    paddingLeft: spacing[2],
-    fontFamily: typography.fontFamily.logo,
+    marginLeft: -18,
   },
   header: {
     alignItems: 'flex-start',
