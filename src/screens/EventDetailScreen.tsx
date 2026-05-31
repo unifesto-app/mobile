@@ -12,7 +12,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { useRoute, useNavigation } from '@react-navigation/native';
+import { useRouter } from 'expo-router';
 import { Calendar, Clock, MapPin, Users, Tag, ChevronRight, ExternalLink, Share2, LogIn } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import GradientText from '../components/GradientText';
@@ -26,9 +26,12 @@ import { useAuth } from '../context/AuthContext';
 
 type TabType = 'overview' | 'agenda' | 'speakers' | 'rewards' | 'faq';
 
-export default function EventDetailScreen() {
-  const route = useRoute<any>();
-  const navigation = useNavigation<any>();
+interface EventDetailScreenProps {
+  route: { params: { eventId: string } };
+}
+
+export default function EventDetailScreen({ route }: EventDetailScreenProps) {
+  const router = useRouter();
   const { eventId } = route.params;
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('overview');
@@ -109,7 +112,7 @@ export default function EventDetailScreen() {
     return (
       <View style={[styles.container, styles.loadingContainer]}>
         <Text style={styles.errorText}>Event not found</Text>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity onPress={() => router.back()}>
           <Text style={styles.backText}>Go Back</Text>
         </TouchableOpacity>
       </View>
@@ -154,7 +157,7 @@ export default function EventDetailScreen() {
       );
     } else {
       // User is authenticated, proceed to registration
-      navigation.navigate('EventRegistration', { eventId: event.id });
+      router.push({ pathname: '/event-registration', params: { eventId: event.id } });
     }
   };
 
@@ -388,7 +391,7 @@ export default function EventDetailScreen() {
           {event.organization && (
             <TouchableOpacity
               style={styles.parentEventCard}
-              onPress={() => navigation.navigate('OrganizationDetail', { organizationId: event.organization_id })}
+              onPress={() => router.push(`/organization/${event.organization_id}`)}
               activeOpacity={0.7}
             >
               <View style={styles.parentEventContent}>

@@ -8,13 +8,13 @@ import {
   RefreshControl,
   Platform,
   StatusBar,
+  Share,
 } from 'react-native';
-import * as Clipboard from 'expo-clipboard';
-import { useNavigation } from '@react-navigation/native';
+import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
   Gift,
-  Copy,
+  Share as ShareIcon,
   Check,
   ChevronLeft,
   Users,
@@ -29,9 +29,8 @@ import { getFontFamily } from '../theme/fontHelpers';
 import { getReferralInfo, getReferralRewardAmount, type ReferralInfo } from '../lib/api/wallet';
 
 export default function ReferralsScreen() {
-  const navigation = useNavigation<any>();
+  const router = useRouter();
   const { user } = useAuth();
-  const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [referralInfo, setReferralInfo] = useState<ReferralInfo | null>(null);
@@ -67,11 +66,15 @@ export default function ReferralsScreen() {
     setRefreshing(false);
   };
 
-  const handleCopyReferral = async () => {
+  const handleShareReferral = async () => {
     if (!referralInfo) return;
-    await Clipboard.setStringAsync(referralInfo.link);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      await Share.share({
+        message: `Join me on Unifesto! Use my referral code: ${referralInfo.code}\n\nDownload here: ${referralInfo.link}`,
+      });
+    } catch (error) {
+      console.error('Error sharing referral:', error);
+    }
   };
 
   const renderSkeleton = () => (
@@ -208,15 +211,11 @@ export default function ReferralsScreen() {
                     <Text style={styles.referralCode}>{referralInfo?.code || '—'}</Text>
                   </View>
                   <TouchableOpacity
-                    style={styles.copyButton}
-                    onPress={handleCopyReferral}
+                    style={styles.shareButton}
+                    onPress={handleShareReferral}
                     activeOpacity={0.7}
                   >
-                    {copied ? (
-                      <Check size={20} color="#10b981" strokeWidth={2.5} />
-                    ) : (
-                      <Copy size={20} color={colors.primary} strokeWidth={2.5} />
-                    )}
+                    <ShareIcon size={20} color={colors.primary} strokeWidth={2.5} />
                   </TouchableOpacity>
                 </View>
 
@@ -405,7 +404,7 @@ const styles = StyleSheet.create({
     color: colors.primary,
     letterSpacing: 2,
   },
-  copyButton: {
+  shareButton: {
     width: 48,
     height: 48,
     borderRadius: borderRadius.lg,

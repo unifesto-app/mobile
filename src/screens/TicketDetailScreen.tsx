@@ -7,7 +7,7 @@ import {
   Image,
   TouchableOpacity,
 } from 'react-native';
-import { useRoute, useNavigation } from '@react-navigation/native';
+import { useRouter } from 'expo-router';
 import { Calendar, Clock, MapPin, User, Download, Share2, QrCode } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import GradientText from '../components/GradientText';
@@ -15,9 +15,12 @@ import GradientButton from '../components/GradientButton';
 import Footer from '../components/Footer';
 import { colors, spacing, typography, borderRadius, shadows, brandGradient } from '../theme';
 
-export default function TicketDetailScreen() {
-  const route = useRoute<any>();
-  const navigation = useNavigation();
+interface TicketDetailScreenProps {
+  route: { params: { ticketId: string; ticket?: any } };
+}
+
+export default function TicketDetailScreen({ route }: TicketDetailScreenProps) {
+  const router = useRouter();
   const { ticket } = route.params;
 
   return (

@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   Linking,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useRouter } from 'expo-router';
 import { 
   Shield,
   FileText,
@@ -43,7 +43,7 @@ const LEGAL_LINKS = [
 ];
 
 export default function LegalScreen() {
-  const navigation = useNavigation<any>();
+  const router = useRouter();
 
   const handleOpenLink = (url: string, title: string) => {
     Linking.openURL(url).catch(() => {
@@ -56,7 +56,7 @@ export default function LegalScreen() {
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
-          onPress={() => navigation.goBack()}
+          onPress={() => router.back()}
           activeOpacity={0.7}
         >
           <ChevronLeft size={24} color={colors.text} strokeWidth={2} />

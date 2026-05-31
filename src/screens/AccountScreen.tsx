@@ -10,7 +10,7 @@ import {
   Image,
   Platform,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
 import {
@@ -51,7 +51,7 @@ import { getFontFamily } from '../theme/fontHelpers';
 const HEADER_TOP_OFFSET = 50;
 
 export default function AccountScreen() {
-  const navigation = useNavigation<any>();
+  const router = useRouter();
   const { user, session, signOut } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -98,11 +98,12 @@ export default function AccountScreen() {
       if (phoneToSave && !phoneToSave.startsWith('+')) {
         phoneToSave = '+91' + phoneToSave;
       }
+
       const updated = await updateProfile({
         name: editedUser.name,
         username: editedUser.username,
         bio: editedUser.bio,
-        phone: phoneToSave === '' ? undefined : phoneToSave,
+        phone: phoneToSave === '' ? '' : phoneToSave,
       });
       if (updated) {
         setProfile(updated);
@@ -407,6 +408,12 @@ export default function AccountScreen() {
                     placeholder="Choose a unique username"
                     placeholderTextColor={colors.textMuted}
                     autoCapitalize="none"
+                    autoCorrect={false}
+                    autoComplete="off"
+                    textContentType="none"
+                    spellCheck={false}
+                    keyboardType="ascii-capable"
+                    importantForAutofill="no"
                   />
                 </View>
                 <View style={styles.inputGroup}>
@@ -463,7 +470,7 @@ export default function AccountScreen() {
             {editingSection === 'contact' ? (
               <View style={styles.editForm}>
                 <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Phone Number</Text>
+                  <Text style={styles.inputLabel}>Phone Number (Optional)</Text>
                   <View style={styles.phoneRow}>
                     <View style={styles.countryCode}>
                       <Text style={styles.countryCodeText}>+91</Text>

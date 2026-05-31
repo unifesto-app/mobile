@@ -14,16 +14,14 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Eye, EyeOff, Mail, Lock, ArrowLeft } from 'lucide-react-native';
 import Svg, { Path } from 'react-native-svg';
+import { useRouter } from 'expo-router';
 import { useAuth } from '../context/AuthContext';
 import GradientText from '../components/GradientText';
 import { colors, spacing, typography, borderRadius, shadows } from '../theme';
 import { getFontFamily } from '../theme/fontHelpers';
 
-interface LoginScreenProps {
-  navigation: any;
-}
-
-export default function LoginScreen({ navigation }: LoginScreenProps) {
+export default function LoginScreen() {
+  const router = useRouter();
   const { signIn, signInWithGoogle, signInWithApple, resetPassword, isConfigured, isAppleAuthAvailable, user, session } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -36,12 +34,9 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
   useEffect(() => {
     if (user && session) {
       // User is authenticated, navigate to main app
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'MainApp' }],
-      });
+      router.replace('/(tabs)');
     }
-  }, [user, session, navigation]);
+  }, [user, session]);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -63,11 +58,8 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
     if (signInError) {
       setError(signInError.message || 'Login failed. Please try again.');
     } else {
-      // Navigate to MainApp after successful login
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'MainApp' }],
-      });
+      // Navigate to tabs after successful login
+      router.replace('/(tabs)');
     }
   };
 
@@ -169,7 +161,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
       {/* Back to Home Button */}
       <TouchableOpacity
         style={styles.backButton}
-        onPress={() => navigation.navigate('MainApp')}
+        onPress={() => router.push('/(tabs)')}
         activeOpacity={0.7}
       >
         <View style={styles.backButtonContent}>
@@ -350,7 +342,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
               <View style={styles.signupContainer}>
                 <Text style={styles.signupText}>Don't have an account? </Text>
                 <TouchableOpacity
-                  onPress={() => navigation.navigate('SignUp')}
+                  onPress={() => router.push('/signup')}
                   disabled={isLoading}
                 >
                   <Text style={styles.signupLink}>Sign Up</Text>

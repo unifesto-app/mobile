@@ -5,7 +5,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import * as Font from 'expo-font';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider } from './src/context/AuthContext';
-import AppNavigator from './src/navigation/AppNavigator';
+import { Slot } from 'expo-router';
 import ConsentManager from './src/services/ConsentManager';
 
 // Keep the splash screen visible while we fetch resources
@@ -95,7 +95,7 @@ export default function App() {
     <SafeAreaProvider>
       <AuthProvider>
         <View style={{ flex: 1 }}>
-          <AppNavigator />
+          <Slot />
           <StatusBar style="light" />
         </View>
       </AuthProvider>

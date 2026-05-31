@@ -9,7 +9,7 @@ import {
   Linking,
   BackHandler,
 } from 'react-native';
-import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { 
   CheckCircle, 
   Copy, 
@@ -26,9 +26,20 @@ import { colors, spacing, typography, borderRadius, shadows } from '../theme';
 import { getEventById } from '../lib/api/events';
 
 export default function RegistrationSuccessScreen() {
-  const route = useRoute<any>();
-  const navigation = useNavigation<any>();
-  const { eventId, registrationData } = route.params;
+  const router = useRouter();
+  const params = useLocalSearchParams();
+  const eventId = typeof params.eventId === 'string' ? params.eventId : '';
+  const registrationDataStr = typeof params.registrationData === 'string' ? params.registrationData : '';
+  
+  // Parse registration data if it's a JSON string
+  let registrationData: any = null;
+  try {
+    if (registrationDataStr) {
+      registrationData = JSON.parse(registrationDataStr);
+    }
+  } catch (error) {
+    console.error('Failed to parse registration data:', error);
+  }
   
   // Event state
   const [event, setEvent] = React.useState<any>(null);
@@ -37,6 +48,10 @@ export default function RegistrationSuccessScreen() {
   // Load event data
   React.useEffect(() => {
     const loadEvent = async () => {
+      if (!eventId) {
+        setLoading(false);
+        return;
+      }
       try {
         const eventData = await getEventById(eventId);
         setEvent(eventData);
@@ -205,14 +220,14 @@ export default function RegistrationSuccessScreen() {
           <View style={styles.actionButtons}>
             <TouchableOpacity
               style={styles.secondaryButton}
-              onPress={() => navigation.navigate('EventDetail', { eventId: event.id })}
+              onPress={() => router.push(`/event/${event.id}`)}
             >
               <Text style={styles.secondaryButtonText}>Back to Event</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.primaryButton}
-              onPress={() => navigation.navigate('MainApp', { screen: 'Discover' })}
+              onPress={() => router.replace('/(tabs)')}
             >
               <LinearGradient
                 colors={['#3491ff', '#0062ff']}

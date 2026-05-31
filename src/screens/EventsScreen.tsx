@@ -10,7 +10,7 @@ import {
   RefreshControl,
   ActivityIndicator,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useRouter } from 'expo-router';
 import { Calendar, MapPin, Search } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import GradientText from '../components/GradientText';
@@ -26,7 +26,7 @@ const STATUS_TABS = [
 ];
 
 export default function EventsScreen() {
-  const navigation = useNavigation<any>();
+  const router = useRouter();
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('all');
@@ -129,7 +129,7 @@ export default function EventsScreen() {
   const renderEventCard = ({ item }: { item: Event }) => (
     <TouchableOpacity
       style={styles.eventCard}
-      onPress={() => navigation.navigate('EventDetail', { eventId: item.id })}
+      onPress={() => router.push(`/event/${item.id}`)}
       activeOpacity={0.9}
     >
       {/* Event Image */}

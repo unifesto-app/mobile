@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
   Image,
 } from 'react-native';
-import { useRoute, useNavigation } from '@react-navigation/native';
+import { useRouter } from 'expo-router';
 import { Building2, Calendar, MapPin, Globe, Mail, Phone, Users } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import GradientText from '../components/GradientText';
@@ -27,9 +27,12 @@ const ORG_TYPE_LABELS: Record<string, string> = {
   other: 'Organization',
 };
 
-export default function OrganizationDetailScreen() {
-  const route = useRoute<any>();
-  const navigation = useNavigation<any>();
+interface OrganizationDetailScreenProps {
+  route: { params: { organizationId: string } };
+}
+
+export default function OrganizationDetailScreen({ route }: OrganizationDetailScreenProps) {
+  const router = useRouter();
   const { organizationId } = route.params;
   
   const [organization, setOrganization] = useState<Organization | null>(null);
@@ -262,7 +265,7 @@ export default function OrganizationDetailScreen() {
               <Text style={styles.sectionTitle}>Part of</Text>
               <TouchableOpacity
                 style={styles.parentOrgCard}
-                onPress={() => navigation.push('OrganizationDetail', { organizationId: parentOrg.id })}
+                onPress={() => router.push(`/organization/${parentOrg.id}`)}
                 activeOpacity={0.7}
               >
                 <View style={styles.parentOrgContent}>
@@ -302,7 +305,7 @@ export default function OrganizationDetailScreen() {
                   <TouchableOpacity
                     key={subOrg.id}
                     style={styles.subOrgCard}
-                    onPress={() => navigation.push('OrganizationDetail', { organizationId: subOrg.id })}
+                    onPress={() => router.push(`/organization/${subOrg.id}`)}
                     activeOpacity={0.7}
                   >
                     <View style={styles.subOrgContent}>
@@ -352,7 +355,7 @@ export default function OrganizationDetailScreen() {
                     <TouchableOpacity
                       key={event.id}
                       style={styles.eventCard}
-                      onPress={() => navigation.navigate('EventDetail', { eventId: event.id })}
+                      onPress={() => router.push(`/event/${event.id}`)}
                       activeOpacity={0.9}
                     >
                       {/* Event Image/Poster */}

@@ -43,13 +43,16 @@ export default function Skeleton({
     outputRange: [0.3, 0.7],
   });
 
+  // Convert height to number if it's a string percentage
+  const numericHeight = typeof height === 'number' ? height : undefined;
+
   return (
     <Animated.View
       style={[
         styles.skeleton,
         {
           width: width as any,
-          height,
+          height: numericHeight,
           borderRadius: customBorderRadius,
           opacity,
         },

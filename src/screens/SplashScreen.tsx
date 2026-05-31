@@ -4,11 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import GradientText from '../components/GradientText';
 import { colors, spacing, typography } from '../theme';
 
-interface SplashScreenProps {
-  navigation: any;
-}
-
-export default function SplashScreen({ navigation }: SplashScreenProps) {
+export default function SplashScreen() {
   return (
     <LinearGradient
       colors={['#000000', '#0a0a0a', '#000000']}

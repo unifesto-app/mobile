@@ -10,7 +10,7 @@ import {
   RefreshControl,
   Image,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useRouter } from 'expo-router';
 import { Search, Building2, X } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import GradientText from '../components/GradientText';
@@ -38,7 +38,7 @@ const TYPE_FILTERS = [
 ];
 
 export default function OrganizationsListScreen() {
-  const navigation = useNavigation<any>();
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState('all');
   const [organizations, setOrganizations] = useState<Organization[]>([]);
@@ -243,7 +243,7 @@ export default function OrganizationsListScreen() {
                 key={org.id}
                 style={styles.orgCard}
                 onPress={() =>
-                  navigation.navigate('OrganizationDetail', { organizationId: org.id })
+                  router.push(`/organization/${org.id}`)
                 }
                 activeOpacity={0.9}
               >

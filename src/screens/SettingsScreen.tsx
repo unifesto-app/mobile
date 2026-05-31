@@ -10,7 +10,7 @@ import {
   Linking,
   Platform,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useRouter } from 'expo-router';
 import {
   ChevronLeft,
   Bell,
@@ -27,7 +27,7 @@ import { supabase } from '../config/supabase';
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://api.unifesto.app';
 
 export default function SettingsScreen() {
-  const navigation = useNavigation<any>();
+  const router = useRouter();
 
   // Preferences state
   const [pushNotifications, setPushNotifications] = useState(true);
@@ -176,7 +176,7 @@ export default function SettingsScreen() {
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
-          onPress={() => navigation.goBack()}
+          onPress={() => router.back()}
           activeOpacity={0.7}
         >
           <ChevronLeft size={24} color={colors.text} strokeWidth={2} />

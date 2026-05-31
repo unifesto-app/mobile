@@ -152,6 +152,7 @@ module.exports = () => {
       favicon: "./assets/app-icon-transparent.png"
     },
     plugins: [
+      "expo-router",
       "expo-font",
       [
         "expo-splash-screen",

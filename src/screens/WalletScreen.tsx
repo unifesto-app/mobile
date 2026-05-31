@@ -12,14 +12,14 @@ import {
   Modal,
   Platform,
   StatusBar,
+  Share,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import * as Clipboard from 'expo-clipboard';
+import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
   Wallet,
   Gift,
-  Copy,
+  Share as ShareIcon,
   Check,
   TrendingUp,
   ArrowUpRight,
@@ -51,8 +51,7 @@ const HEADER_TOP_OFFSET = Platform.OS === 'ios' ? spacing[12] : 20;
 
 export default function WalletScreen() {
   const { user } = useAuth();
-  const navigation = useNavigation<any>();
-  const [copied, setCopied] = useState(false);
+  const router = useRouter();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -102,12 +101,16 @@ export default function WalletScreen() {
     setRefreshing(false);
   };
 
-  const handleCopyReferral = async () => {
+  const handleShareReferral = async () => {
     if (!referralInfo) return;
 
-    await Clipboard.setStringAsync(referralInfo.link);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      await Share.share({
+        message: `Join me on Unifesto! Use my referral code: ${referralInfo.code}\n\nDownload here: ${referralInfo.link}`,
+      });
+    } catch (error) {
+      console.error('Error sharing referral:', error);
+    }
   };
 
   const handleApplyRedeemCode = async () => {
@@ -201,7 +204,7 @@ export default function WalletScreen() {
 
             <TouchableOpacity
               style={styles.browseButton}
-              onPress={() => navigation.navigate('Discover')}
+              onPress={() => router.push('/(tabs)')}
               activeOpacity={0.8}
             >
               <Text style={styles.browseButtonText}>Browse Events</Text>
@@ -326,7 +329,7 @@ export default function WalletScreen() {
 
             <TouchableOpacity
               style={styles.quickActionButton}
-              onPress={() => navigation.navigate('Referrals')}
+              onPress={() => router.push('/referrals')}
               activeOpacity={0.7}
             >
               <View style={styles.quickActionIcon}>
@@ -346,7 +349,7 @@ export default function WalletScreen() {
                 <Text style={styles.cardTitle}>Referral Program</Text>
               </View>
               <TouchableOpacity
-                onPress={() => navigation.navigate('Referrals')}
+                onPress={() => router.push('/referrals')}
                 activeOpacity={0.7}
               >
                 <Text style={styles.viewAllText}>View All</Text>
@@ -371,15 +374,11 @@ export default function WalletScreen() {
                       <Text style={styles.referralCode}>{referralInfo?.code || 'LOADING'}</Text>
                     </View>
                     <TouchableOpacity
-                      style={styles.copyButton}
-                      onPress={handleCopyReferral}
+                      style={styles.shareButton}
+                      onPress={handleShareReferral}
                       activeOpacity={0.7}
                     >
-                      {copied ? (
-                        <Check size={20} color="#10b981" strokeWidth={2} />
-                      ) : (
-                        <Copy size={20} color={colors.primary} strokeWidth={2} />
-                      )}
+                      <ShareIcon size={20} color={colors.primary} strokeWidth={2} />
                     </TouchableOpacity>
                   </View>
 
@@ -644,7 +643,7 @@ const styles = StyleSheet.create({
     color: colors.primary,
     letterSpacing: 2,
   },
-  copyButton: {
+  shareButton: {
     width: 48,
     height: 48,
     borderRadius: borderRadius.lg,

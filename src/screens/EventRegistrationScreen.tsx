@@ -8,7 +8,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { useRoute, useNavigation } from '@react-navigation/native';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { 
   ArrowLeft, 
   Minus, 
@@ -43,9 +43,9 @@ interface AttendeeInfo {
 const REGISTRATION_TIME_LIMIT = 15 * 60; // 15 minutes in seconds
 
 export default function EventRegistrationScreen() {
-  const route = useRoute<any>();
-  const navigation = useNavigation<any>();
-  const { eventId } = route.params;
+  const router = useRouter();
+  const params = useLocalSearchParams<{ eventId: string }>();
+  const eventId = params.eventId;
   
   // Event state
   const [event, setEvent] = useState<Event | null>(null);
@@ -130,7 +130,7 @@ export default function EventRegistrationScreen() {
         </Text>
         <TouchableOpacity
           style={[styles.backButton, { marginTop: spacing[6] }]}
-          onPress={() => navigation.goBack()}
+          onPress={() => router.back()}
         >
           <LinearGradient
             colors={['#3491ff', '#0062ff']}
@@ -156,7 +156,7 @@ export default function EventRegistrationScreen() {
         {
           text: 'Cancel',
           style: 'destructive',
-          onPress: () => navigation.goBack(),
+          onPress: () => router.back(),
         },
       ],
       { cancelable: true }
@@ -331,27 +331,17 @@ export default function EventRegistrationScreen() {
       );
 
       if (result.success) {
-        // Navigate to success screen
-        navigation.reset({
-          index: 0,
-          routes: [
-            { name: 'MainApp' as never },
-            { 
-              name: 'RegistrationSuccess' as never, 
-              params: { 
-                eventId: event.id, 
-                registrationData: {
-                  event: event.id,
-                  ticket: selectedTicket,
-                  quantity,
-                  attendees,
-                  total: calculateTotal(),
-                  registrations: result.registrations,
-                  paymentId: result.paymentId,
-                }
-              } as never 
-            }
-          ],
+        // Navigate to success screen with registration data
+        router.replace({
+          pathname: '/registration-success',
+          params: {
+            eventId: event.id,
+            eventTitle: event.title,
+            ticketName: selectedTicket.name,
+            quantity: quantity.toString(),
+            total: calculateTotal().toString(),
+            currency: getCurrencySymbol(),
+          }
         });
       }
     } catch (error) {

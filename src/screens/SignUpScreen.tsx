@@ -13,17 +13,15 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Eye, EyeOff, Mail, Lock, User, Phone, Gift, ArrowLeft } from 'lucide-react-native';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../context/AuthContext';
 import GradientText from '../components/GradientText';
 import { colors, spacing, typography, borderRadius, shadows } from '../theme';
 import { getFontFamily } from '../theme/fontHelpers';
 
-interface SignUpScreenProps {
-  route?: any;
-  navigation: any;
-}
-
-export default function SignUpScreen({ route, navigation }: SignUpScreenProps) {
+export default function SignUpScreen() {
+  const router = useRouter();
+  const params = useLocalSearchParams<{ ref?: string }>();
   const { signUp, isConfigured, user, session } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
@@ -32,7 +30,7 @@ export default function SignUpScreen({ route, navigation }: SignUpScreenProps) {
     phone: '',
     password: '',
     confirmPassword: '',
-    referralCode: route?.params?.ref || '',
+    referralCode: params?.ref || '',
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -42,12 +40,9 @@ export default function SignUpScreen({ route, navigation }: SignUpScreenProps) {
   // Listen for auth state changes and navigate when logged in
   useEffect(() => {
     if (user && session) {
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'MainApp' }],
-      });
+      router.replace('/(tabs)');
     }
-  }, [user, session, navigation]);
+  }, [user, session]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -147,7 +142,7 @@ export default function SignUpScreen({ route, navigation }: SignUpScreenProps) {
     Alert.alert(
       'Success!',
       message,
-      [{ text: 'OK', onPress: () => navigation.navigate('MainApp') }]
+      [{ text: 'OK', onPress: () => router.replace('/(tabs)') }]
     );
   };
 
@@ -158,7 +153,7 @@ export default function SignUpScreen({ route, navigation }: SignUpScreenProps) {
     >
       <TouchableOpacity
         style={styles.backButton}
-        onPress={() => navigation.navigate('MainApp')}
+        onPress={() => router.push('/(tabs)')}
         activeOpacity={0.7}
       >
         <View style={styles.backButtonContent}>

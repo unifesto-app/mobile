@@ -12,7 +12,7 @@ import {
   Platform,
   RefreshControl,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
   User,
@@ -70,14 +70,14 @@ const MOCK_USER = {
 };
 
 // Space needed to clear the transparent gradient header
-const HEADER_TOP_OFFSET = Platform.OS === 'ios' ? 100 : 80;
+const HEADER_TOP_OFFSET = 0;
 
 interface ProfileScreenProps {
-  navigation?: any;
+
 }
 
-export default function ProfileScreen({ navigation: navProp }: ProfileScreenProps) {
-  const navigation = useNavigation<any>();
+export default function ProfileScreen() {
+  const router = useRouter();
   const { user, session, signOut, loading: authLoading } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -128,10 +128,7 @@ export default function ProfileScreen({ navigation: navProp }: ProfileScreenProp
           onPress: async () => {
             try {
               await signOut();
-              navigation.reset({
-                index: 0,
-                routes: [{ name: 'MainApp' as never }],
-              });
+              router.replace('/login');
             } catch (error) {
               Alert.alert('Error', 'Failed to sign out. Please try again.');
             }
@@ -142,12 +139,12 @@ export default function ProfileScreen({ navigation: navProp }: ProfileScreenProp
   };
 
   const handleNavigate = (screenName: string) => {
-    navigation.navigate(screenName);
+    router.push(`/${screenName.toLowerCase().replace('screen', '')}`);
   };
 
   const handleRateApp = () => {
     const storeUrl = Platform.select({
-      ios: 'https://apps.apple.com/app/unifesto/id6738633431',
+      ios: 'https://apps.apple.com/in/app/unifesto-discover-events/id6767165496',
       android: 'https://play.google.com/store/apps/details?id=com.unifesto.app',
     });
     if (storeUrl) {
@@ -292,7 +289,7 @@ export default function ProfileScreen({ navigation: navProp }: ProfileScreenProp
 
             <TouchableOpacity
               style={styles.browseButton}
-              onPress={() => navigation.navigate('Discover')}
+              onPress={() => router.push('/(tabs)')}
               activeOpacity={0.8}
             >
               <Text style={styles.browseButtonText}>Continue Browsing Events</Text>
@@ -405,14 +402,14 @@ export default function ProfileScreen({ navigation: navProp }: ProfileScreenProp
             {/* Notifications */}
             <TouchableOpacity
               style={styles.menuItem}
-              onPress={() => handleNavigate('Notifications')}
+              onPress={() => handleNavigate('NotificationSettings')}
               activeOpacity={0.7}
             >
               <View style={styles.menuItemLeft}>
                 <GlassyButton size={36} variant="dark" shape="square" disabled>
                   <Bell size={16} color="#8b5cf6" strokeWidth={2} />
                 </GlassyButton>
-                <Text style={styles.menuItemText}>Notifications</Text>
+                <Text style={styles.menuItemText}>Notification Settings</Text>
               </View>
               <ChevronRight size={16} color={colors.textMuted} strokeWidth={2} />
             </TouchableOpacity>

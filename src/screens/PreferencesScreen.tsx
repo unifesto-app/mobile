@@ -8,7 +8,7 @@ import {
   Switch,
   Alert,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useRouter } from 'expo-router';
 import { 
   Bell,
   Mail,
@@ -23,7 +23,7 @@ import { supabase } from '../config/supabase';
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://api.unifesto.app';
 
 export default function PreferencesScreen() {
-  const navigation = useNavigation<any>();
+  const router = useRouter();
   const [pushNotifications, setPushNotifications] = useState(true);
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [eventReminders, setEventReminders] = useState(true);
@@ -150,7 +150,7 @@ export default function PreferencesScreen() {
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
-          onPress={() => navigation.goBack()}
+          onPress={() => router.back()}
           activeOpacity={0.7}
         >
           <ChevronLeft size={24} color={colors.text} strokeWidth={2} />

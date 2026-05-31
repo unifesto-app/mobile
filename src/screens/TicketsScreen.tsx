@@ -9,7 +9,7 @@ import {
   Platform,
   ActivityIndicator,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useRouter } from 'expo-router';
 import { Calendar, Clock, Ticket } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import GradientText from '../components/GradientText';
@@ -19,7 +19,8 @@ import { colors, spacing, typography, borderRadius, shadows, brandGradient, bran
 import { getMyRegisteredEvents } from '../lib/api/events';
 import { getFontFamily } from '../theme/fontHelpers';
 
-const HEADER_TOP_OFFSET = Platform.OS === 'ios' ? 150 : 100;
+
+const HEADER_TOP_OFFSET = Platform.OS === 'ios' ? spacing[12] : 20;
 
 const TABS = ['Upcoming', 'Past'];
 
@@ -31,7 +32,7 @@ export default function TicketsScreen() {
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const navigation = useNavigation<any>();
+  const router = useRouter();
   const { user } = useAuth();
 
   useEffect(() => {
@@ -103,7 +104,7 @@ export default function TicketsScreen() {
     <TouchableOpacity
       key={ticket.id}
       style={styles.ticketCard}
-      onPress={() => navigation.navigate('TicketDetail', { ticket })}
+      onPress={() => router.push({ pathname: '/ticket/[id]', params: { id: ticket.id, ticket: JSON.stringify(ticket) } })}
       activeOpacity={0.9}
     >
       {/* Top Section */}
@@ -198,7 +199,7 @@ export default function TicketsScreen() {
 
             <TouchableOpacity
               style={styles.browseButton}
-              onPress={() => navigation.navigate('Discover')}
+              onPress={() => router.push('/(tabs)')}
               activeOpacity={0.8}
             >
               <Text style={styles.browseButtonText}>Browse Events</Text>
