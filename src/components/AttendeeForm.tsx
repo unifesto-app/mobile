@@ -1,8 +1,9 @@
 import React from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
 import { User, Mail, Phone } from 'lucide-react-native';
-import { colors, spacing, typography, borderRadius } from '../theme';
+import { spacing, typography, borderRadius } from '../theme';
 import { getFontFamily } from '../theme/fontHelpers';
+import { useTheme } from '../context/ThemeContext';
 
 interface AttendeeInfo {
   name: string;
@@ -17,6 +18,7 @@ interface AttendeeFormProps {
   onChange: (index: number, field: keyof AttendeeInfo, value: string) => void;
   errors?: Partial<Record<keyof AttendeeInfo, string>>;
   showTitle?: boolean;
+  onFillFromProfile?: () => void;
 }
 
 export default function AttendeeForm({
@@ -25,16 +27,113 @@ export default function AttendeeForm({
   onChange,
   errors = {},
   showTitle = true,
+  onFillFromProfile,
 }: AttendeeFormProps) {
+  const { colors } = useTheme();
   const genderOptions = ['Male', 'Female', 'Other', 'Prefer not to say'];
+
+  const styles = StyleSheet.create({
+    container: {
+      backgroundColor: colors.card,
+      borderRadius: borderRadius.xl,
+      padding: spacing[6],
+      marginBottom: spacing[4],
+      borderWidth: 1,
+      borderColor: colors.borderMuted,
+    },
+    formTitle: {
+      fontSize: typography.fontSize.lg,
+      fontFamily: getFontFamily('bold'),
+      color: colors.text,
+    },
+    inputGroup: {
+      marginBottom: spacing[5],
+    },
+    label: {
+      fontSize: typography.fontSize.sm,
+      fontFamily: getFontFamily('bold'),
+      color: colors.text,
+      marginBottom: spacing[2],
+    },
+    required: {
+      color: '#ef4444',
+    },
+    inputContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.backgroundSecondary,
+      borderRadius: borderRadius.lg,
+      paddingHorizontal: spacing[4],
+      paddingVertical: spacing[3],
+      borderWidth: 1,
+      borderColor: colors.borderMuted,
+      gap: spacing[3],
+    },
+    inputError: {
+      borderColor: '#ef4444',
+    },
+    countryCode: {
+      fontSize: typography.fontSize.base,
+      color: colors.text,
+      fontFamily: getFontFamily('bold'),
+      paddingRight: spacing[2],
+      borderRightWidth: 1,
+      borderRightColor: colors.borderMuted,
+    },
+    input: {
+      flex: 1,
+      fontSize: typography.fontSize.base,
+      color: colors.text,
+      fontFamily: typography.fontFamily.primary,
+    },
+    errorText: {
+      fontSize: typography.fontSize.xs,
+      color: '#ef4444',
+      marginTop: spacing[1],
+      marginLeft: spacing[1],
+    },
+    genderContainer: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing[2],
+    },
+    genderOption: {
+      paddingHorizontal: spacing[4],
+      paddingVertical: spacing[2],
+      borderRadius: borderRadius.md,
+      backgroundColor: colors.backgroundSecondary,
+      borderWidth: 1,
+      borderColor: colors.borderMuted,
+    },
+    genderOptionSelected: {
+      backgroundColor: 'rgba(52, 145, 255, 0.1)',
+      borderColor: colors.primary,
+    },
+    genderOptionText: {
+      fontSize: typography.fontSize.sm,
+      color: colors.textSecondary,
+      fontFamily: getFontFamily('bold'),
+    },
+    genderOptionTextSelected: {
+      color: colors.primary,
+      fontFamily: getFontFamily('bold'),
+    },
+  });
 
   return (
     <View style={styles.container}>
-      {showTitle && (
-        <Text style={styles.formTitle}>
-          {index === 0 ? 'Your Details' : `Attendee ${index + 1}`}
-        </Text>
-      )}
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: showTitle ? spacing[5] : 0 }}>
+        {showTitle && (
+          <Text style={styles.formTitle}>
+            {index === 0 ? 'Your Details' : `Attendee ${index + 1}`}
+          </Text>
+        )}
+        {onFillFromProfile && index === 0 && (
+          <TouchableOpacity onPress={onFillFromProfile} style={{ paddingVertical: 4, paddingHorizontal: 10, backgroundColor: 'rgba(52,145,255,0.1)', borderRadius: 8 }}>
+            <Text style={{ color: colors.primary, fontSize: 12, fontFamily: getFontFamily('semibold') }}>Fill from Profile</Text>
+          </TouchableOpacity>
+        )}
+      </View>
 
       {/* Name */}
       <View style={styles.inputGroup}>
@@ -132,92 +231,3 @@ export default function AttendeeForm({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: colors.card,
-    borderRadius: borderRadius.xl,
-    padding: spacing[6],
-    marginBottom: spacing[4],
-    borderWidth: 1,
-    borderColor: colors.borderMuted,
-  },
-  formTitle: {
-    fontSize: typography.fontSize.lg,
-    fontFamily: getFontFamily('bold'),
-    color: colors.text,
-    marginBottom: spacing[5],
-  },
-  inputGroup: {
-    marginBottom: spacing[5],
-  },
-  label: {
-    fontSize: typography.fontSize.sm,
-    fontFamily: getFontFamily('bold'),
-    color: colors.text,
-    marginBottom: spacing[2],
-  },
-  required: {
-    color: '#ef4444',
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.backgroundSecondary,
-    borderRadius: borderRadius.lg,
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[3],
-    borderWidth: 1,
-    borderColor: colors.borderMuted,
-    gap: spacing[3],
-  },
-  inputError: {
-    borderColor: '#ef4444',
-  },
-  countryCode: {
-    fontSize: typography.fontSize.base,
-    color: colors.text,
-    fontFamily: getFontFamily('bold'),
-    paddingRight: spacing[2],
-    borderRightWidth: 1,
-    borderRightColor: colors.borderMuted,
-  },
-  input: {
-    flex: 1,
-    fontSize: typography.fontSize.base,
-    color: colors.text,
-    fontFamily: typography.fontFamily.primary,
-  },
-  errorText: {
-    fontSize: typography.fontSize.xs,
-    color: '#ef4444',
-    marginTop: spacing[1],
-    marginLeft: spacing[1],
-  },
-  genderContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing[2],
-  },
-  genderOption: {
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[2],
-    borderRadius: borderRadius.md,
-    backgroundColor: colors.backgroundSecondary,
-    borderWidth: 1,
-    borderColor: colors.borderMuted,
-  },
-  genderOptionSelected: {
-    backgroundColor: 'rgba(52, 145, 255, 0.1)',
-    borderColor: colors.primary,
-  },
-  genderOptionText: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
-    fontFamily: getFontFamily('bold'),
-  },
-  genderOptionTextSelected: {
-    color: colors.primary,
-    fontFamily: getFontFamily('bold'),
-  },
-});

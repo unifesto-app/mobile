@@ -1,4 +1,4 @@
-import { supabase } from '../../config/supabase';
+import { getToken } from './helpers';
 import * as Device from 'expo-device';
 import * as Application from 'expo-application';
 import Constants from 'expo-constants';
@@ -14,22 +14,14 @@ const activeRequests = new Set<AbortController>();
  * Returns null if no active session
  */
 const getAuthHeaders = async (): Promise<{ 'Authorization': string; 'Content-Type': string } | null> => {
-  if (!supabase) {
-    return null;
-  }
-
-  const { data: { session }, error } = await supabase.auth.getSession();
+  const token = await getToken();
   
-  if (error) {
-    return null;
-  }
-  
-  if (!session) {
+  if (!token) {
     return null;
   }
 
   return {
-    'Authorization': `Bearer ${session.access_token}`,
+    'Authorization': `Bearer ${token}`,
     'Content-Type': 'application/json',
   };
 };
@@ -58,14 +50,12 @@ const handleUnauthorized = async (message?: string) => {
 
   // Check if session is actually invalid before logging out
   try {
-    if (supabase) {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-      } else {
-        // Don't automatically log out - let AuthContext handle it
-        // The user might still have a valid session
-      }
+    const token = await getToken();
+    
+    if (!token) {
+    } else {
+      // Don't automatically log out - let AuthContext handle it
+      // The user might still have a valid session
     }
   } catch (e) {
   }

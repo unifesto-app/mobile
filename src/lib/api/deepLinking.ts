@@ -3,27 +3,20 @@
  * Handles conversion of web slugs to mobile app IDs
  */
 
-import { supabase } from '../../config/supabase';
+import { makePublicRequest } from './helpers';
 
 /**
  * Get event ID from slug
  */
 export async function getEventIdFromSlug(slug: string): Promise<string | null> {
   try {
-    if (!supabase) {
+    const response = await makePublicRequest(`/events/${slug}`);
+    
+    if (!response?.ok) {
       return null;
     }
 
-    const { data, error } = await supabase
-      .from('events')
-      .select('id')
-      .eq('slug', slug)
-      .single();
-
-    if (error) {
-      return null;
-    }
-
+    const data = await response.json();
     return data?.id || null;
   } catch (error) {
     return null;
@@ -31,24 +24,17 @@ export async function getEventIdFromSlug(slug: string): Promise<string | null> {
 }
 
 /**
- * Get organization ID from slug
+ * Get space ID from slug
  */
-export async function getOrganizationIdFromSlug(slug: string): Promise<string | null> {
+export async function getSpaceIdFromSlug(slug: string): Promise<string | null> {
   try {
-    if (!supabase) {
+    const response = await makePublicRequest(`/spaces/slug/${slug}`);
+    
+    if (!response?.ok) {
       return null;
     }
 
-    const { data, error } = await supabase
-      .from('organizations')
-      .select('id')
-      .eq('slug', slug)
-      .single();
-
-    if (error) {
-      return null;
-    }
-
+    const data = await response.json();
     return data?.id || null;
   } catch (error) {
     return null;

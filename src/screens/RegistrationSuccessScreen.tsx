@@ -22,285 +22,14 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import GradientText from '../components/GradientText';
 import Footer from '../components/Footer';
-import { colors, spacing, typography, borderRadius, shadows } from '../theme';
+import { useTheme } from '../context/ThemeContext';
+import { spacing, typography, borderRadius, shadows } from '../theme';
 import { getEventById } from '../lib/api/events';
 
 export default function RegistrationSuccessScreen() {
-  const router = useRouter();
-  const params = useLocalSearchParams();
-  const eventId = typeof params.eventId === 'string' ? params.eventId : '';
-  const registrationDataStr = typeof params.registrationData === 'string' ? params.registrationData : '';
+  const { colors } = useTheme();
   
-  // Parse registration data if it's a JSON string
-  let registrationData: any = null;
-  try {
-    if (registrationDataStr) {
-      registrationData = JSON.parse(registrationDataStr);
-    }
-  } catch (error) {
-    console.error('Failed to parse registration data:', error);
-  }
-  
-  // Event state
-  const [event, setEvent] = React.useState<any>(null);
-  const [loading, setLoading] = React.useState(true);
-  
-  // Load event data
-  React.useEffect(() => {
-    const loadEvent = async () => {
-      if (!eventId) {
-        setLoading(false);
-        return;
-      }
-      try {
-        const eventData = await getEventById(eventId);
-        setEvent(eventData);
-      } catch (error) {
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadEvent();
-  }, [eventId]);
-
-  // Prevent back navigation
-  useFocusEffect(
-    React.useCallback(() => {
-      const onBackPress = () => {
-        // Return true to prevent default back behavior
-        return true;
-      };
-
-      const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
-
-      return () => subscription.remove();
-    }, [])
-  );
-
-  // Generate mock registration ID
-  const registrationId = 'REG' + Math.random().toString(36).substr(2, 9).toUpperCase();
-  
-  // Generate QR code URL
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${registrationId}`;
-
-  const copyToClipboard = async (text: string) => {
-    try {
-      // In a real app, you'd use Clipboard from @react-native-clipboard/clipboard
-      // For now, just show an alert or toast
-    } catch (error) {
-    }
-  };
-  
-  if (loading) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.errorText}>Loading...</Text>
-      </View>
-    );
-  }
-  
-  if (!event) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.errorText}>Event not found</Text>
-      </View>
-    );
-  }
-
-  const nextSteps = [
-    {
-      icon: Mail,
-      text: 'Check your email for confirmation',
-    },
-    {
-      icon: Smartphone,
-      text: 'Save the QR code or screenshot',
-    },
-    {
-      icon: Calendar,
-      text: 'Add event to your calendar',
-    },
-    {
-      icon: Smile,
-      text: 'Get ready for an amazing experience!',
-    },
-  ];
-
-  return (
-    <View style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Hero Section */}
-        <LinearGradient
-          colors={['rgba(52, 145, 255, 0.1)', 'transparent']}
-          style={styles.heroSection}
-        >
-          <View style={styles.heroContent}>
-            {/* Success Animation */}
-            <View style={styles.successIconContainer}>
-              <View style={styles.successIcon}>
-                <CheckCircle size={32} color="#000000" strokeWidth={2.5} />
-              </View>
-            </View>
-
-            <GradientText style={styles.successTitle}>
-              Registration Successful!
-            </GradientText>
-            <Text style={styles.successSubtitle}>
-              You're all set for {event.title}
-            </Text>
-          </View>
-        </LinearGradient>
-
-        <View style={styles.contentContainer}>
-          {/* Registration Details Card */}
-          <View style={styles.registrationCard}>
-            {/* QR Code Section */}
-            <View style={styles.qrSection}>
-              <Text style={styles.qrSectionTitle}>Your Entry Pass</Text>
-              <View style={styles.qrCodeContainer}>
-                <Image source={{ uri: qrCodeUrl }} style={styles.qrCode} />
-              </View>
-              <Text style={styles.qrHint}>
-                Show this QR code at the event entrance
-              </Text>
-            </View>
-
-            {/* Registration ID */}
-            <View style={styles.registrationIdSection}>
-              <Text style={styles.registrationIdTitle}>Registration ID</Text>
-              <View style={styles.registrationIdContainer}>
-                <Text style={styles.registrationIdText}>{registrationId}</Text>
-                <TouchableOpacity
-                  style={styles.copyButton}
-                  onPress={() => copyToClipboard(registrationId)}
-                >
-                  <Copy size={16} color={colors.text} strokeWidth={2} />
-                  <Text style={styles.copyButtonText}>Copy</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {/* Event Details */}
-            <View style={styles.eventDetailsSection}>
-              <View style={styles.eventDetailRow}>
-                <Text style={styles.eventDetailLabel}>Event:</Text>
-                <Text style={styles.eventDetailValue}>{event.title}</Text>
-              </View>
-              <View style={styles.eventDetailRow}>
-                <Text style={styles.eventDetailLabel}>Date:</Text>
-                <Text style={styles.eventDetailValue}>{event.date}</Text>
-              </View>
-              <View style={styles.eventDetailRow}>
-                <Text style={styles.eventDetailLabel}>Time:</Text>
-                <Text style={styles.eventDetailValue}>{event.time}</Text>
-              </View>
-              <View style={styles.eventDetailRow}>
-                <Text style={styles.eventDetailLabel}>Location:</Text>
-                <Text style={styles.eventDetailValue}>{event.location}</Text>
-              </View>
-            </View>
-          </View>
-
-          {/* Next Steps */}
-          <View style={styles.nextStepsCard}>
-            <Text style={styles.nextStepsTitle}>What's Next?</Text>
-            <View style={styles.nextStepsList}>
-              {nextSteps.map((step, index) => (
-                <View key={index} style={styles.nextStepItem}>
-                  <View style={styles.nextStepIcon}>
-                    <step.icon size={16} color="#000000" strokeWidth={2} />
-                  </View>
-                  <Text style={styles.nextStepText}>{step.text}</Text>
-                </View>
-              ))}
-            </View>
-          </View>
-
-          {/* Action Buttons */}
-          <View style={styles.actionButtons}>
-            <TouchableOpacity
-              style={styles.secondaryButton}
-              onPress={() => router.push(`/event/${event.id}`)}
-            >
-              <Text style={styles.secondaryButtonText}>Back to Event</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.primaryButton}
-              onPress={() => router.replace('/(tabs)')}
-            >
-              <LinearGradient
-                colors={['#3491ff', '#0062ff']}
-                style={styles.primaryButtonGradient}
-              >
-                <Text style={styles.primaryButtonText}>Explore More Events</Text>
-                <ArrowRight size={16} color="#000000" strokeWidth={2} />
-              </LinearGradient>
-            </TouchableOpacity>
-          </View>
-
-          {/* Additional Actions */}
-          <View style={styles.additionalActions}>
-            <TouchableOpacity
-              style={styles.additionalAction}
-              onPress={() => {
-                // Add to calendar functionality
-              }}
-            >
-              <Calendar size={20} color={colors.primary} strokeWidth={2} />
-              <Text style={styles.additionalActionText}>Add to Calendar</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.additionalAction}
-              onPress={() => {
-                // Share functionality
-              }}
-            >
-              <ArrowRight
-                size={20}
-                color={colors.primary}
-                strokeWidth={2}
-                style={{ transform: [{ rotate: '-45deg' }] }}
-              />
-              <Text style={styles.additionalActionText}>Share Event</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Registration Summary */}
-          {registrationData && (
-            <View style={styles.summaryCard}>
-              <Text style={styles.summaryTitle}>Registration Summary</Text>
-              <View style={styles.summaryContent}>
-                <View style={styles.summaryRow}>
-                  <Text style={styles.summaryLabel}>Ticket Type:</Text>
-                  <Text style={styles.summaryValue}>{registrationData.ticket?.name}</Text>
-                </View>
-                <View style={styles.summaryRow}>
-                  <Text style={styles.summaryLabel}>Attendees:</Text>
-                  <Text style={styles.summaryValue}>
-                    {registrationData.attendees?.length} {registrationData.attendees?.length === 1 ? 'person' : 'people'}
-                  </Text>
-                </View>
-                <View style={styles.summaryRow}>
-                  <Text style={styles.summaryLabel}>Total Amount:</Text>
-                  <Text style={styles.summaryValue}>
-                    {registrationData.total === 0 ? 'Free' : `₹${registrationData.total}`}
-                  </Text>
-                </View>
-              </View>
-            </View>
-          )}
-        </View>
-
-        {/* Footer */}
-        <Footer />
-      </ScrollView>
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
+  const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -584,3 +313,278 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
 });
+
+  const router = useRouter();
+  const params = useLocalSearchParams();
+  const eventId = typeof params.eventId === 'string' ? params.eventId : '';
+  const registrationDataStr = typeof params.registrationData === 'string' ? params.registrationData : '';
+  
+  // Parse registration data if it's a JSON string
+  let registrationData: any = null;
+  try {
+    if (registrationDataStr) {
+      registrationData = JSON.parse(registrationDataStr);
+    }
+  } catch (error) {
+    console.error('Failed to parse registration data:', error);
+  }
+  
+  // Event state
+  const [event, setEvent] = React.useState<any>(null);
+  const [loading, setLoading] = React.useState(true);
+  
+  // Load event data
+  React.useEffect(() => {
+    const loadEvent = async () => {
+      if (!eventId) {
+        setLoading(false);
+        return;
+      }
+      try {
+        const eventData = await getEventById(eventId);
+        setEvent(eventData);
+      } catch (error) {
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadEvent();
+  }, [eventId]);
+
+  // Prevent back navigation
+  useFocusEffect(
+    React.useCallback(() => {
+      const onBackPress = () => {
+        // Return true to prevent default back behavior
+        return true;
+      };
+
+      const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+
+      return () => subscription.remove();
+    }, [])
+  );
+
+  // Generate mock registration ID
+  const registrationId = 'REG' + Math.random().toString(36).substr(2, 9).toUpperCase();
+  
+  // Generate QR code URL
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${registrationId}`;
+
+  const copyToClipboard = async (text: string) => {
+    try {
+      // In a real app, you'd use Clipboard from @react-native-clipboard/clipboard
+      // For now, just show an alert or toast
+    } catch (error) {
+    }
+  };
+  
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.errorText}>Loading...</Text>
+      </View>
+    );
+  }
+  
+  if (!event) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.errorText}>Event not found</Text>
+      </View>
+    );
+  }
+
+  const nextSteps = [
+    {
+      icon: Mail,
+      text: 'Check your email for confirmation',
+    },
+    {
+      icon: Smartphone,
+      text: 'Save the QR code or screenshot',
+    },
+    {
+      icon: Calendar,
+      text: 'Add event to your calendar',
+    },
+    {
+      icon: Smile,
+      text: 'Get ready for an amazing experience!',
+    },
+  ];
+
+  return (
+    <View style={styles.container}>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {/* Hero Section */}
+        <LinearGradient
+          colors={['rgba(52, 145, 255, 0.1)', 'transparent']}
+          style={styles.heroSection}
+        >
+          <View style={styles.heroContent}>
+            {/* Success Animation */}
+            <View style={styles.successIconContainer}>
+              <View style={styles.successIcon}>
+                <CheckCircle size={32} color="#000000" strokeWidth={2.5} />
+              </View>
+            </View>
+
+            <GradientText style={styles.successTitle}>
+              Registration Successful!
+            </GradientText>
+            <Text style={styles.successSubtitle}>
+              You're all set for {event.title}
+            </Text>
+          </View>
+        </LinearGradient>
+
+        <View style={styles.contentContainer}>
+          {/* Registration Details Card */}
+          <View style={styles.registrationCard}>
+            {/* QR Code Section */}
+            <View style={styles.qrSection}>
+              <Text style={styles.qrSectionTitle}>Your Entry Pass</Text>
+              <View style={styles.qrCodeContainer}>
+                <Image source={{ uri: qrCodeUrl }} style={styles.qrCode} />
+              </View>
+              <Text style={styles.qrHint}>
+                Show this QR code at the event entrance
+              </Text>
+            </View>
+
+            {/* Registration ID */}
+            <View style={styles.registrationIdSection}>
+              <Text style={styles.registrationIdTitle}>Registration ID</Text>
+              <View style={styles.registrationIdContainer}>
+                <Text style={styles.registrationIdText}>{registrationId}</Text>
+                <TouchableOpacity
+                  style={styles.copyButton}
+                  onPress={() => copyToClipboard(registrationId)}
+                >
+                  <Copy size={16} color={colors.text} strokeWidth={2} />
+                  <Text style={styles.copyButtonText}>Copy</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Event Details */}
+            <View style={styles.eventDetailsSection}>
+              <View style={styles.eventDetailRow}>
+                <Text style={styles.eventDetailLabel}>Event:</Text>
+                <Text style={styles.eventDetailValue}>{event.title}</Text>
+              </View>
+              <View style={styles.eventDetailRow}>
+                <Text style={styles.eventDetailLabel}>Date:</Text>
+                <Text style={styles.eventDetailValue}>{event.date}</Text>
+              </View>
+              <View style={styles.eventDetailRow}>
+                <Text style={styles.eventDetailLabel}>Time:</Text>
+                <Text style={styles.eventDetailValue}>{event.time}</Text>
+              </View>
+              <View style={styles.eventDetailRow}>
+                <Text style={styles.eventDetailLabel}>Location:</Text>
+                <Text style={styles.eventDetailValue}>{event.location}</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Next Steps */}
+          <View style={styles.nextStepsCard}>
+            <Text style={styles.nextStepsTitle}>What's Next?</Text>
+            <View style={styles.nextStepsList}>
+              {nextSteps.map((step, index) => (
+                <View key={index} style={styles.nextStepItem}>
+                  <View style={styles.nextStepIcon}>
+                    <step.icon size={16} color="#000000" strokeWidth={2} />
+                  </View>
+                  <Text style={styles.nextStepText}>{step.text}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          {/* Action Buttons */}
+          <View style={styles.actionButtons}>
+            <TouchableOpacity
+              style={styles.secondaryButton}
+              onPress={() => router.push(`/event/${event.id}`)}
+            >
+              <Text style={styles.secondaryButtonText}>Back to Event</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.primaryButton}
+              onPress={() => router.replace('/(tabs)')}
+            >
+              <LinearGradient
+                colors={['#3491ff', '#0062ff']}
+                style={styles.primaryButtonGradient}
+              >
+                <Text style={styles.primaryButtonText}>Explore More Events</Text>
+                <ArrowRight size={16} color="#000000" strokeWidth={2} />
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+
+          {/* Additional Actions */}
+          <View style={styles.additionalActions}>
+            <TouchableOpacity
+              style={styles.additionalAction}
+              onPress={() => {
+                // Add to calendar functionality
+              }}
+            >
+              <Calendar size={20} color={colors.primary} strokeWidth={2} />
+              <Text style={styles.additionalActionText}>Add to Calendar</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.additionalAction}
+              onPress={() => {
+                // Share functionality
+              }}
+            >
+              <ArrowRight
+                size={20}
+                color={colors.primary}
+                strokeWidth={2}
+                style={{ transform: [{ rotate: '-45deg' }] }}
+              />
+              <Text style={styles.additionalActionText}>Share Event</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Registration Summary */}
+          {registrationData && (
+            <View style={styles.summaryCard}>
+              <Text style={styles.summaryTitle}>Registration Summary</Text>
+              <View style={styles.summaryContent}>
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Ticket Type:</Text>
+                  <Text style={styles.summaryValue}>{registrationData.ticket?.name}</Text>
+                </View>
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Attendees:</Text>
+                  <Text style={styles.summaryValue}>
+                    {registrationData.attendees?.length} {registrationData.attendees?.length === 1 ? 'person' : 'people'}
+                  </Text>
+                </View>
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Total Amount:</Text>
+                  <Text style={styles.summaryValue}>
+                    {registrationData.total === 0 ? 'Free' : `₹${registrationData.total}`}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          )}
+        </View>
+
+        {/* Footer */}
+        <Footer />
+      </ScrollView>
+    </View>
+  );
+}
+

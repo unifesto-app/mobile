@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,20 +9,19 @@ import {
   Platform,
   RefreshControl,
   TextInput,
+  Modal,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Calendar, TrendingUp, ArrowRight, Users, Search, X, MapPin, Grid, Heart, Ticket, Clock } from 'lucide-react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import { Calendar, TrendingUp, Users, Search, X, Grid, Heart, Sparkles } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import GradientText from '../components/GradientText';
 import Skeleton from '../components/Skeleton';
-import Footer from '../components/Footer';
-import LoginModal from '../components/LoginModal';
-import { colors, spacing, typography, borderRadius, shadows, brandGradient, brandGradientStart, brandGradientEnd } from '../theme';
+import { spacing, typography, borderRadius, shadows, brandGradient, brandGradientStart, brandGradientEnd } from '../theme';
 import { getFontFamily } from '../theme/fontHelpers';
+import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
-import { getProfile, Profile } from '../lib/api/profile';
-import { getEvents, getFeaturedEvents, getTrendingEvents, Event, getEventCardPrice, getMyRegisteredEvents } from '../lib/api/events';
-import { getAllOrganizations, Organization } from '../lib/api/organizations';
+import { getEvents, getFeaturedEvents, getTrendingEvents, getCategories, Event, getEventCardPrice } from '../lib/api/events';
+import { getAllSpaces, Space } from '../lib/api/spaces';
 import useAnalyticsScreenTracking from '../hooks/useAnalyticsScreenTracking';
 
 // Space needed to clear the transparent gradient header
@@ -31,178 +30,112 @@ const HEADER_TOP_OFFSET = Platform.OS === 'ios' ? 150 : 130;
 export default function DiscoverScreen() {
   const router = useRouter();
   const { user } = useAuth();
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const { colors } = useTheme();
   const [refreshing, setRefreshing] = useState(false);
-  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [isLoadingEvents, setIsLoadingEvents] = useState(true);
   const [isLoadingOrgs, setIsLoadingOrgs] = useState(true);
   const [featuredEvents, setFeaturedEvents] = useState<Event[]>([]);
   const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([]);
   const [trendingEvents, setTrendingEvents] = useState<Event[]>([]);
-  const [organizations, setOrganizations] = useState<Organization[]>([]);
-  const [followingOrgs, setFollowingOrgs] = useState<Organization[]>([]);
-  const [followingOrgEvents, setFollowingOrgEvents] = useState<Event[]>([]);
-  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [savedEvents, setSavedEvents] = useState<Event[]>([]);
+  const [spaces, setSpaces] = useState<Space[]>([]);
+  const searchInputRef = useRef<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchType, setSearchType] = useState<'events' | 'spaces'>('events');
   const [searchResults, setSearchResults] = useState<Event[]>([]);
+  const [spaceSearchResults, setSpaceSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
-  const [userTickets, setUserTickets] = useState<Event[]>([]);
-  const [isLoadingTickets, setIsLoadingTickets] = useState(false);
+  const [showSearchModal, setShowSearchModal] = useState(false);
+  const [activeFilter, setActiveFilter] = useState<'all' | 'trending' | 'featured' | 'upcoming' | 'saved'>('all');
+  
+  // Ref for search debounce timeout
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Mock data for cities and categories
-  const cities = [
-    { id: '1', name: 'Mumbai', count: 45 },
-    { id: '2', name: 'Delhi', count: 38 },
-    { id: '3', name: 'Bangalore', count: 52 },
-    { id: '4', name: 'Hyderabad', count: 28 },
-    { id: '5', name: 'Pune', count: 31 },
-  ];
-
-  const categories = [
-    { id: '1', name: 'Technology' },
-    { id: '2', name: 'Music' },
-    { id: '3', name: 'Sports' },
-    { id: '4', name: 'Arts' },
-    { id: '5', name: 'Business' },
-    { id: '6', name: 'Food' },
-  ];
+  // Real event categories
+  const [categories, setCategories] = useState<any[]>([]);
 
   useAnalyticsScreenTracking('Discover');
-
-  // Load profile data
-  const loadProfile = useCallback(async () => {
-    if (user) {
-      try {
-        const userProfile = await getProfile();
-        if (userProfile) {
-          setProfile(userProfile);
-        }
-      } catch (error) {
-      } finally {
-        setIsLoadingProfile(false);
-      }
-    } else {
-      setIsLoadingProfile(false);
-    }
-  }, [user]);
 
   // Load events data
   const loadEvents = useCallback(async () => {
     try {
       setIsLoadingEvents(true);
 
-      // Load featured events
-      const featured = await getFeaturedEvents(3);
+      // Load all event types
+      const [featured, trending, upcoming] = await Promise.all([
+        getFeaturedEvents(10),
+        getTrendingEvents(10),
+        getEvents({ page: 1, limit: 10 }),
+      ]);
+
       setFeaturedEvents(featured);
-
-      // Load trending events (ongoing only)
-      const trending = await getTrendingEvents(3);
       setTrendingEvents(trending);
-
-      // Load upcoming events
-      const upcoming = await getEvents(1, 3);
-      setUpcomingEvents(upcoming.events);
+      setUpcomingEvents(upcoming?.data || upcoming?.events || []);
+      
+      // TODO: Load saved events from user's saved list
+      setSavedEvents([]);
     } catch (error) {
-      // Set empty arrays on error
       setFeaturedEvents([]);
       setTrendingEvents([]);
       setUpcomingEvents([]);
+      setSavedEvents([]);
     } finally {
       setIsLoadingEvents(false);
     }
   }, []);
 
-  // Load organizations
-  const loadOrganizations = useCallback(async () => {
+  // Load categories
+  const loadCategories = useCallback(async () => {
+    try {
+      const cats = await getCategories();
+      setCategories(cats);
+    } catch { setCategories([]); }
+  }, []);
+
+  // Load spaces
+  const loadSpaces = useCallback(async () => {
     try {
       setIsLoadingOrgs(true);
-      const response = await getAllOrganizations(1, 4);
-      setOrganizations(response.organizations);
-      
-      // If user is logged in, load following organizations (mock for now)
-      if (user) {
-        // TODO: Replace with actual API call to get user's following organizations
-        const followingResponse = await getAllOrganizations(1, 3);
-        setFollowingOrgs(followingResponse.organizations.slice(0, 3));
-        
-        // Load events from following organizations
-        if (followingResponse.organizations.length > 0) {
-          const eventsResponse = await getEvents(1, 3);
-          setFollowingOrgEvents(eventsResponse.events.slice(0, 3));
-        }
-      }
+      const response = await getAllSpaces({ page: 1, limit: 4 });
+      setSpaces(response.spaces);
     } catch (error) {
-      setOrganizations([]);
-      setFollowingOrgs([]);
-      setFollowingOrgEvents([]);
+      console.error('Failed to load spaces:', error);
+      setSpaces([]);
     } finally {
       setIsLoadingOrgs(false);
     }
-  }, [user]);
-
-  // Load user tickets
-  const loadUserTickets = useCallback(async () => {
-    if (!user) {
-      setUserTickets([]);
-      return;
-    }
-
-    try {
-      setIsLoadingTickets(true);
-      const response = await getMyRegisteredEvents(1, 5);
-      
-      if (response && response.events) {
-        // Filter for upcoming events only
-        const now = new Date();
-        const upcomingTickets = response.events.filter(event => {
-          const eventDate = new Date(event.start_date);
-          return eventDate >= now;
-        });
-        setUserTickets(upcomingTickets.slice(0, 5));
-      } else {
-        setUserTickets([]);
-      }
-    } catch (error) {
-      setUserTickets([]);
-    } finally {
-      setIsLoadingTickets(false);
-    }
-  }, [user]);
+  }, []);
 
   // Initial load
   useEffect(() => {
-    loadProfile();
     loadEvents();
-    loadOrganizations();
-    loadUserTickets();
-  }, [loadProfile, loadEvents, loadOrganizations, loadUserTickets]);
+    loadSpaces();
+    loadCategories();
+  }, [loadEvents, loadSpaces]);
+  
+  // Cleanup search timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Note: Removed useFocusEffect that was clearing search on focus
+  // as it was causing the search field to clear while typing
 
   // Pull to refresh handler
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      await Promise.all([loadProfile(), loadEvents(), loadOrganizations(), loadUserTickets()]);
+      await Promise.all([loadEvents(), loadSpaces()]);
     } catch (error) {
     } finally {
       setRefreshing(false);
     }
-  }, [loadProfile, loadEvents, loadOrganizations, loadUserTickets]);
-
-  const getDisplayName = () => {
-    // Guest user
-    if (!user) {
-      return 'Guest';
-    }
-    if (profile?.name) {
-      // Return first name only
-      return profile.name.split(' ')[0];
-    }
-    if (profile?.username) {
-      return profile.username;
-    }
-    return 'User';
-  };
+  }, [loadEvents, loadSpaces]);
 
   const handleSearch = () => {
     if (searchQuery.trim()) {
@@ -214,6 +147,11 @@ export default function DiscoverScreen() {
   // Search handler with debounce
   const handleSearchChange = useCallback(async (query: string) => {
     setSearchQuery(query);
+    
+    // Clear existing timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
     
     if (query.trim().length === 0) {
       setIsSearching(false);
@@ -227,25 +165,42 @@ export default function DiscoverScreen() {
 
     setIsSearching(true);
     setSearchLoading(true);
+    setSpaceSearchResults([]);
 
-    try {
-      // Debounce search
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      // Search events
-      const response = await getEvents(1, 10, { search: query });
-      setSearchResults(response.events);
-    } catch (error) {
-      setSearchResults([]);
-    } finally {
-      setSearchLoading(false);
-    }
+    // Set new timeout for debounced search
+    searchTimeoutRef.current = setTimeout(async () => {
+      try {
+        // Search events
+        const response = await getEvents({ page: 1, limit: 10, search: query });
+        // Handle both response shapes
+        setSearchResults(response?.events || response?.data || []);
+        // Also search spaces
+        try {
+          const spaceResp = await getAllSpaces({ search: query, limit: 10 });
+          setSpaceSearchResults(spaceResp?.spaces || []);
+        } catch { setSpaceSearchResults([]); }
+      } catch (error) {
+        setSearchResults([]);
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 300);
   }, []);
 
   const clearSearch = () => {
     setSearchQuery('');
     setIsSearching(false);
     setSearchResults([]);
+  };
+
+  const openSearchModal = () => {
+    setShowSearchModal(true);
+    setTimeout(() => searchInputRef.current?.focus(), 100);
+  };
+
+  const closeSearchModal = () => {
+    setShowSearchModal(false);
+    clearSearch();
   };
 
   const renderSkeletonEventCard = () => (
@@ -280,18 +235,20 @@ export default function DiscoverScreen() {
     <TouchableOpacity
       key={event.id}
       style={styles.featuredEventCard}
-      onPress={() => router.push(`/event/${event.id}`)}
+      onPress={() => router.push(`/event/${event.slug || event.id}`)}
       activeOpacity={0.9}
     >
-      {event.image_url || event.banner_url || event.thumbnail_url ? (
+      {event.coverImageUrl ? (
         <Image
-          source={{ uri: event.image_url || event.banner_url || event.thumbnail_url }}
+          source={{ uri: event.coverImageUrl }}
           style={styles.featuredEventImage}
           resizeMode="cover"
         />
       ) : (
         <View style={styles.featuredEventImagePlaceholder}>
-          <Text style={styles.featuredEventImageText}>{event.category}</Text>
+          <Text style={styles.featuredEventImageText}>
+            {event.category || event.type || 'Event'}
+          </Text>
         </View>
       )}
       <LinearGradient
@@ -301,9 +258,11 @@ export default function DiscoverScreen() {
       <View style={styles.featuredEventContent}>
         {/* Badges at top */}
         <View style={styles.featuredEventBadgesTop}>
-          <View style={styles.featuredEventBadge}>
-            <Text style={styles.featuredEventBadgeText}>{event.category}</Text>
-          </View>
+          {event.category && (
+            <View style={styles.featuredEventBadge}>
+              <Text style={styles.featuredEventBadgeText}>{event.category}</Text>
+            </View>
+          )}
         </View>
 
         {/* Title and info at bottom */}
@@ -315,19 +274,25 @@ export default function DiscoverScreen() {
             <View style={styles.featuredEventMetaItem}>
               <Calendar size={12} color={colors.textMuted} strokeWidth={2} />
               <Text style={styles.featuredEventMetaText}>
-                {new Date(event.start_date).toLocaleDateString('en-US', {
+                {new Date(event.startDateTime).toLocaleDateString('en-US', {
                   month: 'short',
                   day: 'numeric',
                 })}
               </Text>
             </View>
-            <View style={styles.featuredEventMetaItem}>
-              <Users size={12} color={colors.textMuted} strokeWidth={2} />
-              <Text style={styles.featuredEventMetaText}>{event.max_attendees || 'TBA'}</Text>
-            </View>
+            {event.capacity && (
+              <View style={styles.featuredEventMetaItem}>
+                <Users size={12} color={colors.textMuted} strokeWidth={2} />
+                <Text style={styles.featuredEventMetaText}>
+                  {event.registeredCount || 0}/{event.capacity}
+                </Text>
+              </View>
+            )}
           </View>
           <View style={styles.featuredEventFooter}>
-            <Text style={styles.featuredEventOrganizer}>{event.organization?.name || 'Organizer'}</Text>
+            <Text style={styles.featuredEventOrganizer} numberOfLines={1}>
+              {event.space?.name || 'Organizer'}
+            </Text>
             <Text style={styles.featuredEventPrice}>
               {getEventCardPrice(event)}
             </Text>
@@ -341,18 +306,20 @@ export default function DiscoverScreen() {
     <TouchableOpacity
       key={event.id}
       style={styles.featuredEventCard}
-      onPress={() => router.push(`/event/${event.id}`)}
+      onPress={() => router.push(`/event/${event.slug || event.id}`)}
       activeOpacity={0.9}
     >
-      {event.image_url || event.banner_url || event.thumbnail_url ? (
+      {event.coverImageUrl ? (
         <Image
-          source={{ uri: event.image_url || event.banner_url || event.thumbnail_url }}
+          source={{ uri: event.coverImageUrl }}
           style={styles.featuredEventImage}
           resizeMode="cover"
         />
       ) : (
         <View style={styles.featuredEventImagePlaceholder}>
-          <Text style={styles.featuredEventImageText}>{event.category}</Text>
+          <Text style={styles.featuredEventImageText}>
+            {event.category || event.type || 'Event'}
+          </Text>
         </View>
       )}
       <LinearGradient
@@ -363,7 +330,7 @@ export default function DiscoverScreen() {
         {/* Trending Badge at top */}
         <View style={styles.featuredEventBadgesTop}>
           <View style={styles.trendingBadgeOnImage}>
-            <TrendingUp size={8} color="#000000" strokeWidth={2.5} />
+            <TrendingUp size={8} color={colors.text} strokeWidth={2.5} />
             <Text style={styles.trendingBadgeText}>Trending</Text>
           </View>
         </View>
@@ -377,19 +344,25 @@ export default function DiscoverScreen() {
             <View style={styles.featuredEventMetaItem}>
               <Calendar size={12} color={colors.textMuted} strokeWidth={2} />
               <Text style={styles.featuredEventMetaText}>
-                {new Date(event.start_date).toLocaleDateString('en-US', {
+                {new Date(event.startDateTime).toLocaleDateString('en-US', {
                   month: 'short',
                   day: 'numeric',
                 })}
               </Text>
             </View>
-            <View style={styles.featuredEventMetaItem}>
-              <Users size={12} color={colors.textMuted} strokeWidth={2} />
-              <Text style={styles.featuredEventMetaText}>{event.max_attendees || 'TBA'}</Text>
-            </View>
+            {event.capacity && (
+              <View style={styles.featuredEventMetaItem}>
+                <Users size={12} color={colors.textMuted} strokeWidth={2} />
+                <Text style={styles.featuredEventMetaText}>
+                  {event.registeredCount || 0}/{event.capacity}
+                </Text>
+              </View>
+            )}
           </View>
           <View style={styles.featuredEventFooter}>
-            <Text style={styles.featuredEventOrganizer}>{event.organization?.name || 'Organizer'}</Text>
+            <Text style={styles.featuredEventOrganizer} numberOfLines={1}>
+              {event.space?.name || 'Organizer'}
+            </Text>
             <Text style={styles.featuredEventPrice}>
               {getEventCardPrice(event)}
             </Text>
@@ -399,86 +372,69 @@ export default function DiscoverScreen() {
     </TouchableOpacity>
   );
 
-  const renderOrganization = (org: Organization) => (
-    <TouchableOpacity
-      key={org.id}
-      style={styles.orgCard}
-      onPress={() => router.push(`/organization/${org.id}`)}
-      activeOpacity={0.9}
-    >
-      {/* Organization logo/background */}
-      {org.logo_url ? (
-        <Image source={{ uri: org.logo_url }} style={styles.orgBackgroundImage} resizeMode="cover" />
-      ) : (
-        <LinearGradient
-          colors={['rgba(139, 92, 246, 0.3)', 'rgba(139, 92, 246, 0.1)']}
-          style={styles.orgGradientBackground}
-        >
-          <View style={styles.orgLogoPlaceholder}>
-            <Text style={styles.orgLogoText}>{org.name.charAt(0).toUpperCase()}</Text>
-          </View>
-        </LinearGradient>
-      )}
-      
-      {/* Gradient overlay */}
-      <LinearGradient
-        colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.9)']}
-        style={styles.orgGradientOverlay}
-      />
-      
-      {/* Organization content at bottom */}
-      <View style={styles.orgCardContent}>
-        <View style={styles.orgCardBottom}>
-          <Text style={styles.orgName} numberOfLines={2}>
-            {org.name}
-          </Text>
-          {org.type && (
-            <View style={styles.orgCardMeta}>
-              <View style={styles.orgCardMetaItem}>
-                <Users size={12} color={colors.textMuted} strokeWidth={2} />
-                <Text style={styles.orgCardMetaText}>{org.type}</Text>
-              </View>
-            </View>
+  const renderSpace = (space: Space, index: number) => (
+    <View key={space.id}>
+      <TouchableOpacity
+        style={styles.spaceStackItem}
+        onPress={() => router.push(`/space/${space.id}`)}
+        activeOpacity={0.7}
+      >
+        {/* Left side - Logo */}
+        <View style={styles.spaceStackLogoContainer}>
+          {(space.logoUrl || space.logo_url) ? (
+            <Image 
+              source={{ uri: (space.logoUrl || space.logo_url) as string }} 
+              style={styles.spaceStackLogo} 
+              resizeMode="cover" 
+            />
+          ) : (
+            <LinearGradient
+              colors={brandGradient}
+              start={brandGradientStart}
+              end={brandGradientEnd}
+              style={styles.spaceStackLogoPlaceholder}
+            >
+              <Text style={styles.spaceStackLogoText}>
+                {space.name.charAt(0).toUpperCase()}
+              </Text>
+            </LinearGradient>
           )}
         </View>
-      </View>
-    </TouchableOpacity>
-  );
-
-  const renderCity = (city: any) => (
-    <TouchableOpacity
-      key={city.id}
-      style={styles.cityCard}
-      onPress={() => router.push({ pathname: '/events', params: { city: city.name } })}
-      activeOpacity={0.9}
-    >
-      {/* City gradient background */}
-      <LinearGradient
-        colors={brandGradient}
-        start={brandGradientStart}
-        end={brandGradientEnd}
-        style={styles.cityGradientBackground}
-      />
-      
-      {/* Gradient overlay */}
-      <LinearGradient
-        colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.9)']}
-        style={styles.cityGradientOverlay}
-      />
-      
-      {/* City content at bottom */}
-      <View style={styles.cityCardContent}>
-        <View style={styles.cityCardBottom}>
-          <Text style={styles.cityCardName}>{city.name}</Text>
-          <View style={styles.cityCardMeta}>
-            <View style={styles.cityCardMetaItem}>
-              <Calendar size={12} color={colors.textMuted} strokeWidth={2} />
-              <Text style={styles.cityCardMetaText}>{city.count} events</Text>
-            </View>
+        
+        {/* Right side - Info */}
+        <View style={styles.spaceStackContent}>
+          <Text style={styles.spaceStackName} numberOfLines={2}>
+            {space.name}
+          </Text>
+          
+          {space.description && (
+            <Text style={styles.spaceStackMetaText} numberOfLines={1}>
+              {space.description}
+            </Text>
+          )}
+          
+          <View style={styles.spaceStackStats}>
+            {space.city && (
+              <>
+                <Text style={styles.spaceStackStatText}>
+                  {space.city}{space.state ? `, ${space.state}` : ''}
+                </Text>
+                <Text style={styles.spaceStackStatDot}>•</Text>
+              </>
+            )}
+            <Text style={styles.spaceStackStatText}>
+              {space.member_count || 0} members
+            </Text>
+            <Text style={styles.spaceStackStatDot}>•</Text>
+            <Text style={styles.spaceStackStatText}>
+              {space.event_count || 0} events
+            </Text>
           </View>
         </View>
-      </View>
-    </TouchableOpacity>
+      </TouchableOpacity>
+      {/* Divider - don't show after last item */}
+      {index < spaces.length - 1 && <View style={styles.spaceDivider} />}
+    </View>
   );
 
   const renderCategory = (category: any) => (
@@ -488,24 +444,22 @@ export default function DiscoverScreen() {
       onPress={() => router.push({ pathname: '/events', params: { category: category.name } })}
       activeOpacity={0.9}
     >
-      {/* Category gradient background */}
-      <LinearGradient
-        colors={brandGradient}
-        start={brandGradientStart}
-        end={brandGradientEnd}
-        style={styles.categoryGradientBackground}
-      />
+      {/* Category Image/Photo Area - Left Side */}
+      <View style={styles.categoryImageContainer}>
+        <LinearGradient
+          colors={brandGradient}
+          start={brandGradientStart}
+          end={brandGradientEnd}
+          style={styles.categoryImage}
+        />
+      </View>
       
-      {/* Gradient overlay */}
-      <LinearGradient
-        colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.9)']}
-        style={styles.categoryGradientOverlay}
-      />
-      
-      {/* Category content at bottom */}
-      <View style={styles.categoryCardContent}>
-        <View style={styles.categoryCardBottom}>
-          <Text style={styles.categoryName}>{category.name}</Text>
+      {/* Category Info Section - Right Side */}
+      <View style={styles.categoryInfo}>
+        <Text style={styles.categoryName} numberOfLines={2}>{category.name}</Text>
+        <View style={styles.categoryMeta}>
+          <Grid size={12} color={colors.textMuted} strokeWidth={2} />
+          <Text style={styles.categoryMetaText}>View events</Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -516,15 +470,16 @@ export default function DiscoverScreen() {
       key={event.id}
       style={styles.searchResultCard}
       onPress={() => {
-        clearSearch();
-        router.push(`/event/${event.id}`);
+        // Close modal before navigating
+        closeSearchModal();
+        router.push(`/event/${event.slug || event.id}`);
       }}
       activeOpacity={0.9}
     >
       <View style={styles.searchResultImageContainer}>
-        {event.image_url || event.banner_url || event.thumbnail_url ? (
+        {event.coverImageUrl ? (
           <Image
-            source={{ uri: event.image_url || event.banner_url || event.thumbnail_url }}
+            source={{ uri: event.coverImageUrl }}
             style={styles.searchResultImage}
             resizeMode="cover"
           />
@@ -540,16 +495,16 @@ export default function DiscoverScreen() {
         <Text style={styles.searchResultTitle} numberOfLines={2}>
           {event.title}
         </Text>
-        {event.organization?.name && (
+        {event.space?.name && (
           <Text style={styles.searchResultOrganizer} numberOfLines={1}>
-            {event.organization.name}
+            {event.space.name}
           </Text>
         )}
         <View style={styles.searchResultMeta}>
           <View style={styles.searchResultMetaItem}>
             <Calendar size={12} color={colors.textMuted} strokeWidth={2} />
             <Text style={styles.searchResultMetaText}>
-              {new Date(event.start_date).toLocaleDateString('en-US', {
+              {new Date(event.startDateTime).toLocaleDateString('en-US', {
                 month: 'short',
                 day: 'numeric',
               })}
@@ -563,659 +518,52 @@ export default function DiscoverScreen() {
     </TouchableOpacity>
   );
 
-  const renderTicketCard = (event: Event) => {
-    const eventDate = new Date(event.start_date);
-    const formattedDate = eventDate.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-    const formattedTime = eventDate.toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-    });
-
-    return (
-      <TouchableOpacity
-        key={event.id}
-        style={styles.ticketCard}
-        onPress={() => router.push(`/event/${event.id}`)}
-        activeOpacity={0.9}
-      >
-        {/* Top Section */}
-        <View style={styles.ticketTop}>
-          <View style={styles.ticketMainContent}>
-            <View style={styles.ticketImage}>
-              <Text style={styles.ticketImagePlaceholder}>
-                {(event.category || 'E').charAt(0)}
-              </Text>
-            </View>
-            <View style={styles.ticketTextContent}>
-              <Text style={styles.ticketTitle} numberOfLines={2}>
-                {event.title}
-              </Text>
-              <View style={styles.ticketInfo}>
-                <View style={styles.ticketInfoRow}>
-                  <Calendar size={12} color={colors.primary} strokeWidth={2} />
-                  <Text style={styles.ticketInfoText}>{formattedDate}</Text>
-                </View>
-                <View style={styles.ticketInfoRow}>
-                  <Clock size={12} color={colors.primary} strokeWidth={2} />
-                  <Text style={styles.ticketInfoText}>{formattedTime}</Text>
-                </View>
-              </View>
-            </View>
-          </View>
-        </View>
-
-        {/* Dashed Line */}
-        <View style={styles.dashedLineContainer}>
-          <View style={styles.dashedLine} />
-        </View>
-
-        {/* Bottom Section */}
-        <View style={styles.ticketBottom}>
-          <View style={styles.ticketBottomRow}>
-            <View>
-              <Text style={styles.ticketLabel}>CATEGORY</Text>
-              <Text style={styles.ticketValue}>{event.category || 'Event'}</Text>
-            </View>
-            <View style={styles.ticketCodeContainer}>
-              <Text style={styles.ticketLabel}>EVENT ID</Text>
-              <Text style={styles.ticketCode}>#{event.id.substring(0, 8).toUpperCase()}</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Left Cutout */}
-        <View style={styles.cutoutLeft} />
-        {/* Right Cutout */}
-        <View style={styles.cutoutRight} />
-      </TouchableOpacity>
-    );
-  };
-
-  const renderSkeletonTicketCard = () => (
-    <View style={styles.ticketCard}>
-      <View style={styles.ticketTop}>
-        <View style={styles.ticketMainContent}>
-          <Skeleton width={70} height={70} borderRadius={borderRadius.md} />
-          <View style={{ flex: 1, gap: spacing[3] }}>
-            <Skeleton width="90%" height={16} borderRadius={borderRadius.sm} />
-            <Skeleton width="70%" height={12} borderRadius={borderRadius.sm} />
-            <Skeleton width="60%" height={12} borderRadius={borderRadius.sm} />
-          </View>
-        </View>
-      </View>
-      <View style={styles.dashedLineContainer}>
-        <View style={styles.dashedLine} />
-      </View>
-      <View style={styles.ticketBottom}>
-        <View style={styles.ticketBottomRow}>
-          <Skeleton width={80} height={12} borderRadius={borderRadius.sm} />
-          <Skeleton width={100} height={12} borderRadius={borderRadius.sm} />
-        </View>
-      </View>
-      <View style={styles.cutoutLeft} />
-      <View style={styles.cutoutRight} />
-    </View>
-  );
-
-  return (
-    <View style={styles.container}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 100 }}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={colors.primary}
-            colors={[colors.primary]}
-            progressViewOffset={HEADER_TOP_OFFSET}
-          />
-        }
-      >
-        {/* Welcome Section */}
-        <View style={styles.welcomeSection}>
-          <View style={styles.welcomeContent}>
-            <Text style={styles.welcomeText}>Welcome,</Text>
-            {isLoadingProfile ? (
-              <Skeleton
-                width={200}
-                height={typography.fontSize['4xl'] * 1.2}
-                borderRadius={borderRadius.md}
-                style={styles.skeletonName}
-              />
-            ) : (
-              <GradientText style={styles.welcomeUser}>{getDisplayName()}</GradientText>
-            )}
-          </View>
-
-          {/* Guest Sign-In Prompt */}
-          {!user && (
-            <View style={styles.guestSection}>
-              <TouchableOpacity
-                style={styles.guestSignInPrompt}
-                onPress={() => setShowLoginModal(true)}
-                activeOpacity={0.8}
-              >
-                <View style={styles.guestSignInContent}>
-                  <Text style={styles.guestSignInTitle}>Sign in to unlock more features</Text>
-                  <Text style={styles.guestSignInDescription}>
-                    Access Events, Tickets, Wallet & Profile
-                  </Text>
-                </View>
-                <ArrowRight size={20} color={colors.primary} strokeWidth={2} />
-              </TouchableOpacity>
-
-              {/* Sign Up Link */}
-              <View style={styles.signUpPrompt}>
-                <Text style={styles.signUpPromptText}>Don't have an account? </Text>
-                <TouchableOpacity onPress={() => router.push('/signup')}>
-                  <Text style={styles.signUpPromptLink}>Sign Up</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
-        </View>
-
-        {/* Search Section */}
-        <View style={styles.searchSection}>
-          <View style={styles.searchContainer}>
-            <Search size={20} color={colors.textMuted} strokeWidth={2} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search events..."
-              placeholderTextColor={colors.textMuted}
-              value={searchQuery}
-              onChangeText={handleSearchChange}
-              onSubmitEditing={handleSearch}
-              returnKeyType="search"
-            />
-            {searchQuery !== '' && (
-              <TouchableOpacity onPress={clearSearch}>
-                <X size={20} color={colors.textMuted} strokeWidth={2} />
-              </TouchableOpacity>
-            )}
-          </View>
-
-          {/* Search Results */}
-          {isSearching && (
-            <View style={styles.searchResultsContainer}>
-              {searchLoading ? (
-                <View style={styles.searchLoadingContainer}>
-                  <Text style={styles.searchLoadingText}>Searching...</Text>
-                </View>
-              ) : searchResults.length > 0 ? (
-                <>
-                  <View style={styles.searchResultsHeader}>
-                    <Text style={styles.searchResultsCount}>
-                      {searchResults.length} result{searchResults.length !== 1 ? 's' : ''} found
-                    </Text>
-                    <TouchableOpacity onPress={() => router.push({ pathname: '/events', params: { search: searchQuery } })}>
-                      <Text style={styles.viewAllSearchText}>View All</Text>
-                    </TouchableOpacity>
-                  </View>
-                  <View style={styles.searchResultsList}>
-                    {searchResults.map(renderSearchResult)}
-                  </View>
-                </>
-              ) : (
-                <View style={styles.searchEmptyState}>
-                  <Search size={48} color={colors.textMuted} strokeWidth={1.5} />
-                  <Text style={styles.searchEmptyTitle}>No results found</Text>
-                  <Text style={styles.searchEmptyText}>
-                    Try different keywords or browse categories
-                  </Text>
-                </View>
-              )}
-            </View>
-          )}
-        </View>
-
-        {/* Your Tickets Section - Show right after search, only if user is logged in */}
-        {user && !isSearching && (
-          <View style={styles.section}>
-            <TouchableOpacity 
-              style={styles.sectionHeaderClickable}
-              onPress={() => router.push('/tickets')}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.sectionTitle}>Your Tickets</Text>
-              <Text style={styles.sectionArrow}> {'>'}</Text>
-            </TouchableOpacity>
-            {isLoadingTickets ? (
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.horizontalScroll}
-              >
-                {[1, 2, 3].map((i) => (
-                  <View key={`skeleton-ticket-${i}`}>
-                    {renderSkeletonTicketCard()}
-                  </View>
-                ))}
-              </ScrollView>
-            ) : userTickets.length > 0 ? (
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.horizontalScroll}
-              >
-                {userTickets.map(renderTicketCard)}
-              </ScrollView>
-            ) : (
-              <View style={styles.emptyTicketsState}>
-                <Ticket size={48} color={colors.textMuted} strokeWidth={1.5} />
-                <Text style={styles.emptyTicketsText}>No upcoming tickets</Text>
-                <TouchableOpacity
-                  style={styles.browseEventsButton}
-                  onPress={() => router.push('/events')}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.browseEventsButtonText}>Browse Events</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
-        )}
-
-        {/* Only show content sections when not searching */}
-        {!isSearching && (
-          <>
-            {/* Cities Section */}
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Explore Cities</Text>
-              </View>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.citiesScrollContainer}
-              >
-                <View style={styles.citiesContainer}>
-                  {/* First Row */}
-                  <View style={styles.cityRow}>
-                    {cities.slice(0, 3).map(renderCity)}
-                  </View>
-                  {/* Second Row */}
-                  <View style={styles.cityRow}>
-                    {cities.slice(3, 5).map(renderCity)}
-                  </View>
-                </View>
-              </ScrollView>
-            </View>
-
-            {/* Categories Section */}
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Browse Categories</Text>
-              </View>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.categoriesScrollContainer}
-              >
-                <View style={styles.categoriesContainer}>
-                  {/* First Row */}
-                  <View style={styles.categoryRow}>
-                    {categories.slice(0, 3).map(renderCategory)}
-                  </View>
-                  {/* Second Row */}
-                  <View style={styles.categoryRow}>
-                    {categories.slice(3, 6).map(renderCategory)}
-                  </View>
-                </View>
-              </ScrollView>
-            </View>
-
-            {/* Following Organizations - Only show if user is logged in */}
-            {user && followingOrgs.length > 0 && (
-              <View style={styles.section}>
-                <TouchableOpacity 
-                  style={styles.sectionHeaderClickable}
-                  onPress={() => router.push('/organizations')}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.sectionTitleWithIcon}>
-                    <Heart size={20} color={colors.primary} strokeWidth={2} fill={colors.primary} />
-                    <Text style={styles.sectionTitle}>Following</Text>
-                    <Text style={styles.sectionArrow}> {'>'}</Text>
-                  </View>
-                </TouchableOpacity>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.horizontalScroll}
-                >
-                  {followingOrgs.map(renderOrganization)}
-                </ScrollView>
-              </View>
-            )}
-
-            {/* Events from Following Organizations */}
-            {user && followingOrgEvents.length > 0 && (
-              <View style={styles.section}>
-                <TouchableOpacity 
-                  style={styles.sectionHeaderClickable}
-                  onPress={() => router.push('/events')}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.sectionTitle}>From Organizations You Follow</Text>
-                  <Text style={styles.sectionArrow}> {'>'}</Text>
-                </TouchableOpacity>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.horizontalScroll}
-                >
-                  {followingOrgEvents.map(renderFeaturedEvent)}
-                </ScrollView>
-              </View>
-            )}
-
-            {/* Featured Events */}
-            <View style={styles.section}>
-              <TouchableOpacity 
-                style={styles.sectionHeaderClickable}
-                onPress={() => router.push('/events')}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.sectionTitle}>Featured Events</Text>
-                <Text style={styles.sectionArrow}> {'>'}</Text>
-              </TouchableOpacity>
-          {isLoadingEvents ? (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.horizontalScroll}
-            >
-              {[1, 2, 3].map((i) => (
-                <View key={`skeleton-featured-${i}`}>
-                  {renderSkeletonEventCard()}
-                </View>
-              ))}
-            </ScrollView>
-          ) : featuredEvents.length > 0 ? (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.horizontalScroll}
-            >
-              {featuredEvents.map(renderFeaturedEvent)}
-            </ScrollView>
-          ) : (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyStateText}>No featured events available</Text>
-            </View>
-          )}
-                </View>
-
-            {/* Trending Events */}
-            <View style={styles.section}>
-              <TouchableOpacity 
-                style={styles.sectionHeaderClickable}
-                onPress={() => router.push('/events')}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.sectionTitle}>Trending Now</Text>
-                <Text style={styles.sectionArrow}> {'>'}</Text>
-              </TouchableOpacity>
-          {isLoadingEvents ? (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.horizontalScroll}
-            >
-              {[1, 2, 3].map((i) => (
-                <View key={`skeleton-trending-${i}`}>
-                  {renderSkeletonEventCard()}
-                </View>
-              ))}
-            </ScrollView>
-          ) : trendingEvents.length > 0 ? (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.horizontalScroll}
-            >
-              {trendingEvents.map(renderTrendingEvent)}
-            </ScrollView>
-          ) : (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyStateText}>No trending events available</Text>
-            </View>
-          )}
-            </View>
-
-            {/* Organizations Section */}
-            <View style={styles.section}>
-              <TouchableOpacity 
-                style={styles.sectionHeaderClickable}
-                onPress={() => router.push('/organizations')}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.sectionTitle}>Organizations</Text>
-                <Text style={styles.sectionArrow}> {'>'}</Text>
-              </TouchableOpacity>
-          {isLoadingOrgs ? (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.horizontalScroll}
-            >
-              {[1, 2, 3, 4].map((i) => (
-                <View key={`skeleton-org-${i}`}>
-                  {renderSkeletonOrgCard()}
-                </View>
-              ))}
-            </ScrollView>
-          ) : organizations.length > 0 ? (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.horizontalScroll}
-            >
-              {organizations.map(renderOrganization)}
-            </ScrollView>
-          ) : (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyStateText}>No organizations available</Text>
-            </View>
-          )}
-            </View>
-
-            {/* Upcoming Events */}
-            <View style={styles.section}>
-              <TouchableOpacity 
-                style={styles.sectionHeaderClickable}
-                onPress={() => router.push('/events')}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.sectionTitle}>Coming Up</Text>
-                <Text style={styles.sectionArrow}> {'>'}</Text>
-              </TouchableOpacity>
-          {isLoadingEvents ? (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.horizontalScroll}
-            >
-              {[1, 2, 3].map((i) => (
-                <View key={`skeleton-upcoming-${i}`}>
-                  {renderSkeletonEventCard()}
-                </View>
-              ))}
-            </ScrollView>
-          ) : upcomingEvents.length > 0 ? (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.horizontalScroll}
-            >
-              {upcomingEvents.map((event) => (
-                <TouchableOpacity
-                  key={event.id}
-                  style={styles.featuredEventCard}
-                  onPress={() => router.push(`/event/${event.id}`)}
-                  activeOpacity={0.9}
-                >
-                  {event.image_url || event.banner_url || event.thumbnail_url ? (
-                    <Image
-                      source={{ uri: event.image_url || event.banner_url || event.thumbnail_url }}
-                      style={styles.featuredEventImage}
-                      resizeMode="cover"
-                    />
-                  ) : (
-                    <View style={styles.featuredEventImagePlaceholder}>
-                      <Text style={styles.featuredEventImageText}>{event.category}</Text>
-                    </View>
-                  )}
-                  <LinearGradient
-                    colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.9)']}
-                    style={styles.featuredEventGradient}
-                  />
-                  <View style={styles.featuredEventContent}>
-                    {/* Badges at top */}
-                    <View style={styles.featuredEventBadgesTop}>
-                      <View style={styles.featuredEventBadge}>
-                        <Text style={styles.featuredEventBadgeText}>{event.category}</Text>
-                      </View>
-                    </View>
-
-                    {/* Title and info at bottom */}
-                    <View style={styles.featuredEventBottom}>
-                      <Text style={styles.featuredEventTitle} numberOfLines={2}>
-                        {event.title}
-                      </Text>
-                      <View style={styles.featuredEventMeta}>
-                        <View style={styles.featuredEventMetaItem}>
-                          <Calendar size={12} color={colors.textMuted} strokeWidth={2} />
-                          <Text style={styles.featuredEventMetaText}>
-                            {new Date(event.start_date).toLocaleDateString('en-US', {
-                              month: 'short',
-                              day: 'numeric',
-                            })}
-                          </Text>
-                        </View>
-                        <View style={styles.featuredEventMetaItem}>
-                          <Users size={12} color={colors.textMuted} strokeWidth={2} />
-                          <Text style={styles.featuredEventMetaText}>{event.max_attendees || 'TBA'}</Text>
-                        </View>
-                      </View>
-                      <View style={styles.featuredEventFooter}>
-                        <Text style={styles.featuredEventOrganizer}>{event.organization?.name || 'Organizer'}</Text>
-                        <Text style={styles.featuredEventPrice}>
-                          {getEventCardPrice(event)}
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          ) : (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyStateText}>No upcoming events available</Text>
-            </View>
-          )}
-            </View>
-          </>
-        )}
-
-        {/* Footer */}
-        <Footer />
-      </ScrollView>
-
-      {/* Login Modal */}
-      <LoginModal
-        visible={showLoginModal}
-        onClose={() => setShowLoginModal(false)}
-        onSuccess={() => {
-          setShowLoginModal(false);
-          loadProfile();
-        }}
-      />
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
+  const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
   },
-  // Welcome Section
-  welcomeSection: {
-    paddingHorizontal: spacing[6],
-    paddingTop: HEADER_TOP_OFFSET,
-    paddingBottom: spacing[8],
-  },
-  welcomeContent: {
-    alignItems: 'flex-start',
-  },
-  welcomeText: {
-    fontSize: typography.fontSize['2xl'],
-    color: colors.textSecondary,
-    fontFamily: typography.fontFamily.primary,
-    marginBottom: spacing[1],
-  },
-  welcomeUser: {
-    fontSize: typography.fontSize['4xl'],
-    fontFamily: typography.fontFamily.primary,
-    letterSpacing: -1,
-  },
-  skeletonName: {
-    marginTop: spacing[1],
-  },
-  guestSection: {
-    gap: spacing[4],
-  },
-  guestSignInPrompt: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: 'rgba(52, 145, 255, 0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(52, 145, 255, 0.3)',
-    borderRadius: borderRadius['2xl'],
-    padding: spacing[5],
-    marginTop: spacing[6],
-    ...shadows.md,
-  },
-  guestSignInContent: {
-    flex: 1,
-    marginRight: spacing[4],
-  },
-  guestSignInTitle: {
-    fontSize: typography.fontSize.base,
-    color: colors.text,
-    fontFamily: getFontFamily('bold'),
-    marginBottom: spacing[1],
-  },
-  guestSignInDescription: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
-    lineHeight: typography.lineHeight.relaxed * typography.fontSize.sm,
-  },
-  signUpPrompt: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  signUpPromptText: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
-  },
-  signUpPromptLink: {
-    fontSize: typography.fontSize.sm,
-    color: colors.primary,
-    fontFamily: getFontFamily('bold'),
-  },
   section: {
     marginBottom: spacing[12],
+  },
+  // Filter Section
+  filterSection: {
+    marginBottom: spacing[6],
+  },
+  filterScrollContainer: {
+    paddingHorizontal: spacing[6],
+    gap: spacing[3],
+  },
+  filterButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+    paddingVertical: spacing[3],
+    paddingHorizontal: spacing[4],
+    borderRadius: borderRadius.lg,
+    backgroundColor: colors.card,
+  },
+  filterButtonActive: {
+    backgroundColor: 'transparent',
+    borderColor: 'transparent',
+  },
+  filterButtonText: {
+    fontSize: typography.fontSize.sm,
+    color: colors.text,
+    fontFamily: getFontFamily('semibold'),
+  },
+  filterButtonTextActive: {
+    fontSize: typography.fontSize.sm,
+    color: colors.text,
+    fontFamily: getFontFamily('semibold'),
+  },
+  filterButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+    paddingVertical: spacing[3],
+    paddingHorizontal: spacing[4],
+    borderRadius: borderRadius.lg,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -1290,7 +638,7 @@ const styles = StyleSheet.create({
   featuredEventImageText: {
     fontSize: typography.fontSize.xl,
     fontFamily: getFontFamily('bold'),
-    color: '#000000',
+    color: colors.text,
   },
   featuredEventGradient: {
     position: 'absolute',
@@ -1345,7 +693,7 @@ const styles = StyleSheet.create({
   },
   urgencyBadgeText: {
     fontSize: typography.fontSize.xs,
-    color: '#ff6b6b',
+    color: colors.error,
     fontFamily: getFontFamily('bold'),
   },
   featuredEventTitle: {
@@ -1383,6 +731,7 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.xs,
     color: colors.textMuted,
     flex: 1,
+    marginRight: spacing[2],
   },
   featuredEventPrice: {
     fontSize: typography.fontSize.sm,
@@ -1415,7 +764,7 @@ const styles = StyleSheet.create({
   trendingEventImageText: {
     fontSize: typography.fontSize['2xl'],
     fontFamily: getFontFamily('bold'),
-    color: '#000000',
+    color: colors.text,
   },
   trendingEventContent: {
     position: 'absolute',
@@ -1446,7 +795,7 @@ const styles = StyleSheet.create({
   },
   trendingBadgeText: {
     fontSize: typography.fontSize.xs,
-    color: '#000000',
+    color: colors.text,
     fontFamily: getFontFamily('bold'),
   },
   trendingEventTitle: {
@@ -1590,10 +939,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[6],
     paddingVertical: spacing[8],
     alignItems: 'center',
+    gap: spacing[2],
   },
   emptyStateText: {
     fontSize: typography.fontSize.sm,
     color: colors.textMuted,
+    textAlign: 'center',
+  },
+  emptyStateSubtext: {
+    fontSize: typography.fontSize.xs,
+    color: colors.textMuted,
+    textAlign: 'center',
+    marginTop: spacing[1],
   },
   // Search Section
   searchSection: {
@@ -1612,6 +969,13 @@ const styles = StyleSheet.create({
     gap: spacing[3],
     ...shadows.md,
   },
+  searchPlaceholder: {
+    flex: 1,
+    fontSize: typography.fontSize.base,
+    color: colors.textMuted,
+    fontFamily: getFontFamily('normal'),
+    paddingVertical: spacing[1],
+  },
   searchInput: {
     flex: 1,
     fontSize: typography.fontSize.base,
@@ -1619,7 +983,80 @@ const styles = StyleSheet.create({
     fontFamily: getFontFamily('normal'),
     paddingVertical: spacing[1],
   },
-  // Organization Cards
+  // Modal Styles
+  modalContainer: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  modalHeader: {
+    paddingTop: Platform.OS === 'ios' ? 50 : 20,
+    paddingHorizontal: spacing[4],
+    paddingBottom: spacing[3],
+    backgroundColor: colors.background,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderMuted,
+  },
+  modalHeaderTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing[3],
+  },
+  modalBackButton: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalHeaderTitle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[3],
+    flex: 1,
+    marginLeft: spacing[2],
+  },
+  modalTitle: {
+    fontSize: typography.fontSize['2xl'],
+    fontFamily: getFontFamily('bold'),
+    color: colors.text,
+  },
+  modalToggle: {
+    flexDirection: 'row',
+    backgroundColor: colors.card,
+    borderRadius: borderRadius.lg,
+    padding: 3,
+  },
+  modalToggleButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: borderRadius.md,
+  },
+  modalToggleButtonActive: {
+    backgroundColor: colors.primary,
+  },
+  modalToggleText: {
+    fontFamily: getFontFamily('semibold'),
+    fontSize: typography.fontSize.xs,
+    color: colors.textMuted,
+  },
+  modalToggleTextActive: {
+    color: '#fff',
+  },
+  modalSearchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.card,
+    borderRadius: borderRadius.xl,
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[2],
+    borderWidth: 1,
+    borderColor: colors.borderMuted,
+    gap: spacing[3],
+  },
+  modalContent: {
+    flex: 1,
+  },
+  // Space Cards
   orgCard: {
     width: 320,
     aspectRatio: 4 / 3,
@@ -1696,6 +1133,87 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.xs,
     color: colors.textMuted,
     textAlign: 'center',
+  },
+  // Space Stack List (Vertical)
+  spaceStackList: {
+    paddingHorizontal: spacing[6],
+  },
+  spaceStackItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing[4],
+    gap: spacing[4],
+  },
+  spaceDivider: {
+    height: 1,
+    backgroundColor: colors.borderMuted,
+    marginLeft: spacing[6] + 64 + spacing[4], // indent to align with text
+  },
+  spaceStackLogoContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: borderRadius.lg,
+    overflow: 'hidden',
+    flexShrink: 0,
+  },
+  spaceStackLogo: {
+    width: '100%',
+    height: '100%',
+  },
+  spaceStackLogoPlaceholder: {
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  spaceStackLogoText: {
+    fontSize: typography.fontSize['2xl'],
+    fontFamily: getFontFamily('bold'),
+    color: colors.text,
+  },
+  spaceStackContent: {
+    flex: 1,
+    gap: spacing[2],
+  },
+  spaceStackName: {
+    fontSize: typography.fontSize.lg,
+    color: colors.text,
+    fontFamily: getFontFamily('bold'),
+    lineHeight: typography.fontSize.lg * 1.3,
+  },
+  spaceStackMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+    flexWrap: 'wrap',
+    marginBottom: spacing[1],
+  },
+  spaceStackMetaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  spaceStackMetaDot: {
+    fontSize: typography.fontSize.xs,
+    color: colors.textMuted,
+  },
+  spaceStackMetaText: {
+    fontSize: typography.fontSize.xs,
+    color: colors.textMuted,
+    fontFamily: getFontFamily('normal'),
+  },
+  spaceStackStats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+  },
+  spaceStackStatDot: {
+    fontSize: typography.fontSize.xs,
+    color: colors.textMuted,
+  },
+  spaceStackStatText: {
+    fontSize: typography.fontSize.xs,
+    color: colors.textMuted,
+    fontFamily: getFontFamily('normal'),
   },
   // Cities Section
   citiesScrollContainer: {
@@ -1793,39 +1311,45 @@ const styles = StyleSheet.create({
   },
   categoryCard: {
     width: 200,
-    aspectRatio: 4 / 3,
+    flexDirection: 'row',
     backgroundColor: colors.card,
     borderRadius: borderRadius['2xl'],
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: colors.borderMuted,
+    padding: spacing[3],
+    gap: spacing[3],
     ...shadows.lg,
   },
-  categoryGradientBackground: {
+  categoryImageContainer: {
+    width: 80,
+    aspectRatio: 4 / 3,
+    borderRadius: borderRadius.lg,
+    overflow: 'hidden',
+  },
+  categoryImage: {
     width: '100%',
     height: '100%',
   },
-  categoryGradientOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: '60%',
-  },
-  categoryCardContent: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: spacing[4],
-  },
-  categoryCardBottom: {
+  categoryInfo: {
+    flex: 1,
+    justifyContent: 'center',
     gap: spacing[1],
   },
   categoryName: {
-    fontSize: typography.fontSize.base,
+    fontSize: typography.fontSize.sm,
     fontFamily: getFontFamily('bold'),
     color: colors.text,
+  },
+  categoryMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[1],
+  },
+  categoryMetaText: {
+    fontSize: typography.fontSize.xs,
+    color: colors.textMuted,
+    fontFamily: getFontFamily('normal'),
   },
   // Section Title with Icon
   sectionTitleWithIcon: {
@@ -1835,13 +1359,8 @@ const styles = StyleSheet.create({
   },
   // Search Results
   searchResultsContainer: {
-    marginTop: spacing[4],
-    backgroundColor: colors.card,
-    borderRadius: borderRadius['2xl'],
-    borderWidth: 1,
-    borderColor: colors.borderMuted,
-    overflow: 'hidden',
-    ...shadows.lg,
+    flex: 1,
+    backgroundColor: colors.background,
   },
   searchLoadingContainer: {
     padding: spacing[8],
@@ -1871,14 +1390,16 @@ const styles = StyleSheet.create({
     fontFamily: getFontFamily('bold'),
   },
   searchResultsList: {
-    maxHeight: 500,
+    paddingBottom: spacing[6],
   },
   searchResultCard: {
     flexDirection: 'row',
     padding: spacing[4],
-    gap: spacing[3],
+    paddingHorizontal: spacing[6],
+    gap: spacing[4],
     borderBottomWidth: 1,
     borderBottomColor: colors.borderMuted,
+    backgroundColor: colors.background,
   },
   searchResultImageContainer: {
     width: 80,
@@ -1953,151 +1474,494 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     textAlign: 'center',
   },
-  // Ticket Cards
-  ticketCard: {
-    width: 300,
-    backgroundColor: colors.card,
-    borderRadius: borderRadius.lg,
-    borderWidth: 0.5,
-    borderColor: colors.primary,
-    ...shadows.lg,
-    marginRight: spacing[4],
-  },
-  ticketTop: {
-    paddingHorizontal: spacing[5],
-    paddingTop: spacing[5],
-    paddingBottom: spacing[4],
-  },
-  ticketMainContent: {
-    flexDirection: 'row',
-    gap: spacing[3],
-  },
-  ticketImage: {
-    width: 70,
-    height: 70,
-    borderRadius: borderRadius.md,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ticketImagePlaceholder: {
-    fontSize: typography.fontSize['2xl'],
-    fontFamily: getFontFamily('bold'),
-    color: '#000000',
-  },
-  ticketTextContent: {
-    flex: 1,
-  },
-  ticketTitle: {
-    fontSize: typography.fontSize.base,
-    color: colors.text,
-    marginBottom: spacing[3],
-    lineHeight: typography.fontSize.base * 1.3,
-    fontFamily: getFontFamily('semibold'),
-  },
-  ticketInfo: {
-    gap: spacing[2],
-  },
-  ticketInfoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[2],
-  },
-  ticketInfoText: {
-    fontSize: typography.fontSize.xs,
-    color: colors.textSecondary,
-    fontFamily: getFontFamily('normal'),
-  },
-  dashedLineContainer: {
-    paddingHorizontal: spacing[3],
-  },
-  dashedLine: {
-    height: 1,
-    borderStyle: 'dashed',
-    borderWidth: 1,
-    borderColor: colors.borderMuted,
-  },
-  ticketBottom: {
-    paddingHorizontal: spacing[5],
-    paddingTop: spacing[4],
-    paddingBottom: spacing[5],
-  },
-  ticketBottomRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-  },
-  ticketLabel: {
-    fontSize: typography.fontSize.xs,
-    color: colors.textMuted,
-    fontFamily: getFontFamily('bold'),
-    letterSpacing: typography.letterSpacing.wider,
-    marginBottom: spacing[1],
-  },
-  ticketValue: {
-    fontSize: typography.fontSize.sm,
-    color: colors.text,
-    fontFamily: getFontFamily('bold'),
-  },
-  ticketCodeContainer: {
-    alignItems: 'flex-end',
-  },
-  ticketCode: {
-    fontSize: typography.fontSize.xs,
-    color: colors.primary,
-    fontFamily: 'Courier',
-  },
-  cutoutLeft: {
-    position: 'absolute',
-    left: -13,
-    top: '50%',
-    marginTop: -12,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: colors.background,
-    borderRightWidth: 1,
-    borderRightColor: colors.primary,
-  },
-  cutoutRight: {
-    position: 'absolute',
-    right: -13,
-    top: '50%',
-    marginTop: -12,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: colors.background,
-    borderLeftWidth: 1,
-    borderLeftColor: colors.primary,
-  },
-  emptyTicketsState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing[8],
-    paddingHorizontal: spacing[6],
-    gap: spacing[3],
-    backgroundColor: colors.card,
-    borderRadius: borderRadius['2xl'],
-    marginHorizontal: spacing[6],
-    borderWidth: 1,
-    borderColor: colors.borderMuted,
-  },
-  emptyTicketsText: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textMuted,
-    textAlign: 'center',
-  },
-  browseEventsButton: {
-    marginTop: spacing[2],
-    paddingVertical: spacing[3],
-    paddingHorizontal: spacing[6],
-    backgroundColor: 'rgba(52, 145, 255, 0.15)',
-    borderRadius: borderRadius.lg,
-  },
-  browseEventsButtonText: {
-    fontSize: typography.fontSize.sm,
-    color: colors.primary,
-    fontFamily: getFontFamily('bold'),
-  },
 });
+
+  return (
+    <View style={styles.container}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 100, paddingTop: HEADER_TOP_OFFSET }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
+            progressViewOffset={HEADER_TOP_OFFSET}
+          />
+        }
+      >
+        {/* Search Section - Opens Modal */}
+        <TouchableOpacity 
+          style={styles.searchSection}
+          onPress={openSearchModal}
+          activeOpacity={0.7}
+        >
+          <View style={styles.searchContainer}>
+            <Search size={20} color={colors.textMuted} strokeWidth={2} />
+            <Text style={styles.searchPlaceholder}>Search events...</Text>
+          </View>
+        </TouchableOpacity>
+
+        {/* Search Modal */}
+        <Modal
+          visible={showSearchModal}
+          animationType="slide"
+          onRequestClose={closeSearchModal}
+        >
+          <View style={styles.modalContainer}>
+            {/* Stack Header */}
+            <View style={styles.modalHeader}>
+              {/* Header Top Row */}
+              <View style={styles.modalHeaderTop}>
+                <TouchableOpacity onPress={closeSearchModal} style={styles.modalBackButton}>
+                  <X size={24} color={colors.text} strokeWidth={2} />
+                </TouchableOpacity>
+                <View style={styles.modalHeaderTitle}>
+                  <Text style={styles.modalTitle}>Search</Text>
+                  {/* Toggle next to title */}
+                  <View style={styles.modalToggle}>
+                    <TouchableOpacity
+                      style={[styles.modalToggleButton, searchType === 'events' && styles.modalToggleButtonActive]}
+                      onPress={() => setSearchType('events')}
+                    >
+                      <Text style={[styles.modalToggleText, searchType === 'events' && styles.modalToggleTextActive]}>
+                        Events
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.modalToggleButton, searchType === 'spaces' && styles.modalToggleButtonActive]}
+                      onPress={() => setSearchType('spaces')}
+                    >
+                      <Text style={[styles.modalToggleText, searchType === 'spaces' && styles.modalToggleTextActive]}>
+                        Spaces
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+
+              {/* Search Input */}
+              <View style={styles.modalSearchContainer}>
+                <Search size={20} color={colors.textMuted} strokeWidth={2} />
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder={`Search ${searchType}...`}
+                  placeholderTextColor={colors.textMuted}
+                  value={searchQuery}
+                  onChangeText={handleSearchChange}
+                  onSubmitEditing={handleSearch}
+                  returnKeyType="search"
+                  ref={searchInputRef}
+                  autoFocus
+                />
+                {searchQuery !== '' && (
+                  <TouchableOpacity onPress={clearSearch}>
+                    <X size={20} color={colors.textMuted} strokeWidth={2} />
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+
+            {/* Search Results in Modal */}
+            <ScrollView style={styles.modalContent}>
+              {isSearching && (
+                <View style={styles.searchResultsContainer}>
+                  {searchLoading ? (
+                    <View style={styles.searchResultsList}>
+                      {[1, 2, 3, 4, 5].map((i) => (
+                        <View key={`skeleton-${i}`} style={styles.searchResultCard}>
+                          <View style={styles.searchResultImageContainer}>
+                            <Skeleton width={80} height={80} borderRadius={borderRadius.lg} />
+                          </View>
+                          <View style={styles.searchResultContent}>
+                            <Skeleton width="80%" height={20} borderRadius={borderRadius.md} style={{ marginBottom: spacing[2] }} />
+                            <Skeleton width="50%" height={14} borderRadius={borderRadius.sm} style={{ marginBottom: spacing[3] }} />
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <Skeleton width={100} height={14} borderRadius={borderRadius.sm} />
+                              <Skeleton width={60} height={14} borderRadius={borderRadius.sm} />
+                            </View>
+                          </View>
+                        </View>
+                      ))}
+                    </View>
+                  ) : searchType === 'spaces' ? (
+                    spaceSearchResults.length > 0 ? (
+                      <View style={styles.searchResultsList}>
+                        {spaceSearchResults.map((space: any) => (
+                          <TouchableOpacity
+                            key={space.id}
+                            style={styles.searchResultCard}
+                            onPress={() => { closeSearchModal(); router.push(`/space/${space.id}`); }}
+                          >
+                            <View style={[styles.searchResultImageContainer, { backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' }]}>
+                              <Text style={{ fontSize: 28, color: '#fff', fontFamily: getFontFamily('bold') }}>{space.name?.[0]?.toUpperCase()}</Text>
+                            </View>
+                            <View style={styles.searchResultContent}>
+                              <Text style={styles.searchResultTitle}>{space.name}</Text>
+                              <Text style={styles.searchResultOrganizer}>{space.city || ''}</Text>
+                            </View>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    ) : isSearching ? (
+                      <View style={styles.searchEmptyState}>
+                        <Text style={styles.searchEmptyTitle}>No spaces found</Text>
+                      </View>
+                    ) : null
+                  ) : (searchResults?.length ?? 0) > 0 ? (
+                    <>
+                      <View style={styles.searchResultsHeader}>
+                        <Text style={styles.searchResultsCount}>
+                          {searchResults.length} result{searchResults.length !== 1 ? 's' : ''} found
+                        </Text>
+                        <TouchableOpacity onPress={() => {
+                          closeSearchModal();
+                          router.push({ pathname: '/events', params: { search: searchQuery } });
+                        }}>
+                          <Text style={styles.viewAllSearchText}>View All</Text>
+                        </TouchableOpacity>
+                      </View>
+                      <View style={styles.searchResultsList}>
+                        {searchResults.map(renderSearchResult)}
+                      </View>
+                    </>
+                  ) : (
+                    <View style={styles.searchEmptyState}>
+                      <Search size={48} color={colors.textMuted} strokeWidth={1.5} />
+                      <Text style={styles.searchEmptyTitle}>No results found</Text>
+                      <Text style={styles.searchEmptyText}>
+                        Try different keywords or find your vibe
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              )}
+            </ScrollView>
+          </View>
+        </Modal>
+
+        {/* Content sections - always show, no conditional */}
+        <>
+          {/* Filter Buttons */}
+          <View style={styles.filterSection}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.filterScrollContainer}
+              >
+                {activeFilter === 'all' ? (
+                  <TouchableOpacity
+                    onPress={() => setActiveFilter('all')}
+                    activeOpacity={0.7}
+                  >
+                    <LinearGradient
+                      colors={brandGradient}
+                      start={brandGradientStart}
+                      end={brandGradientEnd}
+                      style={styles.filterButtonGradient}
+                    >
+                      <Sparkles size={14} color={colors.text} strokeWidth={2} />
+                      <Text style={styles.filterButtonTextActive}>All Events</Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    style={styles.filterButton}
+                    onPress={() => setActiveFilter('all')}
+                    activeOpacity={0.7}
+                  >
+                    <Sparkles size={14} color={colors.text} strokeWidth={2} />
+                    <Text style={styles.filterButtonText}>All Events</Text>
+                  </TouchableOpacity>
+                )}
+
+                {activeFilter === 'trending' ? (
+                  <TouchableOpacity
+                    onPress={() => setActiveFilter('trending')}
+                    activeOpacity={0.7}
+                  >
+                    <LinearGradient
+                      colors={brandGradient}
+                      start={brandGradientStart}
+                      end={brandGradientEnd}
+                      style={styles.filterButtonGradient}
+                    >
+                      <TrendingUp size={14} color={colors.text} strokeWidth={2} />
+                      <Text style={styles.filterButtonTextActive}>Trending</Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    style={styles.filterButton}
+                    onPress={() => setActiveFilter('trending')}
+                    activeOpacity={0.7}
+                  >
+                    <TrendingUp size={14} color={colors.text} strokeWidth={2} />
+                    <Text style={styles.filterButtonText}>Trending</Text>
+                  </TouchableOpacity>
+                )}
+
+                {activeFilter === 'featured' ? (
+                  <TouchableOpacity
+                    onPress={() => setActiveFilter('featured')}
+                    activeOpacity={0.7}
+                  >
+                    <LinearGradient
+                      colors={brandGradient}
+                      start={brandGradientStart}
+                      end={brandGradientEnd}
+                      style={styles.filterButtonGradient}
+                    >
+                      <Grid size={14} color={colors.text} strokeWidth={2} />
+                      <Text style={styles.filterButtonTextActive}>Featured</Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    style={styles.filterButton}
+                    onPress={() => setActiveFilter('featured')}
+                    activeOpacity={0.7}
+                  >
+                    <Grid size={14} color={colors.text} strokeWidth={2} />
+                    <Text style={styles.filterButtonText}>Featured</Text>
+                  </TouchableOpacity>
+                )}
+
+                {activeFilter === 'upcoming' ? (
+                  <TouchableOpacity
+                    onPress={() => setActiveFilter('upcoming')}
+                    activeOpacity={0.7}
+                  >
+                    <LinearGradient
+                      colors={brandGradient}
+                      start={brandGradientStart}
+                      end={brandGradientEnd}
+                      style={styles.filterButtonGradient}
+                    >
+                      <Calendar size={14} color={colors.text} strokeWidth={2} />
+                      <Text style={styles.filterButtonTextActive}>Upcoming</Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    style={styles.filterButton}
+                    onPress={() => setActiveFilter('upcoming')}
+                    activeOpacity={0.7}
+                  >
+                    <Calendar size={14} color={colors.text} strokeWidth={2} />
+                    <Text style={styles.filterButtonText}>Upcoming</Text>
+                  </TouchableOpacity>
+                )}
+
+                {user && (
+                  activeFilter === 'saved' ? (
+                    <TouchableOpacity
+                      onPress={() => setActiveFilter('saved')}
+                      activeOpacity={0.7}
+                    >
+                      <LinearGradient
+                        colors={brandGradient}
+                        start={brandGradientStart}
+                        end={brandGradientEnd}
+                        style={styles.filterButtonGradient}
+                      >
+                        <Heart size={14} color={colors.text} strokeWidth={2} fill={colors.text} />
+                        <Text style={styles.filterButtonTextActive}>Saved</Text>
+                      </LinearGradient>
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity
+                      style={styles.filterButton}
+                      onPress={() => setActiveFilter('saved')}
+                      activeOpacity={0.7}
+                    >
+                      <Heart size={14} color={colors.text} strokeWidth={2} fill="none" />
+                      <Text style={styles.filterButtonText}>Saved</Text>
+                    </TouchableOpacity>
+                  )
+                )}
+              </ScrollView>
+            </View>
+
+            {/* Filtered Events */}
+            <View style={styles.section}>
+              {isLoadingEvents ? (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.horizontalScroll}
+                >
+                  {[1, 2, 3].map((i) => (
+                    <View key={`skeleton-${i}`}>
+                      {renderSkeletonEventCard()}
+                    </View>
+                  ))}
+                </ScrollView>
+              ) : (
+                <>
+                  {activeFilter === 'all' && (
+                    ((trendingEvents?.length || 0) > 0 || (featuredEvents?.length || 0) > 0 || (upcomingEvents?.length || 0) > 0) ? (
+                      <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.horizontalScroll}
+                      >
+                        {trendingEvents?.map(renderTrendingEvent)}
+                        {featuredEvents?.map(renderFeaturedEvent)}
+                        {upcomingEvents?.map(renderFeaturedEvent)}
+                      </ScrollView>
+                    ) : (
+                      <View style={styles.emptyState}>
+                        <Sparkles size={48} color={colors.textMuted} strokeWidth={1.5} />
+                        <Text style={styles.emptyStateText}>No events available</Text>
+                      </View>
+                    )
+                  )}
+
+                  {activeFilter === 'trending' && (
+                    (trendingEvents?.length || 0) > 0 ? (
+                      <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.horizontalScroll}
+                      >
+                        {trendingEvents.map(renderTrendingEvent)}
+                        {featuredEvents.map(renderFeaturedEvent)}
+                        {upcomingEvents.map(renderFeaturedEvent)}
+                      </ScrollView>
+                    ) : (
+                      <View style={styles.emptyState}>
+                        <TrendingUp size={48} color={colors.textMuted} strokeWidth={1.5} />
+                        <Text style={styles.emptyStateText}>No trending events</Text>
+                      </View>
+                    )
+                  )}
+
+                  {activeFilter === 'featured' && (
+                    (featuredEvents?.length || 0) > 0 ? (
+                      <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.horizontalScroll}
+                      >
+                        {featuredEvents?.map(renderFeaturedEvent)}
+                        {trendingEvents?.map(renderTrendingEvent)}
+                        {upcomingEvents?.map(renderFeaturedEvent)}
+                      </ScrollView>
+                    ) : (
+                      <View style={styles.emptyState}>
+                        <Grid size={48} color={colors.textMuted} strokeWidth={1.5} />
+                        <Text style={styles.emptyStateText}>No featured events</Text>
+                      </View>
+                    )
+                  )}
+
+                  {activeFilter === 'upcoming' && (
+                    (upcomingEvents?.length || 0) > 0 ? (
+                      <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.horizontalScroll}
+                      >
+                        {upcomingEvents?.map(renderFeaturedEvent)}
+                        {featuredEvents?.map(renderFeaturedEvent)}
+                        {trendingEvents?.map(renderTrendingEvent)}
+                      </ScrollView>
+                    ) : (
+                      <View style={styles.emptyState}>
+                        <Calendar size={48} color={colors.textMuted} strokeWidth={1.5} />
+                        <Text style={styles.emptyStateText}>No upcoming events</Text>
+                      </View>
+                    )
+                  )}
+
+                  {activeFilter === 'saved' && (
+                    (savedEvents?.length || 0) > 0 ? (
+                      <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.horizontalScroll}
+                      >
+                        {savedEvents?.map(renderFeaturedEvent)}
+                      </ScrollView>
+                    ) : (
+                      <View style={styles.emptyState}>
+                        <Heart size={48} color={colors.textMuted} strokeWidth={1.5} />
+                        <Text style={styles.emptyStateText}>No saved events</Text>
+                        <Text style={styles.emptyStateSubtext}>Save events to see them here</Text>
+                      </View>
+                    )
+                  )}
+                </>
+              )}
+            </View>
+
+            {/* Categories Section */}
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Find Your Vibe</Text>
+              </View>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.categoriesScrollContainer}
+              >
+                <View style={styles.categoriesContainer}>
+                  {/* First Row */}
+                  <View style={styles.categoryRow}>
+                    {categories.slice(0, 3).map(renderCategory)}
+                  </View>
+                  {/* Second Row */}
+                  <View style={styles.categoryRow}>
+                    {categories.slice(3, 6).map(renderCategory)}
+                  </View>
+                  {/* Third Row */}
+                  <View style={styles.categoryRow}>
+                    {categories.slice(6, 9).map(renderCategory)}
+                  </View>
+                </View>
+              </ScrollView>
+            </View>
+
+            {/* Spaces Section */}
+            <View style={styles.section}>
+              <TouchableOpacity 
+                style={styles.sectionHeaderClickable}
+                onPress={() => router.push('/spaces')}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.sectionTitle}>Explore Spaces</Text>
+                <Text style={styles.sectionArrow}> {'>'}</Text>
+              </TouchableOpacity>
+              {isLoadingOrgs ? (
+                <View style={styles.spaceStackList}>
+                  {[1, 2, 3, 4].map((i) => (
+                    <View key={`skeleton-space-${i}`}>
+                      <View style={styles.spaceStackItem}>
+                        <Skeleton width={64} height={64} borderRadius={borderRadius.lg} />
+                        <View style={styles.spaceStackContent}>
+                          <Skeleton width="80%" height={20} borderRadius={borderRadius.sm} style={{ marginBottom: spacing[2] }} />
+                          <Skeleton width="60%" height={14} borderRadius={borderRadius.sm} style={{ marginBottom: spacing[2] }} />
+                          <Skeleton width="90%" height={14} borderRadius={borderRadius.sm} />
+                        </View>
+                      </View>
+                      {i < 4 && <View style={styles.spaceDivider} />}
+                    </View>
+                  ))}
+                </View>
+              ) : spaces.length > 0 ? (
+                <View style={styles.spaceStackList}>
+                  {spaces.map((space, index) => renderSpace(space, index))}
+                </View>
+              ) : (
+                <View style={styles.emptyState}>
+                  <Text style={styles.emptyStateText}>No spaces available</Text>
+                </View>
+              )}
+            </View>
+          </>
+      </ScrollView>
+    </View>
+  );
+}

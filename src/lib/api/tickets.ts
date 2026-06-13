@@ -3,7 +3,7 @@
  * Handles ticket fetching for event registration (authenticated)
  */
 
-import { getAuthSession } from './helpers';
+import { makeAuthenticatedRequest } from './helpers';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080';
 
@@ -102,27 +102,9 @@ async function fetchWithTimeout(url: string, options: RequestInit = {}, timeout:
  */
 export async function getEventTickets(eventId: string): Promise<{ tickets: Ticket[] }> {
   try {
-    const session = await getAuthSession();
+    const response = await makeAuthenticatedRequest(`/events/${eventId}/tickets`);
     
-    if (!session?.access_token) {
-      // User not authenticated - return empty tickets silently
-      return { tickets: [] };
-    }
-
-    const response = await fetchWithTimeout(
-      `${API_URL}/events/${eventId}/tickets`,
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-      },
-      10000
-    );
-
-    if (!response.ok) {
-      console.error('Failed to fetch tickets:', response.status);
+    if (!response?.ok) {
       return { tickets: [] };
     }
 
@@ -147,27 +129,9 @@ export async function getEventTickets(eventId: string): Promise<{ tickets: Ticke
  */
 export async function getEventCustomFields(eventId: string): Promise<{ fields: CustomField[] }> {
   try {
-    const session = await getAuthSession();
+    const response = await makeAuthenticatedRequest(`/events/${eventId}/custom-fields`);
     
-    if (!session?.access_token) {
-      // User not authenticated - return empty fields silently
-      return { fields: [] };
-    }
-
-    const response = await fetchWithTimeout(
-      `${API_URL}/events/${eventId}/custom-fields`,
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-      },
-      10000
-    );
-
-    if (!response.ok) {
-      console.error('Failed to fetch custom fields:', response.status);
+    if (!response?.ok) {
       return { fields: [] };
     }
 

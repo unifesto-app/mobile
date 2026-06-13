@@ -2,10 +2,38 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import UnifestoAppWordmark from './UnifestoAppWordmark';
-import { colors, spacing, typography } from '../theme';
+import { spacing, typography } from '../theme';
+import { useTheme } from '../context/ThemeContext';
 import { getFontFamily } from '../theme/fontHelpers';
 
 export default function Footer() {
+  const { colors } = useTheme();
+
+  const styles = StyleSheet.create({
+    footerContainer: {
+      marginTop: spacing[8],
+    },
+    dividerContainer: {
+      alignItems: 'center',
+      paddingHorizontal: spacing[6],
+      marginBottom: spacing[12],
+    },
+    divider: {
+      width: '66%',
+      height: 1,
+    },
+    footer: {
+      paddingHorizontal: spacing[6],
+      paddingBottom: spacing[16],
+      alignItems: 'center',
+    },
+    footerVersion: {
+      fontSize: typography.fontSize.xs,
+      color: colors.textMuted,
+      fontFamily: typography.fontFamily.primary,
+    },
+  });
+
   return (
     <View style={styles.footerContainer}>
       {/* Gradient Divider */}
@@ -25,29 +53,3 @@ export default function Footer() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  footerContainer: {
-    marginTop: spacing[8],
-  },
-  dividerContainer: {
-    alignItems: 'center',
-    paddingHorizontal: spacing[6],
-    marginBottom: spacing[12],
-  },
-  divider: {
-    width: '66%',
-    height: 1,
-  },
-  footer: {
-    paddingHorizontal: spacing[6],
-    paddingBottom: spacing[16],
-    alignItems: 'center',
-  },
-
-  footerVersion: {
-    fontSize: typography.fontSize.xs,
-    color: colors.textMuted,
-    fontFamily: typography.fontFamily.primary,
-  },
-});

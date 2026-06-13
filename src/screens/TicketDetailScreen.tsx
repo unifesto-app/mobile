@@ -13,131 +13,17 @@ import { LinearGradient } from 'expo-linear-gradient';
 import GradientText from '../components/GradientText';
 import GradientButton from '../components/GradientButton';
 import Footer from '../components/Footer';
-import { colors, spacing, typography, borderRadius, shadows, brandGradient } from '../theme';
+import { useTheme } from '../context/ThemeContext';
+import { spacing, typography, borderRadius, shadows, brandGradient } from '../theme';
 
 interface TicketDetailScreenProps {
   route: { params: { ticketId: string; ticket?: any } };
 }
 
 export default function TicketDetailScreen({ route }: TicketDetailScreenProps) {
-  const router = useRouter();
-  const { ticket } = route.params;
-
-  return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Hero Image */}
-      <View style={styles.heroContainer}>
-        <Image source={{ uri: ticket.image }} style={styles.heroImage} />
-        <LinearGradient
-          colors={['transparent', 'rgba(0, 0, 0, 0.9)']}
-          style={styles.heroGradient}
-        />
-      </View>
-
-      {/* Content */}
-      <View style={styles.content}>
-        {/* Event Title */}
-        <View style={styles.titleSection}>
-          <GradientText style={styles.eventTitle}>{ticket.title}</GradientText>
-          <View style={styles.categoryBadge}>
-            <Text style={styles.categoryText}>{ticket.category}</Text>
-          </View>
-        </View>
-
-        {/* Event Details */}
-        <View style={styles.detailsSection}>
-          <View style={styles.detailRow}>
-            <View style={styles.detailIconContainer}>
-              <Calendar size={20} color={colors.primary} strokeWidth={2} />
-            </View>
-            <View style={styles.detailContent}>
-              <Text style={styles.detailLabel}>Date</Text>
-              <Text style={styles.detailValue}>{ticket.date}</Text>
-            </View>
-          </View>
-
-          <View style={styles.detailRow}>
-            <View style={styles.detailIconContainer}>
-              <Clock size={20} color={colors.primary} strokeWidth={2} />
-            </View>
-            <View style={styles.detailContent}>
-              <Text style={styles.detailLabel}>Time</Text>
-              <Text style={styles.detailValue}>{ticket.time}</Text>
-            </View>
-          </View>
-
-          <View style={styles.detailRow}>
-            <View style={styles.detailIconContainer}>
-              <MapPin size={20} color={colors.primary} strokeWidth={2} />
-            </View>
-            <View style={styles.detailContent}>
-              <Text style={styles.detailLabel}>Location</Text>
-              <Text style={styles.detailValue}>{ticket.location}</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* QR Code Section */}
-        <View style={styles.qrSection}>
-          <Text style={styles.sectionTitle}>Your Ticket</Text>
-          <View style={styles.qrCard}>
-            <View style={styles.qrPlaceholder}>
-              <QrCode size={180} color={colors.text} strokeWidth={1.5} />
-            </View>
-            <View style={styles.ticketIdSection}>
-              <Text style={styles.ticketIdLabel}>TICKET ID</Text>
-              <Text style={styles.ticketId}>#{ticket.id}</Text>
-            </View>
-            <Text style={styles.qrInstruction}>
-              Show this QR code at the venue for entry
-            </Text>
-          </View>
-        </View>
-
-        {/* Description */}
-        {ticket.description && (
-          <View style={styles.descriptionSection}>
-            <Text style={styles.sectionTitle}>About Event</Text>
-            <Text style={styles.descriptionText}>{ticket.description}</Text>
-          </View>
-        )}
-
-        {/* Action Buttons */}
-        <View style={styles.actionsSection}>
-          <TouchableOpacity style={styles.actionButton} activeOpacity={0.7}>
-            <LinearGradient
-              colors={['#3491ff', '#0062ff']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.actionButtonGradient}
-            >
-              <Download size={20} color="#000000" strokeWidth={2} />
-              <Text style={styles.actionButtonText}>Download Ticket</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.actionButtonSecondary} activeOpacity={0.7}>
-            <Share2 size={20} color={colors.primary} strokeWidth={2} />
-            <Text style={styles.actionButtonTextSecondary}>Share</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Attendee Info */}
-        <View style={styles.attendeeSection}>
-          <View style={styles.attendeeRow}>
-            <User size={18} color={colors.textMuted} strokeWidth={2} />
-            <Text style={styles.attendeeText}>Registered to: Abhinavtej Reddy</Text>
-          </View>
-        </View>
-
-        {/* Footer */}
-        <Footer />
-      </View>
-    </ScrollView>
-  );
-}
-
-const styles = StyleSheet.create({
+  const { colors } = useTheme();
+  
+  const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -341,3 +227,121 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
 });
+
+  const router = useRouter();
+  const { ticket } = route.params;
+
+  return (
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      {/* Hero Image */}
+      <View style={styles.heroContainer}>
+        <Image source={{ uri: ticket.image }} style={styles.heroImage} />
+        <LinearGradient
+          colors={['transparent', 'rgba(0, 0, 0, 0.9)']}
+          style={styles.heroGradient}
+        />
+      </View>
+
+      {/* Content */}
+      <View style={styles.content}>
+        {/* Event Title */}
+        <View style={styles.titleSection}>
+          <GradientText style={styles.eventTitle}>{ticket.title}</GradientText>
+          <View style={styles.categoryBadge}>
+            <Text style={styles.categoryText}>{ticket.category}</Text>
+          </View>
+        </View>
+
+        {/* Event Details */}
+        <View style={styles.detailsSection}>
+          <View style={styles.detailRow}>
+            <View style={styles.detailIconContainer}>
+              <Calendar size={20} color={colors.primary} strokeWidth={2} />
+            </View>
+            <View style={styles.detailContent}>
+              <Text style={styles.detailLabel}>Date</Text>
+              <Text style={styles.detailValue}>{ticket.date}</Text>
+            </View>
+          </View>
+
+          <View style={styles.detailRow}>
+            <View style={styles.detailIconContainer}>
+              <Clock size={20} color={colors.primary} strokeWidth={2} />
+            </View>
+            <View style={styles.detailContent}>
+              <Text style={styles.detailLabel}>Time</Text>
+              <Text style={styles.detailValue}>{ticket.time}</Text>
+            </View>
+          </View>
+
+          <View style={styles.detailRow}>
+            <View style={styles.detailIconContainer}>
+              <MapPin size={20} color={colors.primary} strokeWidth={2} />
+            </View>
+            <View style={styles.detailContent}>
+              <Text style={styles.detailLabel}>Location</Text>
+              <Text style={styles.detailValue}>{ticket.location}</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* QR Code Section */}
+        <View style={styles.qrSection}>
+          <Text style={styles.sectionTitle}>Your Ticket</Text>
+          <View style={styles.qrCard}>
+            <View style={styles.qrPlaceholder}>
+              <QrCode size={180} color={colors.text} strokeWidth={1.5} />
+            </View>
+            <View style={styles.ticketIdSection}>
+              <Text style={styles.ticketIdLabel}>TICKET ID</Text>
+              <Text style={styles.ticketId}>#{ticket.id}</Text>
+            </View>
+            <Text style={styles.qrInstruction}>
+              Show this QR code at the venue for entry
+            </Text>
+          </View>
+        </View>
+
+        {/* Description */}
+        {ticket.description && (
+          <View style={styles.descriptionSection}>
+            <Text style={styles.sectionTitle}>About Event</Text>
+            <Text style={styles.descriptionText}>{ticket.description}</Text>
+          </View>
+        )}
+
+        {/* Action Buttons */}
+        <View style={styles.actionsSection}>
+          <TouchableOpacity style={styles.actionButton} activeOpacity={0.7}>
+            <LinearGradient
+              colors={['#3491ff', '#0062ff']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.actionButtonGradient}
+            >
+              <Download size={20} color="#000000" strokeWidth={2} />
+              <Text style={styles.actionButtonText}>Download Ticket</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.actionButtonSecondary} activeOpacity={0.7}>
+            <Share2 size={20} color={colors.primary} strokeWidth={2} />
+            <Text style={styles.actionButtonTextSecondary}>Share</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Attendee Info */}
+        <View style={styles.attendeeSection}>
+          <View style={styles.attendeeRow}>
+            <User size={18} color={colors.textMuted} strokeWidth={2} />
+            <Text style={styles.attendeeText}>Registered to: Abhinavtej Reddy</Text>
+          </View>
+        </View>
+
+        {/* Footer */}
+        <Footer />
+      </View>
+    </ScrollView>
+  );
+}
+

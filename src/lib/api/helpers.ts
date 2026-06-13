@@ -1,71 +1,67 @@
-import { supabase } from '../../config/supabase';
-import { Session } from '@supabase/supabase-js';
+import * as SecureStore from 'expo-secure-store';
 
-/**
- * Get current session with proper error handling
- * Automatically signs out user if refresh token is invalid
- */
-export async function getAuthSession(): Promise<Session | null> {
+const TOKEN_KEY = 'unifesto_access_token';
+const BASE_URL = 'https://api.unifesto.app';
+
+export async function getToken(): Promise<string | null> {
   try {
-    if (!supabase) {
-      return null;
-    }
-
-    const { data: { session }, error } = await supabase.auth.getSession();
-    
-    if (error) {
-      
-      // If refresh token is invalid or not found, sign out the user
-      if (
-        error.message?.includes('Refresh Token') ||
-        error.message?.includes('Invalid Refresh Token') ||
-        error.message?.includes('refresh_token_not_found')
-      ) {
-        await supabase.auth.signOut().catch(() => {
-          // Silent error handling
-        });
-      }
-      
-      return null;
-    }
-    
-    if (!session) {
-      return null;
-    }
-
-    return session;
-  } catch (error) {
+    return await SecureStore.getItemAsync(TOKEN_KEY);
+  } catch {
     return null;
   }
 }
 
-/**
- * Make authenticated API request with automatic token refresh
- */
+export async function saveToken(token: string): Promise<void> {
+  await SecureStore.setItemAsync(TOKEN_KEY, token);
+}
+
+export async function clearToken(): Promise<void> {
+  await SecureStore.deleteItemAsync(TOKEN_KEY);
+}
+
 export async function makeAuthenticatedRequest(
-  url: string,
+  path: string,
   options: RequestInit = {}
 ): Promise<Response | null> {
   try {
-    const session = await getAuthSession();
-    
-    if (!session) {
-      throw new Error('No active session');
+    const token = await getToken();
+    if (!token) throw new Error('No token');
+
+    const response = await fetch(`${BASE_URL}${path}`, {
+      ...options,
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+    });
+
+    if (response.status === 401) {
+      await clearToken();
+      // Emit unauthorized event
     }
 
-    const headers = {
-      'Authorization': `Bearer ${session.access_token}`,
-      'Content-Type': 'application/json',
-      ...options.headers,
-    };
+    return response;
+  } catch {
+    return null;
+  }
+}
 
-    const response = await fetch(url, {
+export async function makePublicRequest(
+  path: string,
+  options: RequestInit = {}
+): Promise<Response | null> {
+  try {
+    const response = await fetch(`${BASE_URL}${path}`, {
       ...options,
-      headers,
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
     });
 
     return response;
-  } catch (error) {
+  } catch {
     return null;
   }
 }

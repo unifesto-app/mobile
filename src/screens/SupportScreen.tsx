@@ -24,7 +24,8 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import GradientText from '../components/GradientText';
 import Footer from '../components/Footer';
-import { colors, spacing, typography, borderRadius, shadows } from '../theme';
+import { useTheme } from '../context/ThemeContext';
+import { spacing, typography, borderRadius, shadows } from '../theme';
 
 type TabType = 'faq' | 'tickets' | 'contact';
 
@@ -115,251 +116,9 @@ const CONTACT_OPTIONS = [
 ];
 
 export default function SupportScreen() {
-  const [activeTab, setActiveTab] = useState<TabType>('faq');
-  const [expandedFaq, setExpandedFaq] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    category: '',
-    message: '',
-  });
-  const [submitted, setSubmitted] = useState(false);
-
-  const categories = Array.from(new Set(FAQ_ITEMS.map((faq) => faq.category)));
-
-  const filteredFaqs = FAQ_ITEMS.filter((faq) =>
-    searchQuery === '' ||
-    faq.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    faq.answer.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const toggleFaq = (id: string) => {
-    setExpandedFaq(expandedFaq === id ? null : id);
-  };
-
-  const handleSubmit = () => {
-    setSubmitted(true);
-    setFormData({ name: '', email: '', category: '', message: '' });
-    setTimeout(() => setSubmitted(false), 5000);
-  };
-
-  return (
-    <View style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingTop: spacing[6], paddingBottom: spacing[8] }}>
-        {/* Content */}
-        <View style={styles.contentContainer}>
-          {/* Tabs */}
-          <View style={styles.tabsContainer}>
-            <TouchableOpacity
-              style={[styles.tab, activeTab === 'faq' && styles.tabActive]}
-              onPress={() => setActiveTab('faq')}
-            >
-              <Text style={[styles.tabText, activeTab === 'faq' && styles.tabTextActive]}>
-                FAQ
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.tab, activeTab === 'contact' && styles.tabActive]}
-              onPress={() => setActiveTab('contact')}
-            >
-              <Text style={[styles.tabText, activeTab === 'contact' && styles.tabTextActive]}>
-                Contact Us
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Search Bar for FAQ */}
-          {activeTab === 'faq' && (
-            <View style={styles.searchContainer}>
-              <HelpCircle size={20} color={colors.textMuted} strokeWidth={2} />
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Search for help..."
-                placeholderTextColor={colors.textMuted}
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-              />
-            </View>
-          )}
-
-          {/* FAQ Tab */}
-          {activeTab === 'faq' && (
-            <View style={styles.faqContainer}>
-              {/* Category Filters */}
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.categoryScroll}
-                style={styles.categoryContainer}
-              >
-                {categories.map((category) => (
-                  <TouchableOpacity key={category} style={styles.categoryChip}>
-                    <Text style={styles.categoryChipText}>{category}</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-
-              {/* FAQ List */}
-              <View style={styles.faqList}>
-                {filteredFaqs.map((faq) => (
-                  <View key={faq.id} style={styles.faqItem}>
-                    <TouchableOpacity
-                      style={styles.faqQuestion}
-                      onPress={() => toggleFaq(faq.id)}
-                    >
-                      <View style={styles.faqQuestionContent}>
-                        <Text style={styles.faqCategory}>{faq.category}</Text>
-                        <Text style={styles.faqQuestionText}>{faq.question}</Text>
-                      </View>
-                      {expandedFaq === faq.id ? (
-                        <ChevronUp size={20} color={colors.textMuted} strokeWidth={2} />
-                      ) : (
-                        <ChevronDown size={20} color={colors.textMuted} strokeWidth={2} />
-                      )}
-                    </TouchableOpacity>
-                    {expandedFaq === faq.id && (
-                      <View style={styles.faqAnswer}>
-                        <Text style={styles.faqAnswerText}>{faq.answer}</Text>
-                      </View>
-                    )}
-                  </View>
-                ))}
-              </View>
-            </View>
-          )}
-
-          {/* Contact Tab */}
-          {activeTab === 'contact' && (
-            <View style={styles.contactContainer}>
-              {/* Contact Options */}
-              <View style={styles.contactOptionsContainer}>
-                <Text style={styles.contactOptionsTitle}>Choose your preferred support channel</Text>
-                <View style={styles.contactOptions}>
-                  {CONTACT_OPTIONS.map((option) => (
-                    <TouchableOpacity 
-                      key={option.id} 
-                      style={styles.contactOption}
-                      onPress={option.onPress}
-                    >
-                      <View style={styles.contactOptionIcon}>
-                        <option.icon size={24} color="#000000" strokeWidth={2} />
-                      </View>
-                      <Text style={styles.contactOptionTitle}>{option.title}</Text>
-                      <Text style={styles.contactOptionDescription}>{option.description}</Text>
-                      <Text style={styles.contactOptionAction}>{option.action} →</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
-
-              {/* Contact Form */}
-              <View style={styles.contactFormContainer}>
-                <Text style={styles.contactFormTitle}>Send us a message</Text>
-                <Text style={styles.contactFormSubtitle}>
-                  Our support team will get back to you within 24 hours.
-                </Text>
-
-                {submitted ? (
-                  <View style={styles.successMessage}>
-                    <CheckCircle size={48} color={colors.primary} strokeWidth={2} />
-                    <Text style={styles.successTitle}>Message Sent!</Text>
-                    <Text style={styles.successText}>
-                      We've received your message and will respond within 24 hours.
-                    </Text>
-                  </View>
-                ) : (
-                  <View style={styles.contactForm}>
-                    <View style={styles.formRow}>
-                      <View style={styles.formField}>
-                        <Text style={styles.formLabel}>Your Name</Text>
-                        <TextInput
-                          style={styles.formInput}
-                          placeholder="John Doe"
-                          placeholderTextColor={colors.textMuted}
-                          value={formData.name}
-                          onChangeText={(text) => setFormData({ ...formData, name: text })}
-                        />
-                      </View>
-                      <View style={styles.formField}>
-                        <Text style={styles.formLabel}>Email Address</Text>
-                        <TextInput
-                          style={styles.formInput}
-                          placeholder="john@example.com"
-                          placeholderTextColor={colors.textMuted}
-                          value={formData.email}
-                          onChangeText={(text) => setFormData({ ...formData, email: text })}
-                          keyboardType="email-address"
-                        />
-                      </View>
-                    </View>
-
-                    <View style={styles.formField}>
-                      <Text style={styles.formLabel}>Category</Text>
-                      <TouchableOpacity style={styles.selectContainer}>
-                        <Text style={styles.selectText}>
-                          {formData.category || 'Select a category'}
-                        </Text>
-                        <ChevronDown size={20} color={colors.textMuted} strokeWidth={2} />
-                      </TouchableOpacity>
-                    </View>
-
-                    <View style={styles.formField}>
-                      <Text style={styles.formLabel}>Message</Text>
-                      <TextInput
-                        style={[styles.formInput, styles.messageInput]}
-                        placeholder="Describe your issue or question..."
-                        placeholderTextColor={colors.textMuted}
-                        value={formData.message}
-                        onChangeText={(text) => setFormData({ ...formData, message: text })}
-                        multiline
-                        numberOfLines={6}
-                        textAlignVertical="top"
-                      />
-                    </View>
-
-                    <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-                      <LinearGradient
-                        colors={['#3491ff', '#0062ff']}
-                        style={styles.submitGradient}
-                      >
-                        <Send size={18} color="#000000" strokeWidth={2} />
-                        <Text style={styles.submitText}>Send Message</Text>
-                      </LinearGradient>
-                    </TouchableOpacity>
-                  </View>
-                )}
-              </View>
-
-              {/* Helpful Resources */}
-              <View style={styles.resourcesContainer}>
-                <Text style={styles.resourcesTitle}>Helpful Resources</Text>
-                <View style={styles.resources}>
-                  {[
-                    { title: 'About Unifesto', description: 'Learn about our mission and platform' },
-                    { title: 'Products & Features', description: 'Explore all available tools and features' },
-                    { title: 'Verification', description: 'Verify certificates and credentials' },
-                  ].map((resource) => (
-                    <TouchableOpacity key={resource.title} style={styles.resource}>
-                      <Text style={styles.resourceTitle}>{resource.title}</Text>
-                      <Text style={styles.resourceDescription}>{resource.description}</Text>
-                      <ExternalLink size={16} color={colors.primary} strokeWidth={2} />
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
-            </View>
-          )}
-        </View>
-
-        {/* Footer */}
-        <Footer />
-      </ScrollView>
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
+  const { colors } = useTheme();
+  
+  const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -674,3 +433,248 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
 });
+
+  const [activeTab, setActiveTab] = useState<TabType>('faq');
+  const [expandedFaq, setExpandedFaq] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    category: '',
+    message: '',
+  });
+  const [submitted, setSubmitted] = useState(false);
+
+  const categories = Array.from(new Set(FAQ_ITEMS.map((faq) => faq.category)));
+
+  const filteredFaqs = FAQ_ITEMS.filter((faq) =>
+    searchQuery === '' ||
+    faq.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    faq.answer.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const toggleFaq = (id: string) => {
+    setExpandedFaq(expandedFaq === id ? null : id);
+  };
+
+  const handleSubmit = () => {
+    setSubmitted(true);
+    setFormData({ name: '', email: '', category: '', message: '' });
+    setTimeout(() => setSubmitted(false), 5000);
+  };
+
+  return (
+    <View style={styles.container}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingTop: spacing[6], paddingBottom: spacing[8] }}>
+        {/* Content */}
+        <View style={styles.contentContainer}>
+          {/* Tabs */}
+          <View style={styles.tabsContainer}>
+            <TouchableOpacity
+              style={[styles.tab, activeTab === 'faq' && styles.tabActive]}
+              onPress={() => setActiveTab('faq')}
+            >
+              <Text style={[styles.tabText, activeTab === 'faq' && styles.tabTextActive]}>
+                FAQ
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.tab, activeTab === 'contact' && styles.tabActive]}
+              onPress={() => setActiveTab('contact')}
+            >
+              <Text style={[styles.tabText, activeTab === 'contact' && styles.tabTextActive]}>
+                Contact Us
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Search Bar for FAQ */}
+          {activeTab === 'faq' && (
+            <View style={styles.searchContainer}>
+              <HelpCircle size={20} color={colors.textMuted} strokeWidth={2} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search for help..."
+                placeholderTextColor={colors.textMuted}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+              />
+            </View>
+          )}
+
+          {/* FAQ Tab */}
+          {activeTab === 'faq' && (
+            <View style={styles.faqContainer}>
+              {/* Category Filters */}
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.categoryScroll}
+                style={styles.categoryContainer}
+              >
+                {categories.map((category) => (
+                  <TouchableOpacity key={category} style={styles.categoryChip}>
+                    <Text style={styles.categoryChipText}>{category}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+
+              {/* FAQ List */}
+              <View style={styles.faqList}>
+                {filteredFaqs.map((faq) => (
+                  <View key={faq.id} style={styles.faqItem}>
+                    <TouchableOpacity
+                      style={styles.faqQuestion}
+                      onPress={() => toggleFaq(faq.id)}
+                    >
+                      <View style={styles.faqQuestionContent}>
+                        <Text style={styles.faqCategory}>{faq.category}</Text>
+                        <Text style={styles.faqQuestionText}>{faq.question}</Text>
+                      </View>
+                      {expandedFaq === faq.id ? (
+                        <ChevronUp size={20} color={colors.textMuted} strokeWidth={2} />
+                      ) : (
+                        <ChevronDown size={20} color={colors.textMuted} strokeWidth={2} />
+                      )}
+                    </TouchableOpacity>
+                    {expandedFaq === faq.id && (
+                      <View style={styles.faqAnswer}>
+                        <Text style={styles.faqAnswerText}>{faq.answer}</Text>
+                      </View>
+                    )}
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+
+          {/* Contact Tab */}
+          {activeTab === 'contact' && (
+            <View style={styles.contactContainer}>
+              {/* Contact Options */}
+              <View style={styles.contactOptionsContainer}>
+                <Text style={styles.contactOptionsTitle}>Choose your preferred support channel</Text>
+                <View style={styles.contactOptions}>
+                  {CONTACT_OPTIONS.map((option) => (
+                    <TouchableOpacity 
+                      key={option.id} 
+                      style={styles.contactOption}
+                      onPress={option.onPress}
+                    >
+                      <View style={styles.contactOptionIcon}>
+                        <option.icon size={24} color="#000000" strokeWidth={2} />
+                      </View>
+                      <Text style={styles.contactOptionTitle}>{option.title}</Text>
+                      <Text style={styles.contactOptionDescription}>{option.description}</Text>
+                      <Text style={styles.contactOptionAction}>{option.action} →</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              {/* Contact Form */}
+              <View style={styles.contactFormContainer}>
+                <Text style={styles.contactFormTitle}>Send us a message</Text>
+                <Text style={styles.contactFormSubtitle}>
+                  Our support team will get back to you within 24 hours.
+                </Text>
+
+                {submitted ? (
+                  <View style={styles.successMessage}>
+                    <CheckCircle size={48} color={colors.primary} strokeWidth={2} />
+                    <Text style={styles.successTitle}>Message Sent!</Text>
+                    <Text style={styles.successText}>
+                      We've received your message and will respond within 24 hours.
+                    </Text>
+                  </View>
+                ) : (
+                  <View style={styles.contactForm}>
+                    <View style={styles.formRow}>
+                      <View style={styles.formField}>
+                        <Text style={styles.formLabel}>Your Name</Text>
+                        <TextInput
+                          style={styles.formInput}
+                          placeholder="John Doe"
+                          placeholderTextColor={colors.textMuted}
+                          value={formData.name}
+                          onChangeText={(text) => setFormData({ ...formData, name: text })}
+                        />
+                      </View>
+                      <View style={styles.formField}>
+                        <Text style={styles.formLabel}>Email Address</Text>
+                        <TextInput
+                          style={styles.formInput}
+                          placeholder="john@example.com"
+                          placeholderTextColor={colors.textMuted}
+                          value={formData.email}
+                          onChangeText={(text) => setFormData({ ...formData, email: text })}
+                          keyboardType="email-address"
+                        />
+                      </View>
+                    </View>
+
+                    <View style={styles.formField}>
+                      <Text style={styles.formLabel}>Category</Text>
+                      <TouchableOpacity style={styles.selectContainer}>
+                        <Text style={styles.selectText}>
+                          {formData.category || 'Select a category'}
+                        </Text>
+                        <ChevronDown size={20} color={colors.textMuted} strokeWidth={2} />
+                      </TouchableOpacity>
+                    </View>
+
+                    <View style={styles.formField}>
+                      <Text style={styles.formLabel}>Message</Text>
+                      <TextInput
+                        style={[styles.formInput, styles.messageInput]}
+                        placeholder="Describe your issue or question..."
+                        placeholderTextColor={colors.textMuted}
+                        value={formData.message}
+                        onChangeText={(text) => setFormData({ ...formData, message: text })}
+                        multiline
+                        numberOfLines={6}
+                        textAlignVertical="top"
+                      />
+                    </View>
+
+                    <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
+                      <LinearGradient
+                        colors={['#3491ff', '#0062ff']}
+                        style={styles.submitGradient}
+                      >
+                        <Send size={18} color="#000000" strokeWidth={2} />
+                        <Text style={styles.submitText}>Send Message</Text>
+                      </LinearGradient>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+
+              {/* Helpful Resources */}
+              <View style={styles.resourcesContainer}>
+                <Text style={styles.resourcesTitle}>Helpful Resources</Text>
+                <View style={styles.resources}>
+                  {[
+                    { title: 'About Unifesto', description: 'Learn about our mission and platform' },
+                    { title: 'Products & Features', description: 'Explore all available tools and features' },
+                    { title: 'Verification', description: 'Verify certificates and credentials' },
+                  ].map((resource) => (
+                    <TouchableOpacity key={resource.title} style={styles.resource}>
+                      <Text style={styles.resourceTitle}>{resource.title}</Text>
+                      <Text style={styles.resourceDescription}>{resource.description}</Text>
+                      <ExternalLink size={16} color={colors.primary} strokeWidth={2} />
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            </View>
+          )}
+        </View>
+
+        {/* Footer */}
+        <Footer />
+      </ScrollView>
+    </View>
+  );
+}
+

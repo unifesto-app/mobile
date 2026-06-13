@@ -19,14 +19,156 @@ import {
   Link2,
   ExternalLink,
 } from 'lucide-react-native';
-import { colors, spacing, typography, borderRadius, shadows } from '../theme';
+import { useTheme } from '../context/ThemeContext';
+import { spacing, typography, borderRadius, shadows } from '../theme';
 import { getFontFamily } from '../theme/fontHelpers';
 import OneSignalService from '../services/OneSignalService';
-import { supabase } from '../config/supabase';
+import { getToken } from '../lib/api/helpers';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://api.unifesto.app';
 
 export default function SettingsScreen() {
+  const { colors } = useTheme();
+  
+  const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing[6],
+    paddingTop: spacing[12],
+    paddingBottom: spacing[4],
+    backgroundColor: colors.background,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerTitle: {
+    fontSize: typography.fontSize.xl,
+    fontFamily: getFontFamily('bold'),
+    color: colors.text,
+  },
+  headerRight: {
+    width: 40,
+  },
+  scrollContent: {
+    padding: spacing[6],
+    paddingTop: spacing[4],
+  },
+  section: {
+    marginBottom: spacing[6],
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+    marginBottom: spacing[4],
+  },
+  sectionTitle: {
+    fontSize: typography.fontSize.lg,
+    fontFamily: getFontFamily('bold'),
+    color: colors.text,
+  },
+  sectionTitleText: {
+    fontSize: typography.fontSize.sm,
+    fontFamily: getFontFamily('bold'),
+    color: colors.textMuted,
+    marginBottom: spacing[4],
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  card: {
+    backgroundColor: colors.card,
+    borderRadius: borderRadius.xl,
+    padding: spacing[6],
+    borderWidth: 1,
+    borderColor: colors.borderMuted,
+    ...shadows.md,
+  },
+  preferenceItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing[2],
+  },
+  preferenceLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[3],
+    flex: 1,
+    paddingRight: spacing[3],
+  },
+  preferenceIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(52, 145, 255, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  preferenceInfo: {
+    flex: 1,
+  },
+  preferenceLabel: {
+    fontSize: typography.fontSize.sm,
+    fontFamily: getFontFamily('bold'),
+    color: colors.text,
+    marginBottom: spacing[1],
+  },
+  preferenceDescription: {
+    fontSize: typography.fontSize.xs,
+    color: colors.textMuted,
+    lineHeight: typography.lineHeight.relaxed * typography.fontSize.xs,
+  },
+  preferenceDivider: {
+    height: 1,
+    backgroundColor: colors.borderMuted,
+    marginVertical: spacing[3],
+  },
+  resourceItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing[2],
+  },
+  resourceLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[3],
+    flex: 1,
+    paddingRight: spacing[3],
+  },
+  resourceIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(52, 145, 255, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  resourceInfo: {
+    flex: 1,
+  },
+  resourceLabel: {
+    fontSize: typography.fontSize.sm,
+    fontFamily: getFontFamily('bold'),
+    color: colors.text,
+    marginBottom: spacing[1],
+  },
+  resourceDescription: {
+    fontSize: typography.fontSize.xs,
+    color: colors.textMuted,
+    lineHeight: typography.lineHeight.relaxed * typography.fontSize.xs,
+  },
+});
+
   const router = useRouter();
 
   // Preferences state
@@ -42,13 +184,8 @@ export default function SettingsScreen() {
 
   const loadPreferences = async () => {
     try {
-      if (!supabase) {
-        setLoading(false);
-        return;
-      }
-
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
+      const token = await getToken();
+      if (!token) {
         setLoading(false);
         return;
       }
@@ -57,7 +194,7 @@ export default function SettingsScreen() {
       const response = await fetch(`${API_URL}/auth/preferences`, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${session.access_token}`,
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       });
@@ -85,19 +222,15 @@ export default function SettingsScreen() {
 
   const savePreferences = async (preferences: any) => {
     try {
-      if (!supabase) {
-        return;
-      }
-
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
+      const token = await getToken();
+      if (!token) {
         return;
       }
 
       await fetch(`${API_URL}/auth/preferences`, {
         method: 'PATCH',
         headers: {
-          'Authorization': `Bearer ${session.access_token}`,
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(preferences),
@@ -344,141 +477,3 @@ export default function SettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing[6],
-    paddingTop: spacing[12],
-    paddingBottom: spacing[4],
-    backgroundColor: colors.background,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    fontSize: typography.fontSize.xl,
-    fontFamily: getFontFamily('bold'),
-    color: colors.text,
-  },
-  headerRight: {
-    width: 40,
-  },
-  scrollContent: {
-    padding: spacing[6],
-    paddingTop: spacing[4],
-  },
-  section: {
-    marginBottom: spacing[6],
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[2],
-    marginBottom: spacing[4],
-  },
-  sectionTitle: {
-    fontSize: typography.fontSize.lg,
-    fontFamily: getFontFamily('bold'),
-    color: colors.text,
-  },
-  sectionTitleText: {
-    fontSize: typography.fontSize.sm,
-    fontFamily: getFontFamily('bold'),
-    color: colors.textMuted,
-    marginBottom: spacing[4],
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  card: {
-    backgroundColor: colors.card,
-    borderRadius: borderRadius.xl,
-    padding: spacing[6],
-    borderWidth: 1,
-    borderColor: colors.borderMuted,
-    ...shadows.md,
-  },
-  preferenceItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: spacing[2],
-  },
-  preferenceLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[3],
-    flex: 1,
-    paddingRight: spacing[3],
-  },
-  preferenceIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(52, 145, 255, 0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  preferenceInfo: {
-    flex: 1,
-  },
-  preferenceLabel: {
-    fontSize: typography.fontSize.sm,
-    fontFamily: getFontFamily('bold'),
-    color: colors.text,
-    marginBottom: spacing[1],
-  },
-  preferenceDescription: {
-    fontSize: typography.fontSize.xs,
-    color: colors.textMuted,
-    lineHeight: typography.lineHeight.relaxed * typography.fontSize.xs,
-  },
-  preferenceDivider: {
-    height: 1,
-    backgroundColor: colors.borderMuted,
-    marginVertical: spacing[3],
-  },
-  resourceItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: spacing[2],
-  },
-  resourceLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[3],
-    flex: 1,
-    paddingRight: spacing[3],
-  },
-  resourceIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(52, 145, 255, 0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  resourceInfo: {
-    flex: 1,
-  },
-  resourceLabel: {
-    fontSize: typography.fontSize.sm,
-    fontFamily: getFontFamily('bold'),
-    color: colors.text,
-    marginBottom: spacing[1],
-  },
-  resourceDescription: {
-    fontSize: typography.fontSize.xs,
-    color: colors.textMuted,
-    lineHeight: typography.lineHeight.relaxed * typography.fontSize.xs,
-  },
-});

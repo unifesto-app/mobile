@@ -1,24 +1,33 @@
 import React, { useEffect, useState } from 'react';
-import { Slot, SplashScreen } from 'expo-router';
+import { Stack, SplashScreen as ExpoSplashScreen } from 'expo-router';
 import * as Font from 'expo-font';
-import { AuthProvider } from '../src/context/NewAuthContext';
+import { AuthProvider } from '../src/context/AuthContext';
+import { ThemeProvider, useTheme } from '../src/context/ThemeContext';
 import ConsentManager from '../src/services/ConsentManager';
 
-// Keep the splash screen visible while we fetch resources
-SplashScreen.preventAutoHideAsync();
+ExpoSplashScreen.preventAutoHideAsync();
 
-/**
- * Root Layout Component
- * 
- * CRITICAL PRIVACY COMPLIANCE FLOW:
- * 1. Show splash screen
- * 2. Initialize ConsentManager (requests ATT permission on iOS)
- * 3. ConsentManager initializes tracking SDKs ONLY if consent granted
- * 4. Load fonts and other resources
- * 5. Show app
- * 
- * This ensures NO tracking occurs before ATT consent on iOS.
- */
+function RootStack() {
+  const { colors, activeTheme } = useTheme();
+
+  return (
+    <AuthProvider>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: colors.background },
+        }}
+      >
+        <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="login" options={{ headerShown: false }} />
+        <Stack.Screen name="signup" options={{ headerShown: false }} />
+        <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+      </Stack>
+    </AuthProvider>
+  );
+}
+
 export default function RootLayout() {
   const [appIsReady, setAppIsReady] = useState(false);
   const [consentReady, setConsentReady] = useState(false);
@@ -26,7 +35,6 @@ export default function RootLayout() {
   useEffect(() => {
     async function initializeConsent() {
       try {
-        // CRITICAL: Initialize ConsentManager FIRST
         await ConsentManager.initialize();
         setConsentReady(true);
       } catch (error) {
@@ -45,7 +53,6 @@ export default function RootLayout() {
       }
 
       try {
-        // Load fonts
         await Font.loadAsync({
           'Agrandir-Regular': require('../assets/fonts/Agrandir/Agrandir-Regular.otf'),
           'Agrandir-Bold': require('../assets/fonts/Agrandir/Agrandir-Bold.ttf'),
@@ -63,23 +70,21 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (appIsReady) {
-      const timer = setTimeout(() => {
-        SplashScreen.hideAsync().catch((err) => {
-          console.error('[RootLayout] Error hiding splash:', err);
-        });
-      }, 100);
-      
-      return () => clearTimeout(timer);
+      // Hide native splash screen immediately when ready
+      ExpoSplashScreen.hideAsync().catch((err) => {
+        console.error('[RootLayout] Error hiding splash:', err);
+      });
     }
   }, [appIsReady]);
 
+  // Don't render anything until app is ready
   if (!appIsReady) {
     return null;
   }
 
   return (
-    <AuthProvider>
-      <Slot />
-    </AuthProvider>
+    <ThemeProvider>
+      <RootStack />
+    </ThemeProvider>
   );
 }

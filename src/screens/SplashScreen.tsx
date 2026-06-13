@@ -1,37 +1,82 @@
-import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, Image } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, StyleSheet, Image, Animated } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import GradientText from '../components/GradientText';
-import { colors, spacing, typography } from '../theme';
+import { spacing } from '../theme';
+import { useTheme } from '../context/ThemeContext';
 
-export default function SplashScreen() {
+interface SplashScreenProps {
+  onAnimationComplete?: () => void;
+  shouldExit?: boolean;
+}
+
+export default function SplashScreen({ onAnimationComplete, shouldExit = false }: SplashScreenProps) {
+  const { colors } = useTheme();
+  const scaleAnim = useRef(new Animated.Value(0.3)).current;
+  const opacityAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    // Fade in and pop animation on mount
+    Animated.parallel([
+      Animated.timing(opacityAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        friction: 8,
+        tension: 40,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
+  useEffect(() => {
+    // Exit animation when shouldExit is true
+    if (shouldExit) {
+      Animated.parallel([
+        Animated.timing(scaleAnim, {
+          toValue: 2.5,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacityAnim, {
+          toValue: 0,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        onAnimationComplete?.();
+      });
+    }
+  }, [shouldExit]);
+
+  const gradientColors: readonly [string, string, string] = colors.background === '#000000' 
+    ? ['#000000', '#0a0a0a', '#000000']
+    : [colors.background, colors.backgroundSecondary, colors.background];
+
   return (
     <LinearGradient
-      colors={['#000000', '#0a0a0a', '#000000']}
+      colors={gradientColors}
       style={styles.container}
     >
       <View style={styles.content}>
-        {/* Logo/Brand */}
-        <View style={styles.logoContainer}>
+        {/* Logo/Brand with Animation */}
+        <Animated.View
+          style={[
+            styles.logoContainer,
+            {
+              transform: [{ scale: scaleAnim }],
+              opacity: opacityAnim,
+            },
+          ]}
+        >
           <Image
             source={require('../../assets/app-icon-transparent.png')}
             style={styles.icon}
             resizeMode="contain"
           />
-          <GradientText style={styles.logo}>unifesto</GradientText>
-          <Text style={styles.tagline}>Discover Campus Events</Text>
-        </View>
-
-        {/* Loading Indicator */}
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#3491ff" />
-          <Text style={styles.loadingText}>Loading...</Text>
-        </View>
-      </View>
-
-      {/* Footer */}
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>Powered by Unifesto</Text>
+        </Animated.View>
       </View>
     </LinearGradient>
   );
@@ -48,43 +93,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: spacing[6],
+    marginTop: -80,
   },
   logoContainer: {
     alignItems: 'center',
-    marginBottom: spacing[16],
   },
   icon: {
-    width: 150,
-    height: 150,
-    marginBottom: spacing[6],
-  },
-  logo: {
-    fontSize: 48,
-    fontFamily: typography.fontFamily.logo,
-    marginBottom: spacing[3],
-    letterSpacing: -1,
-  },
-  tagline: {
-    fontSize: typography.fontSize.base,
-    color: colors.textSecondary,
-    fontFamily: typography.fontFamily.bold,
-    letterSpacing: typography.letterSpacing.wide,
-  },
-  loadingContainer: {
-    alignItems: 'center',
-    gap: spacing[4],
-  },
-  loadingText: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textMuted,
-    fontFamily: typography.fontFamily.bold,
-  },
-  footer: {
-    paddingBottom: spacing[8],
-  },
-  footerText: {
-    fontSize: typography.fontSize.xs,
-    color: colors.textMuted,
-    fontFamily: typography.fontFamily.bold,
+    width: 250,
+    height: 250,
   },
 });

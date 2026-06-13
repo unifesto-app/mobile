@@ -1,14 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { View, StyleSheet, Platform, TouchableOpacity, Image, Text } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Bell } from 'lucide-react-native';
-import UnifestoAppLogo from './UnifestoAppLogo';
 import LiquidMetalLogo from './LiquidMetalLogo';
-import { spacing, colors } from '../theme';
+import { spacing } from '../theme';
 import { useAuth } from '../context/AuthContext';
-import { getProfile, Profile } from '../lib/api/profile';
+import { useTheme } from '../context/ThemeContext';
 import { getFontFamily } from '../theme/fontHelpers';
 
 export const HEADER_CONTENT_HEIGHT = 80;
@@ -17,17 +16,7 @@ export default function CustomHeader() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuth();
-  const [profile, setProfile] = useState<Profile | null>(null);
-
-  useEffect(() => {
-    const loadProfile = async () => {
-      if (user) {
-        const userProfile = await getProfile();
-        if (userProfile) setProfile(userProfile);
-      }
-    };
-    loadProfile();
-  }, [user]);
+  const { colors, activeTheme } = useTheme();
 
   const handleNotificationPress = () => {
     router.push('/notifications');
@@ -40,21 +29,35 @@ export default function CustomHeader() {
   const getInitials = (name: string) =>
     name.split(' ').map((n) => n[0]).join('').toUpperCase();
 
+  // Dynamic gradient colors based on theme
+  const gradientColors: readonly [string, string, string] = activeTheme === 'light' 
+    ? ['#ffffff', 'rgba(255,255,255,0.85)', 'rgba(255,255,255,0)']
+    : ['#000000', 'rgba(0,0,0,0.85)', 'rgba(0,0,0,0)'];
+
   const renderProfileIcon = () => {
     if (!user) return null;
 
-    if (profile?.avatar_url) {
+    // Use avatarUrl from the user object in auth context
+    if (user.avatarUrl) {
       return (
         <TouchableOpacity
           onPress={handleProfilePress}
           style={styles.profileButton}
           activeOpacity={0.7}
         >
-          <Image source={{ uri: profile.avatar_url }} style={styles.profileImage} />
+          <Image 
+            source={{ uri: user.avatarUrl }} 
+            style={styles.profileImage}
+            // Add cache busting to ensure fresh image loads
+            key={user.avatarUrl}
+          />
         </TouchableOpacity>
       );
     }
 
+    // Fallback to initials with gradient background
+    const displayName = user.fullName || user.username || 'U';
+    
     return (
       <TouchableOpacity
         onPress={handleProfilePress}
@@ -68,7 +71,7 @@ export default function CustomHeader() {
           style={styles.profileGradient}
         >
           <Text style={styles.profileInitials}>
-            {getInitials(profile?.name || 'U')}
+            {getInitials(displayName)}
           </Text>
         </LinearGradient>
       </TouchableOpacity>
@@ -78,7 +81,7 @@ export default function CustomHeader() {
   return (
     <View style={[styles.container, { height: insets.top + HEADER_CONTENT_HEIGHT + 24, position: 'absolute', top: 0, left: 0, right: 0, zIndex: 1000 }]}>
       <LinearGradient
-        colors={['#000000', 'rgba(0,0,0,0.85)', 'rgba(0,0,0,0)']}
+        colors={gradientColors}
         start={{ x: 0, y: 0 }}
         end={{ x: 0, y: 1 }}
         style={StyleSheet.absoluteFill}

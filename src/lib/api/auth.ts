@@ -291,16 +291,18 @@ export async function uploadAvatar(
   const match = /\.(\w+)$/.exec(filename);
   const type = match ? `image/${match[1]}` : 'image/jpeg';
 
+  // React Native FormData requires this specific format
   formData.append('avatar', {
-    uri,
+    uri: uri,
     name: filename,
-    type,
+    type: type,
   } as any);
 
   const response = await fetch(`${API_URL}/users/me/avatar`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${accessToken}`,
+      // Don't set Content-Type header - let the browser/fetch set it with boundary
     },
     body: formData,
   });
@@ -349,6 +351,37 @@ export async function getUserByUsername(username: string): Promise<User> {
   if (!response.ok) {
     const error: ApiError = await response.json();
     throw new Error(error.message || 'User not found');
+  }
+
+  return response.json();
+}
+
+/**
+ * User Identity (Linked Account)
+ */
+export interface UserIdentity {
+  id: string;
+  provider: 'EMAIL' | 'GOOGLE' | 'APPLE';
+  email: string | null;
+  emailVerified: boolean;
+  createdAt: string;
+}
+
+/**
+ * Get current user's linked accounts
+ */
+export async function getUserIdentities(accessToken: string): Promise<UserIdentity[]> {
+  const response = await fetch(`${API_URL}/users/me/identities`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const error: ApiError = await response.json();
+    throw new Error(error.message || 'Failed to get linked accounts');
   }
 
   return response.json();

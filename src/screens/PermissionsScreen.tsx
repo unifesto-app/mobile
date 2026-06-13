@@ -4,20 +4,19 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
-  Linking,
   Platform,
+  RefreshControl,
 } from 'react-native';
-import {
-  Camera,
-  Image as ImageIcon,
-  Eye,
-  ExternalLink,
-  RefreshCw,
-} from 'lucide-react-native';
+import { useHeaderHeight } from '@react-navigation/elements';
 import * as ImagePicker from 'expo-image-picker';
-import GlassyButton from '../components/GlassyButton';
-import { colors, spacing, typography, borderRadius, shadows } from '../theme';
+import { UnIcon, IconName } from '@unifesto/unicon/react-native';
+import { useTheme } from '../context/ThemeContext';
+import {
+  spacing,
+  typography,
+  borderRadius,
+  shadows,
+} from '../theme';
 import { getFontFamily } from '../theme/fontHelpers';
 
 type PermStatus = 'granted' | 'denied' | 'undetermined';
@@ -26,7 +25,7 @@ type PermItem = {
   key: string;
   label: string;
   description: string;
-  icon: React.ReactNode;
+  iconName: IconName;
   status: PermStatus;
   iosOnly?: boolean;
 };
@@ -43,27 +42,27 @@ const STATUS_LABEL: Record<PermStatus, string> = {
 };
 
 export default function PermissionsScreen() {
+  const headerHeight = useHeaderHeight();
+  const { colors } = useTheme();
   const [perms, setPerms] = useState<PermItem[]>([
     {
       key: 'camera',
       label: 'Camera',
       description: 'Scan QR tickets and capture profile photos',
-      icon: <Camera size={16} color="#3491ff" strokeWidth={2} />,
+      iconName: 'camera',
       status: 'undetermined',
     },
     {
       key: 'mediaLibrary',
       label: 'Photo Library',
       description: 'Upload images for your profile',
-      icon: <ImageIcon size={16} color="#ec4899" strokeWidth={2} />,
+      iconName: 'photo',
       status: 'undetermined',
     },
   ]);
-  const [checking, setChecking] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const checkPermissions = useCallback(async () => {
-    setChecking(true);
-
     const camResult = await ImagePicker.getCameraPermissionsAsync();
     const camStatus: PermStatus =
       camResult.status === 'granted' ? 'granted'
@@ -83,36 +82,139 @@ export default function PermissionsScreen() {
         return p;
       })
     );
-    setChecking(false);
   }, []);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await checkPermissions();
+    setRefreshing(false);
+  }, [checkPermissions]);
 
   useEffect(() => {
     checkPermissions();
   }, [checkPermissions]);
 
-  const openSettings = () => Linking.openSettings();
-
   const visiblePerms = perms.filter((p) => !p.iosOnly || Platform.OS === 'ios');
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    scrollContent: {
+      paddingTop: spacing[4],
+      paddingBottom: 100,
+      paddingHorizontal: spacing[6],
+    },
+    section: {
+      marginBottom: spacing[6],
+    },
+    sectionTitle: {
+      fontSize: typography.fontSize.sm,
+      fontFamily: getFontFamily('normal'),
+      color: colors.textMuted,
+      marginBottom: spacing[3],
+      paddingLeft: spacing[1],
+    },
+    card: {
+      backgroundColor: colors.card,
+      borderRadius: borderRadius['2xl'],
+      overflow: 'hidden',
+      ...shadows.lg,
+    },
+    menuItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: spacing[5],
+      paddingVertical: spacing[4],
+    },
+    menuItemLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing[3],
+      flex: 1,
+    },
+    iconContainer: {
+      width: 36,
+      height: 36,
+      borderRadius: borderRadius.md,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    menuItemTextContainer: {
+      flex: 1,
+    },
+    menuItemLabel: {
+      fontSize: typography.fontSize.base,
+      fontFamily: getFontFamily('semibold'),
+      color: colors.text,
+      marginBottom: 2,
+    },
+    menuItemDesc: {
+      fontSize: typography.fontSize.xs,
+      fontFamily: getFontFamily('normal'),
+      color: colors.textMuted,
+    },
+    statusBadge: {
+      alignItems: 'center',
+      gap: 4,
+      minWidth: 52,
+    },
+    dot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+    },
+    statusText: {
+      fontSize: 10,
+      fontFamily: getFontFamily('bold'),
+      textAlign: 'center',
+    },
+    menuDivider: {
+      height: 1,
+      backgroundColor: colors.borderMuted,
+      marginLeft: 72,
+      marginRight: spacing[5],
+    },
+    hint: {
+      fontSize: typography.fontSize.xs,
+      color: colors.textMuted,
+      fontFamily: getFontFamily('normal'),
+      lineHeight: typography.lineHeight.relaxed * typography.fontSize.xs,
+      textAlign: 'center',
+      paddingHorizontal: spacing[2],
+    },
+  });
 
   return (
     <View style={styles.container}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
+          />
+        }
       >
         {/* Permission rows */}
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>App Permissions</Text>
+          <Text style={styles.sectionTitle}>App Permissions</Text>
           <View style={styles.card}>
             {visiblePerms.map((perm, index) => (
               <View key={perm.key}>
-                <View style={styles.row}>
-                  <GlassyButton size={36} variant="dark" shape="square" disabled>
-                    {perm.icon}
-                  </GlassyButton>
-                  <View style={styles.rowText}>
-                    <Text style={styles.rowLabel}>{perm.label}</Text>
-                    <Text style={styles.rowDesc}>{perm.description}</Text>
+                <View style={styles.menuItem}>
+                  <View style={styles.menuItemLeft}>
+                    <View style={styles.iconContainer}>
+                      <UnIcon name={perm.iconName} size={32} />
+                    </View>
+                    <View style={styles.menuItemTextContainer}>
+                      <Text style={styles.menuItemLabel}>{perm.label}</Text>
+                    </View>
                   </View>
                   <View style={styles.statusBadge}>
                     <View style={[styles.dot, { backgroundColor: STATUS_COLOR[perm.status] }]} />
@@ -121,158 +223,12 @@ export default function PermissionsScreen() {
                     </Text>
                   </View>
                 </View>
-                {index < visiblePerms.length - 1 && <View style={styles.divider} />}
+                {index < visiblePerms.length - 1 && <View style={styles.menuDivider} />}
               </View>
             ))}
           </View>
-        </View>
-
-        {/* Actions */}
-        <View style={styles.section}>
-          <View style={styles.actionsRow}>
-            <TouchableOpacity
-              style={styles.actionBtn}
-              onPress={checkPermissions}
-              activeOpacity={0.8}
-            >
-              <RefreshCw
-                size={15}
-                color={colors.primary}
-                strokeWidth={2}
-                style={checking ? { opacity: 0.4 } : undefined}
-              />
-              <Text style={styles.actionBtnText}>
-                {checking ? 'Checking…' : 'Refresh'}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.actionBtn, styles.actionBtnPrimary]}
-              onPress={openSettings}
-              activeOpacity={0.8}
-            >
-              <ExternalLink size={15} color="#000000" strokeWidth={2} />
-              <Text style={styles.actionBtnTextPrimary}>Open Settings</Text>
-            </TouchableOpacity>
-          </View>
-
-          <Text style={styles.hint}>
-            To change a permission tap "Open Settings" and adjust it under Unifesto's app permissions.
-          </Text>
         </View>
       </ScrollView>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  scrollContent: {
-    paddingTop: spacing[6],
-    paddingBottom: 100,
-  },
-  section: {
-    paddingHorizontal: spacing[6],
-    marginBottom: spacing[6],
-  },
-  sectionLabel: {
-    fontSize: typography.fontSize.xs,
-    fontFamily: getFontFamily('bold'),
-    color: colors.textMuted,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-    marginBottom: spacing[3],
-    paddingLeft: spacing[1],
-  },
-  // Matches ProfileScreen card — borderless, deep shadow
-  card: {
-    backgroundColor: colors.card,
-    borderRadius: borderRadius['2xl'],
-    overflow: 'hidden',
-    ...shadows.lg,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[3],
-    gap: spacing[3],
-  },
-  rowText: { flex: 1 },
-  rowLabel: {
-    fontSize: typography.fontSize.base,
-    fontFamily: getFontFamily('semibold'),
-    color: colors.text,
-    marginBottom: 2,
-  },
-  rowDesc: {
-    fontSize: typography.fontSize.xs,
-    color: colors.textMuted,
-    fontFamily: getFontFamily('normal'),
-  },
-  statusBadge: {
-    alignItems: 'center',
-    gap: 4,
-    minWidth: 52,
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  statusText: {
-    fontSize: 10,
-    fontFamily: getFontFamily('bold'),
-    textAlign: 'center',
-  },
-  // Inset divider
-  divider: {
-    height: 1,
-    backgroundColor: colors.borderMuted,
-    marginLeft: 72,
-    marginRight: spacing[4],
-  },
-  actionsRow: {
-    flexDirection: 'row',
-    gap: spacing[3],
-    marginBottom: spacing[4],
-  },
-  actionBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing[2],
-    paddingVertical: spacing[3],
-    paddingHorizontal: spacing[4],
-    backgroundColor: 'rgba(52,145,255,0.08)',
-    borderRadius: borderRadius.lg,
-    borderWidth: 1,
-    borderColor: 'rgba(52,145,255,0.2)',
-  },
-  actionBtnPrimary: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  actionBtnText: {
-    fontSize: typography.fontSize.sm,
-    fontFamily: getFontFamily('bold'),
-    color: colors.primary,
-  },
-  actionBtnTextPrimary: {
-    fontSize: typography.fontSize.sm,
-    fontFamily: getFontFamily('bold'),
-    color: '#000000',
-  },
-  hint: {
-    fontSize: typography.fontSize.xs,
-    color: colors.textMuted,
-    fontFamily: getFontFamily('normal'),
-    lineHeight: typography.lineHeight.relaxed * typography.fontSize.xs,
-    textAlign: 'center',
-    paddingHorizontal: spacing[2],
-  },
-});

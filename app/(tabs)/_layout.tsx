@@ -1,22 +1,30 @@
-import { Platform, StatusBar } from 'react-native';
+import { Platform, StatusBar, DynamicColorIOS } from 'react-native';
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { useEffect } from 'react';
 import * as SystemUI from 'expo-system-ui';
+import { useTheme } from '../../src/context/ThemeContext';
 
 export default function TabsLayout() {
+  const { colors, activeTheme } = useTheme();
+
   useEffect(() => {
     if (Platform.OS === 'android') {
-      SystemUI.setBackgroundColorAsync('#000000').catch(() => {});
+      SystemUI.setBackgroundColorAsync(colors.background).catch(() => {});
       StatusBar.setTranslucent(false);
-      StatusBar.setBackgroundColor('#000000');
-      StatusBar.setBarStyle('light-content');
+      StatusBar.setBackgroundColor(colors.background);
+      StatusBar.setBarStyle(activeTheme === 'light' ? 'dark-content' : 'light-content');
     } else {
-      StatusBar.setBarStyle('light-content');
+      StatusBar.setBarStyle(activeTheme === 'light' ? 'dark-content' : 'light-content');
     }
-  }, []);
+  }, [colors.background, activeTheme]);
 
   return (
-    <NativeTabs>
+    <NativeTabs
+      tintColor={Platform.OS === 'ios' ? DynamicColorIOS({
+        dark: colors.primary,
+        light: colors.primary,
+      }) : colors.primary}
+    >
      <NativeTabs.Trigger
         name="home"
         options={{

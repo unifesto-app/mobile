@@ -3,25 +3,27 @@ import { Tabs } from 'expo-router';
 import { useEffect } from 'react';
 import * as SystemUI from 'expo-system-ui';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { colors } from '../../src/theme';
+import { useTheme } from '../../src/context/ThemeContext';
 
 export default function TabsLayout() {
+  const { colors, activeTheme } = useTheme();
+
   useEffect(() => {
-    SystemUI.setBackgroundColorAsync('#000000').catch(() => {});
+    SystemUI.setBackgroundColorAsync(colors.background).catch(() => {});
     StatusBar.setTranslucent(false);
-    StatusBar.setBackgroundColor('#000000');
-    StatusBar.setBarStyle('light-content');
-  }, []);
+    StatusBar.setBackgroundColor(colors.background);
+    StatusBar.setBarStyle(activeTheme === 'light' ? 'dark-content' : 'light-content');
+  }, [colors.background, activeTheme]);
 
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: '#666666',
+        tabBarInactiveTintColor: colors.textMuted,
         tabBarStyle: {
-          backgroundColor: '#000000',
-          borderTopColor: '#1a1a1a',
+          backgroundColor: colors.background,
+          borderTopColor: colors.borderMuted,
           borderTopWidth: 1,
           height: 60,
           paddingBottom: 8,

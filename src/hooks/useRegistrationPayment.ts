@@ -24,12 +24,18 @@ export function useRegistrationPayment() {
     eventTitle: string,
     eventBanner?: string
   ) => {
+    const eventId = registrationData.eventId;
     try {
       setLoading(true);
       setError(null);
 
       // Step 1: Create registration
-      const registrationResponse = await createRegistration(registrationData);
+      const registrationResponse = await createRegistration(eventId, {
+        ticketTypeId: registrationData.ticketTypeId,
+        quantity: registrationData.quantity,
+        coinsToUse: (registrationData as any).coinsToUse,
+        formResponses: (registrationData as any).formResponses,
+      });
 
       // Step 2: Handle payment if required
       if (registrationResponse.requiresPayment && registrationResponse.razorpayOrder) {
@@ -47,9 +53,9 @@ export function useRegistrationPayment() {
           description: eventTitle,
           image: eventBanner,
           prefill: {
-            name: registrationData.buyerName,
-            email: registrationData.buyerEmail,
-            contact: registrationData.buyerPhone,
+            name: registrationData.attendees?.[0]?.name || '',
+            email: registrationData.attendees?.[0]?.email || '',
+            contact: registrationData.attendees?.[0]?.mobile || '',
           },
           keyId: config.keyId,
         });
@@ -57,8 +63,8 @@ export function useRegistrationPayment() {
         console.log('Payment successful, verifying...');
 
         // Step 3: Verify payment
-        const verificationResponse = await verifyPayment({
-          registrationIds: registrationResponse.registrations.map((r) => r.id),
+        const verificationResponse = await verifyPayment(eventId, {
+          registrationId: registrationResponse.registrations[0]?.id || '',
           razorpayOrderId: paymentResponse.razorpay_order_id,
           razorpayPaymentId: paymentResponse.razorpay_payment_id,
           razorpaySignature: paymentResponse.razorpay_signature,

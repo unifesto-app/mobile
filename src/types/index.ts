@@ -33,8 +33,8 @@ export type RootStackParamList = {
   MainApp: undefined;
   EventDetail: { eventId: string };
   TicketDetail: { ticketId: string };
-  OrganizationsList: undefined;
-  OrganizationDetail: { orgId: string };
+  SpacesList: undefined;
+  SpaceDetail: { orgId: string };
   Profile: undefined;
   EventRegistration: { eventId: string };
   RegistrationSuccess: { eventId: string };

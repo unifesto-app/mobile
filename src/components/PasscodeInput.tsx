@@ -6,8 +6,9 @@ import {
   TouchableOpacity,
   Text,
 } from 'react-native';
-import { colors, spacing, borderRadius, typography } from '../theme';
+import { spacing, borderRadius, typography } from '../theme';
 import { getFontFamily } from '../theme/fontHelpers';
+import { useTheme } from '../context/ThemeContext';
 
 interface PasscodeInputProps {
   length: number; // 4-6 digits
@@ -30,6 +31,58 @@ export default function PasscodeInput({
   autoFocus = true,
   value,
 }: PasscodeInputProps) {
+  const { colors } = useTheme();
+  
+  const styles = StyleSheet.create({
+    container: {
+      alignItems: 'center',
+    },
+    boxesContainer: {
+      flexDirection: 'row',
+      gap: spacing[3],
+      justifyContent: 'center',
+    },
+    box: {
+      width: 48,
+      height: 48,
+      borderRadius: borderRadius.lg,
+      borderWidth: 2,
+      borderColor: colors.border,
+      backgroundColor: colors.card,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    boxFilled: {
+      borderColor: colors.primary,
+      backgroundColor: 'rgba(52, 145, 255, 0.05)',
+    },
+    boxActive: {
+      borderColor: colors.primary,
+      backgroundColor: 'rgba(52, 145, 255, 0.1)',
+    },
+    boxError: {
+      borderColor: '#ef4444',
+      backgroundColor: 'rgba(239, 68, 68, 0.05)',
+    },
+    boxDisabled: {
+      opacity: 0.5,
+    },
+    boxText: {
+      fontSize: typography.fontSize['2xl'],
+      fontFamily: getFontFamily('bold'),
+      color: colors.textMuted,
+    },
+    boxTextFilled: {
+      color: colors.text,
+    },
+    hiddenInput: {
+      position: 'absolute',
+      opacity: 0,
+      width: 1,
+      height: 1,
+    },
+  });
+
   const [passcode, setPasscode] = useState(value || '');
   const inputRef = useRef<TextInput>(null);
 
@@ -125,53 +178,3 @@ export default function PasscodeInput({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    alignItems: 'center',
-  },
-  boxesContainer: {
-    flexDirection: 'row',
-    gap: spacing[3],
-    justifyContent: 'center',
-  },
-  box: {
-    width: 50,
-    height: 60,
-    borderRadius: borderRadius.lg,
-    borderWidth: 2,
-    borderColor: colors.border,
-    backgroundColor: colors.card,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  boxFilled: {
-    borderColor: colors.primary,
-    backgroundColor: 'rgba(52, 145, 255, 0.05)',
-  },
-  boxActive: {
-    borderColor: colors.primary,
-    backgroundColor: 'rgba(52, 145, 255, 0.1)',
-  },
-  boxError: {
-    borderColor: '#ef4444',
-    backgroundColor: 'rgba(239, 68, 68, 0.05)',
-  },
-  boxDisabled: {
-    opacity: 0.5,
-  },
-  boxText: {
-    fontSize: typography.fontSize['2xl'],
-    fontFamily: getFontFamily('bold'),
-    color: colors.textMuted,
-  },
-  boxTextFilled: {
-    color: colors.text,
-  },
-  hiddenInput: {
-    position: 'absolute',
-    opacity: 0,
-    width: 1,
-    height: 1,
-  },
-});

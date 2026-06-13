@@ -108,7 +108,7 @@ export async function getEventAgenda(eventId: string): Promise<AgendaItem[]> {
     });
 
     if (!response.ok) {
-      throw new Error('Failed to fetch agenda');
+      return [];
     }
 
     return await response.json();
@@ -128,7 +128,7 @@ export async function getEventSpeakers(eventId: string): Promise<Speaker[]> {
     });
 
     if (!response.ok) {
-      throw new Error('Failed to fetch speakers');
+      return [];
     }
 
     return await response.json();
@@ -148,7 +148,7 @@ export async function getEventPrizes(eventId: string): Promise<Prize[]> {
     });
 
     if (!response.ok) {
-      throw new Error('Failed to fetch prizes');
+      return [];
     }
 
     return await response.json();
@@ -168,7 +168,7 @@ export async function getEventFaqs(eventId: string): Promise<Faq[]> {
     });
 
     if (!response.ok) {
-      throw new Error('Failed to fetch FAQs');
+      return [];
     }
 
     return await response.json();

@@ -8,7 +8,8 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors, shadows, borderRadius } from '../theme';
+import { shadows, borderRadius } from '../theme';
+import { useTheme } from '../context/ThemeContext';
 import { getFontFamily } from '../theme/fontHelpers';
 
 interface GradientButtonProps {
@@ -32,6 +33,7 @@ export default function GradientButton({
   style,
   textStyle,
 }: GradientButtonProps) {
+  const { colors } = useTheme();
   const sizeStyles = {
     sm: { paddingHorizontal: 16, paddingVertical: 8, fontSize: 13 },
     md: { paddingHorizontal: 24, paddingVertical: 12, fontSize: 15 },

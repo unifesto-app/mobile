@@ -1,7 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import { View, StyleSheet, Animated, ViewStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors, borderRadius } from '../theme';
+import { borderRadius } from '../theme';
+import { useTheme } from '../context/ThemeContext';
 
 interface SkeletonProps {
   width?: number | string;
@@ -16,6 +17,7 @@ export default function Skeleton({
   borderRadius: customBorderRadius = borderRadius.md,
   style 
 }: SkeletonProps) {
+  const { colors } = useTheme();
   const animatedValue = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -49,7 +51,10 @@ export default function Skeleton({
   return (
     <Animated.View
       style={[
-        styles.skeleton,
+        {
+          backgroundColor: colors.borderMuted,
+          overflow: 'hidden',
+        },
         {
           width: width as any,
           height: numericHeight,
@@ -61,10 +66,3 @@ export default function Skeleton({
     />
   );
 }
-
-const styles = StyleSheet.create({
-  skeleton: {
-    backgroundColor: colors.borderMuted,
-    overflow: 'hidden',
-  },
-});

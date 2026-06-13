@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useHeaderHeight } from '@react-navigation/elements';
 import {
   View,
   Text,
@@ -10,7 +11,8 @@ import {
 import { Bell, Calendar, Gift, Ticket, Users, Megaphone, CheckCheck } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import GlassyButton from '../components/GlassyButton';
-import { colors, spacing, typography, borderRadius, shadows, brandGradient, brandGradientStart, brandGradientEnd } from '../theme';
+import { useTheme } from '../context/ThemeContext';
+import { spacing, typography, borderRadius, shadows, brandGradient, brandGradientStart, brandGradientEnd } from '../theme';
 import { getFontFamily } from '../theme/fontHelpers';
 import useAnalyticsScreenTracking from '../hooks/useAnalyticsScreenTracking';
 
@@ -80,145 +82,9 @@ const MOCK_NOTIFICATIONS: Notification[] = [
 const HEADER_TOP_OFFSET = 30;
 
 export default function NotificationsScreen() {
-  const [notifications, setNotifications] = useState<Notification[]>(MOCK_NOTIFICATIONS);
-  const [refreshing, setRefreshing] = useState(false);
-
-  useAnalyticsScreenTracking('Notifications');
-
-  const onRefresh = async () => {
-    setRefreshing(true);
-    // Simulate API call
-    setTimeout(() => {
-      setRefreshing(false);
-    }, 1000);
-  };
-
-  const markAsRead = (id: string) => {
-    setNotifications((prev) =>
-      prev.map((notif) => (notif.id === id ? { ...notif, read: true } : notif))
-    );
-  };
-
-  const markAllAsRead = () => {
-    setNotifications((prev) => prev.map((notif) => ({ ...notif, read: true })));
-  };
-
-  const getNotificationIcon = (type: NotificationType) => {
-    switch (type) {
-      case 'event':
-        return <Calendar size={16} color="#10b981" strokeWidth={2} />;
-      case 'ticket':
-        return <Ticket size={16} color={colors.primary} strokeWidth={2} />;
-      case 'referral':
-        return <Gift size={16} color="#f59e0b" strokeWidth={2} />;
-      case 'social':
-        return <Users size={16} color="#ec4899" strokeWidth={2} />;
-      case 'promo':
-        return <Megaphone size={16} color="#8b5cf6" strokeWidth={2} />;
-      default:
-        return <Bell size={16} color={colors.primary} strokeWidth={2} />;
-    }
-  };
-
-  const unreadCount = notifications.filter((n) => !n.read).length;
-
-  if (notifications.length === 0) {
-    return (
-      <View style={styles.container}>
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.emptyContainer}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              tintColor={colors.primary}
-              colors={[colors.primary]}
-              progressViewOffset={HEADER_TOP_OFFSET}
-            />
-          }
-        >
-          <LinearGradient
-            colors={brandGradient}
-            start={brandGradientStart}
-            end={brandGradientEnd}
-            style={styles.emptyIcon}
-          >
-            <Bell size={48} color={colors.text} strokeWidth={2} />
-          </LinearGradient>
-          <Text style={styles.emptyTitle}>No Notifications</Text>
-          <Text style={styles.emptyDescription}>
-            You're all caught up! Check back later for updates.
-          </Text>
-        </ScrollView>
-      </View>
-    );
-  }
-
-  return (
-    <View style={styles.container}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={colors.primary}
-            colors={[colors.primary]}
-            progressViewOffset={HEADER_TOP_OFFSET}
-          />
-        }
-      >
-        {/* Header with Mark All as Read */}
-        {unreadCount > 0 && (
-          <View style={styles.headerSection}>
-            <Text style={styles.unreadText}>{unreadCount} unread</Text>
-            <TouchableOpacity onPress={markAllAsRead} activeOpacity={0.7}>
-              <View style={styles.markAllButton}>
-                <CheckCheck size={16} color={colors.primary} strokeWidth={2} />
-                <Text style={styles.markAllText}>Mark all as read</Text>
-              </View>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* Notifications List */}
-        <View style={styles.notificationsList}>
-          {notifications.map((notification, index) => (
-            <TouchableOpacity
-              key={notification.id}
-              style={[
-                styles.notificationCard,
-                !notification.read && styles.notificationCardUnread,
-              ]}
-              onPress={() => markAsRead(notification.id)}
-              activeOpacity={0.7}
-            >
-              <View style={styles.notificationContent}>
-                <GlassyButton size={40} variant="dark" shape="square" disabled>
-                  {getNotificationIcon(notification.type)}
-                </GlassyButton>
-                <View style={styles.notificationText}>
-                  <View style={styles.notificationHeader}>
-                    <Text style={styles.notificationTitle}>{notification.title}</Text>
-                    {!notification.read && <View style={styles.unreadDot} />}
-                  </View>
-                  <Text style={styles.notificationMessage} numberOfLines={2}>
-                    {notification.message}
-                  </Text>
-                  <Text style={styles.notificationTime}>{notification.time}</Text>
-                </View>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </ScrollView>
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
+  const { colors } = useTheme();
+  
+  const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -330,3 +196,143 @@ const styles = StyleSheet.create({
     lineHeight: typography.lineHeight.relaxed * typography.fontSize.base,
   },
 });
+
+  const headerHeight = useHeaderHeight();
+  const [notifications, setNotifications] = useState<Notification[]>(MOCK_NOTIFICATIONS);
+  const [refreshing, setRefreshing] = useState(false);
+
+  useAnalyticsScreenTracking('Notifications');
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    // Simulate API call
+    setTimeout(() => {
+      setRefreshing(false);
+    }, 1000);
+  };
+
+  const markAsRead = (id: string) => {
+    setNotifications((prev) =>
+      prev.map((notif) => (notif.id === id ? { ...notif, read: true } : notif))
+    );
+  };
+
+  const markAllAsRead = () => {
+    setNotifications((prev) => prev.map((notif) => ({ ...notif, read: true })));
+  };
+
+  const getNotificationIcon = (type: NotificationType) => {
+    switch (type) {
+      case 'event':
+        return <Calendar size={16} color="#10b981" strokeWidth={2} />;
+      case 'ticket':
+        return <Ticket size={16} color={colors.primary} strokeWidth={2} />;
+      case 'referral':
+        return <Gift size={16} color="#f59e0b" strokeWidth={2} />;
+      case 'social':
+        return <Users size={16} color="#ec4899" strokeWidth={2} />;
+      case 'promo':
+        return <Megaphone size={16} color="#8b5cf6" strokeWidth={2} />;
+      default:
+        return <Bell size={16} color={colors.primary} strokeWidth={2} />;
+    }
+  };
+
+  const unreadCount = notifications.filter((n) => !n.read).length;
+
+  if (notifications.length === 0) {
+    return (
+      <View style={styles.container}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={[styles.emptyContainer, { paddingTop: headerHeight + 20 }]}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={colors.primary}
+              colors={[colors.primary]}
+              progressViewOffset={HEADER_TOP_OFFSET}
+            />
+          }
+        >
+          <LinearGradient
+            colors={brandGradient}
+            start={brandGradientStart}
+            end={brandGradientEnd}
+            style={styles.emptyIcon}
+          >
+            <Bell size={48} color={colors.text} strokeWidth={2} />
+          </LinearGradient>
+          <Text style={styles.emptyTitle}>No Notifications</Text>
+          <Text style={styles.emptyDescription}>
+            You're all caught up! Check back later for updates.
+          </Text>
+        </ScrollView>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.container}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[styles.scrollContent, { paddingTop: headerHeight + 20 }]}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
+            progressViewOffset={HEADER_TOP_OFFSET}
+          />
+        }
+      >
+        {/* Header with Mark All as Read */}
+        {unreadCount > 0 && (
+          <View style={styles.headerSection}>
+            <Text style={styles.unreadText}>{unreadCount} unread</Text>
+            <TouchableOpacity onPress={markAllAsRead} activeOpacity={0.7}>
+              <View style={styles.markAllButton}>
+                <CheckCheck size={16} color={colors.primary} strokeWidth={2} />
+                <Text style={styles.markAllText}>Mark all as read</Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Notifications List */}
+        <View style={styles.notificationsList}>
+          {notifications.map((notification, index) => (
+            <TouchableOpacity
+              key={notification.id}
+              style={[
+                styles.notificationCard,
+                !notification.read && styles.notificationCardUnread,
+              ]}
+              onPress={() => markAsRead(notification.id)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.notificationContent}>
+                <GlassyButton size={40} variant="dark" shape="square" disabled>
+                  {getNotificationIcon(notification.type)}
+                </GlassyButton>
+                <View style={styles.notificationText}>
+                  <View style={styles.notificationHeader}>
+                    <Text style={styles.notificationTitle}>{notification.title}</Text>
+                    {!notification.read && <View style={styles.unreadDot} />}
+                  </View>
+                  <Text style={styles.notificationMessage} numberOfLines={2}>
+                    {notification.message}
+                  </Text>
+                  <Text style={styles.notificationTime}>{notification.time}</Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </ScrollView>
+    </View>
+  );
+}
+

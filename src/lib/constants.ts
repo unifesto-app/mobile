@@ -30,7 +30,7 @@ export const PAYMENT_METHODS = [
 // Registration Status
 export const REGISTRATION_STATUS = {
   CONFIRMED: 'confirmed',
-  CANCELLED: 'cancelled',
+  CANCELLED: 'CANCELLED',
   WAITLISTED: 'waitlisted',
   CHECKED_IN: 'checked_in',
 } as const;
@@ -38,7 +38,7 @@ export const REGISTRATION_STATUS = {
 // Payment Status
 export const PAYMENT_STATUS = {
   PENDING: 'pending',
-  COMPLETED: 'completed',
+  COMPLETED: 'COMPLETED',
   FAILED: 'failed',
   REFUNDED: 'refunded',
 } as const;

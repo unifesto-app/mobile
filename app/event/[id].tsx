@@ -1,8 +1,12 @@
-import { Stack, useLocalSearchParams } from 'expo-router';
+import React from 'react';
+import { Stack } from 'expo-router';
+import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import { Share2 } from 'lucide-react-native';
+import { useTheme } from '../../src/context/ThemeContext';
 import EventDetailScreen from '../../src/screens/EventDetailScreen';
 
 export default function EventDetail() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { colors } = useTheme();
 
   return (
     <>
@@ -10,12 +14,32 @@ export default function EventDetail() {
         options={{
           title: 'Event Details',
           headerShown: true,
-          headerStyle: { backgroundColor: '#000000' },
-          headerTintColor: '#3491ff',
+          headerTransparent: true,
+          headerTintColor: '#ffffff',
+          headerBackButtonDisplayMode: 'minimal',
           headerShadowVisible: true,
+          headerTitleStyle: {
+            fontWeight: '600',
+            fontSize: 18,
+            color: '#ffffff',
+          },
         }}
       />
-      <EventDetailScreen route={{ params: { eventId: id } }} />
+      <EventDetailScreen />
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingRight: 4,
+  },
+  iconButton: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});

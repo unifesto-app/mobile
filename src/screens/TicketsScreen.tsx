@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useHeaderHeight } from '@react-navigation/elements';
 import {
   View,
   Text,
@@ -13,9 +14,9 @@ import { useRouter } from 'expo-router';
 import { Calendar, Clock, Ticket } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import GradientText from '../components/GradientText';
-import LoginModal from '../components/LoginModal';
 import { useAuth } from '../context/AuthContext';
-import { colors, spacing, typography, borderRadius, shadows, brandGradient, brandGradientStart, brandGradientEnd } from '../theme';
+import { useTheme } from '../context/ThemeContext';
+import { spacing, typography, borderRadius, shadows, brandGradient, brandGradientStart, brandGradientEnd } from '../theme';
 import { getMyRegisteredEvents } from '../lib/api/events';
 import { getFontFamily } from '../theme/fontHelpers';
 
@@ -25,270 +26,9 @@ const HEADER_TOP_OFFSET = Platform.OS === 'ios' ? spacing[12] : 20;
 const TABS = ['Upcoming', 'Past'];
 
 export default function TicketsScreen() {
-  const [activeTab, setActiveTab] = useState('Upcoming');
-  const [tickets, setTickets] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [showLoginModal, setShowLoginModal] = useState(false);
-  const router = useRouter();
-  const { user } = useAuth();
-
-  useEffect(() => {
-    setPage(1);
-    loadTickets(1, true);
-  }, [activeTab]);
-
-  const loadTickets = async (pageNum: number = 1, reset: boolean = false) => {
-    try {
-      if (reset) {
-        setLoading(true);
-      } else {
-        setLoadingMore(true);
-      }
-
-      // Get user's registered events
-      const response = await getMyRegisteredEvents(pageNum, 20);
-
-      // If API returns null (error or not implemented), show empty state
-      if (!response) {
-        if (reset) {
-          setTickets([]);
-        }
-        setHasMore(false);
-        return;
-      }
-
-      const allEvents = response?.events || [];
-
-      // Filter based on active tab
-      const now = new Date();
-      const filtered = allEvents.filter(event => {
-        const eventDate = new Date(event.start_date);
-        if (activeTab === 'Upcoming') {
-          return eventDate >= now;
-        } else {
-          return eventDate < now;
-        }
-      });
-
-      if (reset) {
-        setTickets(filtered);
-      } else {
-        setTickets(prev => [...prev, ...filtered]);
-      }
-
-      // Check if there are more items
-      setHasMore(allEvents.length === 20);
-      setPage(pageNum);
-    } catch (error) {
-      // Set empty array on error - show "no tickets" instead of error
-      if (reset) {
-        setTickets([]);
-      }
-      setHasMore(false);
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-    }
-  };
-
-  const handleLoadMore = () => {
-    if (!loadingMore && hasMore && !loading) {
-      loadTickets(page + 1, false);
-    }
-  };
-
-  const renderTicket = (ticket: any) => (
-    <TouchableOpacity
-      key={ticket.id}
-      style={styles.ticketCard}
-      onPress={() => router.push({ pathname: '/ticket/[id]', params: { id: ticket.id, ticket: JSON.stringify(ticket) } })}
-      activeOpacity={0.9}
-    >
-      {/* Top Section */}
-      <View style={styles.ticketTop}>
-        <View style={styles.ticketMainContent}>
-          <View style={styles.ticketImage}>
-            <Text style={styles.ticketImagePlaceholder}>
-              {(ticket.category || 'E').charAt(0)}
-            </Text>
-          </View>
-          <View style={styles.ticketTextContent}>
-            <Text style={styles.ticketTitle} numberOfLines={1}>
-              {ticket.title}
-            </Text>
-            <View style={styles.ticketInfo}>
-              <View style={styles.ticketInfoRow}>
-                <Calendar size={14} color={colors.primary} strokeWidth={2} />
-                <Text style={styles.ticketInfoText}>{ticket.date}</Text>
-              </View>
-              <View style={styles.ticketInfoRow}>
-                <Clock size={14} color={colors.primary} strokeWidth={2} />
-                <Text style={styles.ticketInfoText}>{ticket.time}</Text>
-              </View>
-            </View>
-          </View>
-        </View>
-      </View>
-
-      {/* Dashed Line */}
-      <View style={styles.dashedLineContainer}>
-        <View style={styles.dashedLine} />
-      </View>
-
-      {/* Bottom Section */}
-      <View style={styles.ticketBottom}>
-        <View style={styles.ticketBottomRow}>
-          <View>
-            <Text style={styles.ticketLabel}>CATEGORY</Text>
-            <Text style={styles.ticketValue}>{ticket.category}</Text>
-          </View>
-          <View style={styles.ticketCodeContainer}>
-            <Text style={styles.ticketLabel}>TICKET ID</Text>
-            <Text style={styles.ticketCode}>#{ticket.id.toUpperCase()}</Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Left Cutout */}
-      <View style={styles.cutoutLeft} />
-      {/* Right Cutout */}
-      <View style={styles.cutoutRight} />
-    </TouchableOpacity>
-  );
-
-  // Show sign-in prompt if not authenticated
-  if (!user) {
-    return (
-      <View style={styles.container}>
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.guestContainer}
-        >
-          <View style={styles.guestContent}>
-            <LinearGradient
-              colors={brandGradient}
-              start={brandGradientStart}
-              end={brandGradientEnd}
-              style={styles.guestIcon}
-            >
-              <Ticket size={48} color={colors.text} strokeWidth={2} />
-            </LinearGradient>
-
-            <GradientText style={styles.guestTitle}>Sign in to view your tickets</GradientText>
-            <Text style={styles.guestDescription}>
-              Create an account or sign in to register for events and manage your tickets
-            </Text>
-
-            <TouchableOpacity
-              style={styles.signInButton}
-              onPress={() => setShowLoginModal(true)}
-              activeOpacity={0.8}
-            >
-              <LinearGradient
-                colors={brandGradient}
-                start={brandGradientStart}
-                end={brandGradientEnd}
-                style={styles.signInButtonGradient}
-              >
-                <Text style={styles.signInButtonText}>Sign In</Text>
-              </LinearGradient>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.browseButton}
-              onPress={() => router.push('/(tabs)')}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.browseButtonText}>Browse Events</Text>
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-
-        {/* Login Modal */}
-        <LoginModal
-          visible={showLoginModal}
-          onClose={() => setShowLoginModal(false)}
-          onSuccess={() => setShowLoginModal(false)}
-        />
-      </View>
-    );
-  }
-
-  return (
-    <ScrollView
-      style={styles.container}
-      showsVerticalScrollIndicator={false}
-      contentContainerStyle={{ paddingBottom: 100 }}
-      onScroll={({ nativeEvent }) => {
-        const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
-        const isCloseToBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - 100;
-        if (isCloseToBottom) {
-          handleLoadMore();
-        }
-      }}
-      scrollEventThrottle={400}
-    >
-      {/* Header */}
-      <View style={styles.header}>
-        <GradientText style={styles.headerTitle}>My Tickets</GradientText>
-        <Text style={styles.headerSubtitle}>
-          View and manage your event tickets
-        </Text>
-
-        {/* Tabs */}
-        <View style={styles.tabsContainer}>
-          {TABS.map((tab) => (
-            <TouchableOpacity
-              key={tab}
-              style={[styles.tab, activeTab === tab && styles.tabActive]}
-              onPress={() => setActiveTab(tab)}
-              activeOpacity={0.7}
-            >
-              <Text
-                style={[
-                  styles.tabText,
-                  activeTab === tab && styles.tabTextActive,
-                ]}
-              >
-                {tab}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
-
-      {/* Tickets List */}
-      <View style={styles.ticketsListContent}>
-        {tickets.length > 0 ? (
-          <>
-            {tickets.map(renderTicket)}
-            {loadingMore && (
-              <View style={styles.loadingMore}>
-                <ActivityIndicator size="small" color={colors.primary} />
-                <Text style={styles.loadingMoreText}>Loading more...</Text>
-              </View>
-            )}
-          </>
-        ) : (
-          <View style={styles.emptyState}>
-            <Ticket size={64} color={colors.textMuted} strokeWidth={1.5} />
-            <Text style={styles.emptyStateTitle}>No tickets yet</Text>
-            <Text style={styles.emptyStateText}>
-              {activeTab === 'Upcoming'
-                ? 'Register for events to see your tickets here'
-                : 'Your past event tickets will appear here'}
-            </Text>
-          </View>
-        )}
-      </View>
-    </ScrollView>
-  );
-}
-
-const styles = StyleSheet.create({
+  const { colors } = useTheme();
+  
+  const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -541,3 +281,259 @@ const styles = StyleSheet.create({
     fontFamily: getFontFamily('medium'),
   },
 });
+
+  const [activeTab, setActiveTab] = useState('Upcoming');
+  const [tickets, setTickets] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const router = useRouter();
+  const { user } = useAuth();
+
+  useEffect(() => {
+    setPage(1);
+    loadTickets(1, true);
+  }, [activeTab]);
+
+  const loadTickets = async (pageNum: number = 1, reset: boolean = false) => {
+    try {
+      if (reset) {
+        setLoading(true);
+      } else {
+        setLoadingMore(true);
+      }
+
+      // Get user's registered events
+      const response = await getMyRegisteredEvents(pageNum, 20);
+
+      // If API returns null (error or not implemented), show empty state
+      if (!response) {
+        if (reset) {
+          setTickets([]);
+        }
+        setHasMore(false);
+        return;
+      }
+
+      const allEvents = response?.events || [];
+
+      // Filter based on active tab
+      const now = new Date();
+      const filtered = allEvents.filter((event: any) => {
+        const eventDate = new Date(event.startDateTime);
+        if (activeTab === 'Upcoming') {
+          return eventDate >= now;
+        } else {
+          return eventDate < now;
+        }
+      });
+
+      if (reset) {
+        setTickets(filtered);
+      } else {
+        setTickets(prev => [...prev, ...filtered]);
+      }
+
+      // Check if there are more items
+      setHasMore(allEvents.length === 20);
+      setPage(pageNum);
+    } catch (error) {
+      // Set empty array on error - show "no tickets" instead of error
+      if (reset) {
+        setTickets([]);
+      }
+      setHasMore(false);
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  };
+
+  const handleLoadMore = () => {
+    if (!loadingMore && hasMore && !loading) {
+      loadTickets(page + 1, false);
+    }
+  };
+
+  const renderTicket = (ticket: any) => (
+    <TouchableOpacity
+      key={ticket.id}
+      style={styles.ticketCard}
+      onPress={() => router.push({ pathname: '/ticket/[id]', params: { id: ticket.id, ticket: JSON.stringify(ticket) } })}
+      activeOpacity={0.9}
+    >
+      {/* Top Section */}
+      <View style={styles.ticketTop}>
+        <View style={styles.ticketMainContent}>
+          <View style={styles.ticketImage}>
+            <Text style={styles.ticketImagePlaceholder}>
+              {(ticket.category || 'E').charAt(0)}
+            </Text>
+          </View>
+          <View style={styles.ticketTextContent}>
+            <Text style={styles.ticketTitle} numberOfLines={1}>
+              {ticket.title}
+            </Text>
+            <View style={styles.ticketInfo}>
+              <View style={styles.ticketInfoRow}>
+                <Calendar size={14} color={colors.primary} strokeWidth={2} />
+                <Text style={styles.ticketInfoText}>{ticket.date}</Text>
+              </View>
+              <View style={styles.ticketInfoRow}>
+                <Clock size={14} color={colors.primary} strokeWidth={2} />
+                <Text style={styles.ticketInfoText}>{ticket.time}</Text>
+              </View>
+            </View>
+          </View>
+        </View>
+      </View>
+
+      {/* Dashed Line */}
+      <View style={styles.dashedLineContainer}>
+        <View style={styles.dashedLine} />
+      </View>
+
+      {/* Bottom Section */}
+      <View style={styles.ticketBottom}>
+        <View style={styles.ticketBottomRow}>
+          <View>
+            <Text style={styles.ticketLabel}>CATEGORY</Text>
+            <Text style={styles.ticketValue}>{ticket.category}</Text>
+          </View>
+          <View style={styles.ticketCodeContainer}>
+            <Text style={styles.ticketLabel}>TICKET ID</Text>
+            <Text style={styles.ticketCode}>#{ticket.id.toUpperCase()}</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Left Cutout */}
+      <View style={styles.cutoutLeft} />
+      {/* Right Cutout */}
+      <View style={styles.cutoutRight} />
+    </TouchableOpacity>
+  );
+
+  // Show sign-in prompt if not authenticated
+  if (!user) {
+    return (
+      <View style={styles.container}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.guestContainer}
+        >
+          <View style={styles.guestContent}>
+            <LinearGradient
+              colors={brandGradient}
+              start={brandGradientStart}
+              end={brandGradientEnd}
+              style={styles.guestIcon}
+            >
+              <Ticket size={48} color={colors.text} strokeWidth={2} />
+            </LinearGradient>
+
+            <GradientText style={styles.guestTitle}>Sign in to view your tickets</GradientText>
+            <Text style={styles.guestDescription}>
+              Create an account or sign in to register for events and manage your tickets
+            </Text>
+
+            <TouchableOpacity
+              style={styles.signInButton}
+              onPress={() => router.push('/login')}
+              activeOpacity={0.8}
+            >
+              <LinearGradient
+                colors={brandGradient}
+                start={brandGradientStart}
+                end={brandGradientEnd}
+                style={styles.signInButtonGradient}
+              >
+                <Text style={styles.signInButtonText}>Sign In</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.browseButton}
+              onPress={() => router.push('/(tabs)')}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.browseButtonText}>Browse Events</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </View>
+    );
+  }
+
+  return (
+    <ScrollView
+      style={styles.container}
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={{ paddingBottom: 100 }}
+      onScroll={({ nativeEvent }) => {
+        const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
+        const isCloseToBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - 100;
+        if (isCloseToBottom) {
+          handleLoadMore();
+        }
+      }}
+      scrollEventThrottle={400}
+    >
+      {/* Header */}
+      <View style={styles.header}>
+        <GradientText style={styles.headerTitle}>My Tickets</GradientText>
+        <Text style={styles.headerSubtitle}>
+          View and manage your event tickets
+        </Text>
+
+        {/* Tabs */}
+        <View style={styles.tabsContainer}>
+          {TABS.map((tab) => (
+            <TouchableOpacity
+              key={tab}
+              style={[styles.tab, activeTab === tab && styles.tabActive]}
+              onPress={() => setActiveTab(tab)}
+              activeOpacity={0.7}
+            >
+              <Text
+                style={[
+                  styles.tabText,
+                  activeTab === tab && styles.tabTextActive,
+                ]}
+              >
+                {tab}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+
+      {/* Tickets List */}
+      <View style={styles.ticketsListContent}>
+        {tickets.length > 0 ? (
+          <>
+            {tickets.map(renderTicket)}
+            {loadingMore && (
+              <View style={styles.loadingMore}>
+                <ActivityIndicator size="small" color={colors.primary} />
+                <Text style={styles.loadingMoreText}>Loading more...</Text>
+              </View>
+            )}
+          </>
+        ) : (
+          <View style={styles.emptyState}>
+            <Ticket size={64} color={colors.textMuted} strokeWidth={1.5} />
+            <Text style={styles.emptyStateTitle}>No tickets yet</Text>
+            <Text style={styles.emptyStateText}>
+              {activeTab === 'Upcoming'
+                ? 'Register for events to see your tickets here'
+                : 'Your past event tickets will appear here'}
+            </Text>
+          </View>
+        )}
+      </View>
+    </ScrollView>
+  );
+}
+

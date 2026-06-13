@@ -24,10 +24,12 @@ import GradientText from '../components/GradientText';
 import RegistrationTimer from '../components/RegistrationTimer';
 import StepIndicator from '../components/StepIndicator';
 import AttendeeForm from '../components/AttendeeForm';
-import { colors, spacing, typography, borderRadius } from '../theme';
-import { getEventById, Event } from '../lib/api/events';
+import { spacing, typography, borderRadius } from '../theme';
+import { getEventById, getEventBySlug, Event } from '../lib/api/events';
 import { getEventTickets, getEventCustomFields, getFieldsForTicket, Ticket, CustomField, calculateTicketPrice, isTicketAvailable } from '../lib/api/tickets';
 import CustomFieldInput from '../components/CustomFieldInput';
+import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 import { useRegistrationPayment } from '../hooks/useRegistrationPayment';
 
 type StepType = 'ticket' | 'details' | 'review' | 'payment';
@@ -43,789 +45,10 @@ interface AttendeeInfo {
 const REGISTRATION_TIME_LIMIT = 15 * 60; // 15 minutes in seconds
 
 export default function EventRegistrationScreen() {
-  const router = useRouter();
-  const params = useLocalSearchParams<{ eventId: string }>();
-  const eventId = params.eventId;
+  const { colors } = useTheme();
+  const { user } = useAuth();
   
-  // Event state
-  const [event, setEvent] = useState<Event | null>(null);
-  const [tickets, setTickets] = useState<Ticket[]>([]);
-  const [customFields, setCustomFields] = useState<CustomField[]>([]);
-  const [loading, setLoading] = useState(true);
-  
-  // Load event data and tickets
-  useEffect(() => {
-    const loadEventData = async () => {
-      try {
-        setLoading(true);
-        const [eventData, ticketsData, fieldsData] = await Promise.all([
-          getEventById(eventId),
-          getEventTickets(eventId),
-          getEventCustomFields(eventId),
-        ]);
-        
-        setEvent(eventData);
-        setTickets(ticketsData.tickets || []);
-        setCustomFields(fieldsData.fields || []);
-      } catch (error) {
-        console.error('Error loading event data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadEventData();
-  }, [eventId]);
-  
-  // Timer state
-  const [timerExpired, setTimerExpired] = useState(false);
-
-  // Registration flow state
-  const [step, setStep] = useState<StepType>('ticket');
-
-  // Ticket selection
-  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
-  const [quantity, setQuantity] = useState(1);
-
-  // Attendee details
-  const [attendees, setAttendees] = useState<AttendeeInfo[]>([{
-    name: '',
-    email: '',
-    mobile: '',
-    gender: '',
-    customFields: {},
-  }]);
-
-  // Payment hook
-  const { processRegistration, loading: paymentLoading, error: paymentError } = useRegistrationPayment();
-
-  const CURRENCY_SYMBOLS: Record<string, string> = {
-    INR: '₹',
-    USD: '$',
-    EUR: '€',
-    GBP: '£',
-  };
-  
-  if (loading) {
-    return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <Text style={styles.loadingMoreText}>Loading...</Text>
-      </View>
-    );
-  }
-  
-  if (!event) {
-    return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <Text style={styles.errorText}>Event not found</Text>
-      </View>
-    );
-  }
-
-  if (tickets.length === 0) {
-    return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', padding: spacing[6] }]}>
-        <Text style={styles.errorText}>No tickets available</Text>
-        <Text style={[styles.errorText, { fontSize: typography.fontSize.sm, marginTop: spacing[2] }]}>
-          This event doesn't have any tickets configured yet.
-        </Text>
-        <TouchableOpacity
-          style={[styles.backButton, { marginTop: spacing[6] }]}
-          onPress={() => router.back()}
-        >
-          <LinearGradient
-            colors={['#3491ff', '#0062ff']}
-            style={styles.backButtonGradient}
-          >
-            <Text style={styles.backButtonText}>Back to Event</Text>
-          </LinearGradient>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
-  // Handle back button press with confirmation
-  const handleBackPress = () => {
-    Alert.alert(
-      'Cancel Registration?',
-      'Are you sure you want to cancel? Your progress will be lost.',
-      [
-        {
-          text: 'Continue Registration',
-          style: 'cancel',
-        },
-        {
-          text: 'Cancel',
-          style: 'destructive',
-          onPress: () => router.back(),
-        },
-      ],
-      { cancelable: true }
-    );
-  };
-
-  // Handle ticket selection
-  const handleTicketSelect = (ticket: Ticket) => {
-    setSelectedTicket(ticket);
-
-    if (ticket.type === 'group') {
-      const initialGroupSize = ticket.group_size || 5;
-      setQuantity(initialGroupSize);
-      setAttendees(Array(initialGroupSize).fill(null).map(() => ({
-        name: '',
-        email: '',
-        mobile: '',
-        gender: '',
-        customFields: {},
-      })));
-    } else {
-      setQuantity(1);
-      setAttendees([{
-        name: '',
-        email: '',
-        mobile: '',
-        gender: '',
-        customFields: {},
-      }]);
-    }
-  };
-
-  // Handle quantity change
-  const handleQuantityChange = (newQuantity: number) => {
-    if (!selectedTicket) return;
-
-    const minQty = selectedTicket.type === 'group' ? (selectedTicket.group_size || 5) : selectedTicket.min_purchase;
-    const maxQty = Math.min(
-      selectedTicket.max_purchase,
-      selectedTicket.quantity_available - selectedTicket.quantity_sold
-    );
-
-    if (newQuantity < minQty || newQuantity > maxQty) {
-      return;
-    }
-
-    setQuantity(newQuantity);
-    const newAttendees = Array(newQuantity).fill(null).map((_, i) =>
-      attendees[i] || {
-        name: '',
-        email: '',
-        mobile: '',
-        gender: '',
-        customFields: {},
-      }
-    );
-    setAttendees(newAttendees);
-  };
-
-  // Handle attendee info change
-  const handleAttendeeChange = (index: number, field: keyof AttendeeInfo, value: string) => {
-    const newAttendees = [...attendees];
-    newAttendees[index] = { ...newAttendees[index], [field]: value };
-    setAttendees(newAttendees);
-  };
-
-  // Handle custom field change
-  const handleCustomFieldChange = (attendeeIndex: number, fieldId: string, value: any) => {
-    const newAttendees = [...attendees];
-    newAttendees[attendeeIndex] = {
-      ...newAttendees[attendeeIndex],
-      customFields: {
-        ...newAttendees[attendeeIndex].customFields,
-        [fieldId]: value,
-      },
-    };
-    setAttendees(newAttendees);
-  };
-
-  // Validate attendee info
-  const validateAttendees = () => {
-    if (!selectedTicket) return false;
-
-    // Get applicable custom fields for this ticket
-    const applicableFields = getFieldsForTicket(customFields, selectedTicket.id);
-
-    return attendees.every(attendee => {
-      // Validate basic fields
-      const basicValid =
-        attendee.name.trim() !== '' &&
-        attendee.email.trim() !== '' &&
-        /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(attendee.email) &&
-        attendee.mobile.trim() !== '' &&
-        /^[0-9]{10}$/.test(attendee.mobile) &&
-        attendee.gender !== '';
-
-      if (!basicValid) return false;
-
-      // Validate required custom fields
-      const customFieldsValid = applicableFields
-        .filter(field => field.is_required)
-        .every(field => {
-          const value = attendee.customFields?.[field.id];
-          if (field.field_type === 'checkbox') {
-            return value === true;
-          }
-          if (field.field_type === 'multi_select') {
-            return Array.isArray(value) && value.length > 0;
-          }
-          return value !== undefined && value !== null && value !== '';
-        });
-
-      return customFieldsValid;
-    });
-  };
-
-  // Calculate total price
-  const calculateTotal = () => {
-    if (!selectedTicket) return 0;
-    return calculateTicketPrice(selectedTicket, quantity);
-  };
-
-  // Get currency symbol
-  const getCurrencySymbol = () => {
-    if (!selectedTicket) return '₹';
-    return CURRENCY_SYMBOLS[selectedTicket.currency] || selectedTicket.currency;
-  };
-
-  // Handle step navigation
-  const goToNextStep = () => {
-    if (step === 'ticket' && selectedTicket) {
-      setStep('details');
-    } else if (step === 'details' && validateAttendees()) {
-      setStep('review');
-    } else if (step === 'review') {
-      setStep('payment');
-    }
-  };
-
-  const goToPreviousStep = () => {
-    if (step === 'details') setStep('ticket');
-    else if (step === 'review') setStep('details');
-    else if (step === 'payment') setStep('review');
-  };
-
-  const handleSubmit = async () => {
-    if (!selectedTicket || !event) return;
-
-    try {
-      // Prepare registration data
-      const registrationData = {
-        eventId: event.id,
-        ticketId: selectedTicket.id,
-        quantity,
-        attendees: attendees.map(a => ({
-          name: a.name,
-          email: a.email,
-          mobile: a.mobile,
-          gender: a.gender,
-          customFields: a.customFields,
-        })),
-        buyerName: attendees[0].name, // Use first attendee as buyer
-        buyerEmail: attendees[0].email,
-        buyerPhone: attendees[0].mobile,
-      };
-
-      // Process registration with payment
-      const result = await processRegistration(
-        registrationData,
-        event.title,
-        event.banner_url
-      );
-
-      if (result.success) {
-        // Navigate to success screen with registration data
-        router.replace({
-          pathname: '/registration-success',
-          params: {
-            eventId: event.id,
-            eventTitle: event.title,
-            ticketName: selectedTicket.name,
-            quantity: quantity.toString(),
-            total: calculateTotal().toString(),
-            currency: getCurrencySymbol(),
-          }
-        });
-      }
-    } catch (error) {
-      console.error('Registration error:', error);
-      // Error is already handled in the hook with Alert
-    }
-  };
-
-  if (timerExpired) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.expiredContainer}>
-          <View style={styles.expiredIcon}>
-            <Clock size={32} color={colors.error} strokeWidth={2} />
-          </View>
-          <Text style={styles.expiredTitle}>Registration Time Expired</Text>
-          <Text style={styles.expiredText}>
-            Your registration session has expired. Please start a new registration.
-          </Text>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={handleBackPress}
-          >
-            <LinearGradient
-              colors={['#3491ff', '#0062ff']}
-              style={styles.backButtonGradient}
-            >
-              <Text style={styles.backButtonText}>Back to Event</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-  }
-
-  return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.headerBackButton}
-          onPress={handleBackPress}
-        >
-          <ArrowLeft size={24} color={colors.text} strokeWidth={2} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Event Registration</Text>
-      </View>
-
-      {/* Timer Bar */}
-      <RegistrationTimer
-        initialSeconds={REGISTRATION_TIME_LIMIT}
-        onExpire={() => setTimerExpired(true)}
-      />
-
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Event Info */}
-        <View style={styles.eventInfo}>
-          <Text style={styles.eventSubtitle}>Event Registration</Text>
-          <GradientText style={styles.eventTitle}>{event.title}</GradientText>
-          <Text style={styles.eventDetails}>
-            {new Date(event.start_date).toLocaleDateString('en-US', {
-              month: 'short',
-              day: 'numeric',
-              year: 'numeric',
-            })} · {event.location || event.city || 'TBA'}
-          </Text>
-        </View>
-
-        {/* Step Indicator */}
-        <StepIndicator
-          steps={[
-            { id: 'ticket', label: 'Select Ticket' },
-            { id: 'details', label: 'Attendee Details' },
-            { id: 'review', label: 'Review' },
-            { id: 'payment', label: 'Payment' },
-          ]}
-          currentStep={
-            step === 'ticket' ? 1 :
-            step === 'details' ? 2 :
-            step === 'review' ? 3 :
-            step === 'payment' ? 4 : 1
-          }
-        />
-
-        {/* Step Content */}
-        <View style={styles.stepContentContainer}>
-          {/* Step 1: Ticket Selection */}
-          {step === 'ticket' && (
-            <View>
-              <Text style={styles.sectionTitle}>Select Your Ticket</Text>
-              {tickets.length === 0 ? (
-                <View style={styles.emptyTickets}>
-                  <Text style={styles.emptyTicketsText}>No tickets available for this event</Text>
-                </View>
-              ) : (
-                <View style={styles.ticketOptions}>
-                  {tickets.map((ticket) => {
-                    const available = isTicketAvailable(ticket);
-                    const spotsLeft = ticket.quantity_available - ticket.quantity_sold;
-                    const currencySymbol = CURRENCY_SYMBOLS[ticket.currency] || ticket.currency;
-                    
-                    return (
-                      <TouchableOpacity
-                        key={ticket.id}
-                        style={[
-                          styles.ticketOption,
-                          selectedTicket?.id === ticket.id && styles.ticketOptionSelected,
-                          !available && styles.ticketOptionDisabled,
-                        ]}
-                        onPress={() => available && handleTicketSelect(ticket)}
-                        disabled={!available}
-                      >
-                        <View style={styles.ticketOptionContent}>
-                          <View style={styles.ticketOptionHeader}>
-                            <View style={styles.ticketOptionInfo}>
-                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing[2] }}>
-                                <Text style={styles.ticketOptionName}>{ticket.name}</Text>
-                                {ticket.type === 'group' && (
-                                  <View style={styles.groupBadge}>
-                                    <Text style={styles.groupBadgeText}>Group</Text>
-                                  </View>
-                                )}
-                              </View>
-                              {ticket.description && (
-                                <Text style={styles.ticketOptionDescription}>{ticket.description}</Text>
-                              )}
-                              {!available && (
-                                <Text style={styles.unavailableText}>
-                                  {spotsLeft === 0 ? 'Sold Out' : 'Not Available'}
-                                </Text>
-                              )}
-                              {available && spotsLeft <= 10 && (
-                                <Text style={styles.lowStockText}>
-                                  Only {spotsLeft} left!
-                                </Text>
-                              )}
-                            </View>
-                            <View
-                              style={[
-                                styles.radioButton,
-                                selectedTicket?.id === ticket.id && styles.radioButtonSelected,
-                                !available && styles.radioButtonDisabled,
-                              ]}
-                            >
-                              {selectedTicket?.id === ticket.id && (
-                                <View style={styles.radioButtonInner} />
-                              )}
-                            </View>
-                          </View>
-                          <View style={styles.ticketOptionPrice}>
-                            <Text style={styles.priceText}>
-                              {ticket.price === 0 ? 'Free' : `${currencySymbol}${ticket.price}`}
-                            </Text>
-                            {ticket.price_type === 'per_person' && (
-                              <Text style={styles.priceSubtext}>per person</Text>
-                            )}
-                            {ticket.price_type === 'per_group' && (
-                              <Text style={styles.priceSubtext}>per group</Text>
-                            )}
-                          </View>
-                        </View>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              )}
-
-              {/* Quantity Selector */}
-              {selectedTicket && (
-                <View style={styles.quantityContainer}>
-                  <Text style={styles.quantityLabel}>
-                    {selectedTicket.type === 'group' ? 'Number of Attendees' : 'Number of Tickets'}
-                  </Text>
-                  <View style={styles.quantitySelector}>
-                    <TouchableOpacity
-                      style={[
-                        styles.quantityButton,
-                        quantity <= (selectedTicket.type === 'group' ? (selectedTicket.group_size || 5) : selectedTicket.min_purchase) && styles.quantityButtonDisabled,
-                      ]}
-                      onPress={() => {
-                        const minQty = selectedTicket.type === 'group' ? (selectedTicket.group_size || 5) : selectedTicket.min_purchase;
-                        handleQuantityChange(Math.max(minQty, quantity - 1));
-                      }}
-                      disabled={quantity <= (selectedTicket.type === 'group' ? (selectedTicket.group_size || 5) : selectedTicket.min_purchase)}
-                    >
-                      <Minus size={20} color={colors.text} strokeWidth={2} />
-                    </TouchableOpacity>
-                    <Text style={styles.quantityValue}>{quantity}</Text>
-                    <TouchableOpacity
-                      style={[
-                        styles.quantityButton,
-                        quantity >= Math.min(selectedTicket.max_purchase, selectedTicket.quantity_available - selectedTicket.quantity_sold) && styles.quantityButtonDisabled,
-                      ]}
-                      onPress={() => {
-                        const maxQty = Math.min(selectedTicket.max_purchase, selectedTicket.quantity_available - selectedTicket.quantity_sold);
-                        handleQuantityChange(Math.min(maxQty, quantity + 1));
-                      }}
-                      disabled={quantity >= Math.min(selectedTicket.max_purchase, selectedTicket.quantity_available - selectedTicket.quantity_sold)}
-                    >
-                      <Plus size={20} color={colors.text} strokeWidth={2} />
-                    </TouchableOpacity>
-                  </View>
-                  <Text style={styles.quantityHint}>
-                    {selectedTicket.type === 'group' 
-                      ? `Min: ${selectedTicket.group_size || 5}, Max: ${Math.min(selectedTicket.max_purchase, selectedTicket.quantity_available - selectedTicket.quantity_sold)}`
-                      : `Min: ${selectedTicket.min_purchase}, Max: ${Math.min(selectedTicket.max_purchase, selectedTicket.quantity_available - selectedTicket.quantity_sold)}`
-                    }
-                  </Text>
-                </View>
-              )}
-            </View>
-          )}
-
-          {/* Step 2: Attendee Details */}
-          {step === 'details' && (
-            <View>
-              <Text style={styles.sectionTitle}>
-                Attendee Information
-                {attendees.length > 1 && (
-                  <Text style={styles.attendeeCount}> ({attendees.length} people)</Text>
-                )}
-              </Text>
-
-              {attendees.map((attendee, index) => {
-                // Get custom fields applicable to the selected ticket
-                const applicableFields = selectedTicket 
-                  ? getFieldsForTicket(customFields, selectedTicket.id)
-                  : [];
-
-                return (
-                  <View key={index}>
-                    <AttendeeForm
-                      attendee={attendee}
-                      index={index}
-                      onChange={handleAttendeeChange}
-                      showTitle={attendees.length > 1}
-                    />
-
-                    {/* Custom Fields */}
-                    {applicableFields.length > 0 && (
-                      <View style={styles.customFieldsSection}>
-                        <Text style={styles.customFieldsTitle}>Additional Information</Text>
-                        {applicableFields.map((field) => (
-                          <CustomFieldInput
-                            key={field.id}
-                            field={field}
-                            value={attendee.customFields?.[field.id]}
-                            onChange={(value) => handleCustomFieldChange(index, field.id, value)}
-                          />
-                        ))}
-                      </View>
-                    )}
-                  </View>
-                );
-              })}
-            </View>
-          )}
-
-          {/* Step 3: Review */}
-          {step === 'review' && (
-            <View>
-              <Text style={styles.sectionTitle}>Review Your Registration</Text>
-
-              {/* Event Details */}
-              <View style={styles.reviewSection}>
-                <Text style={styles.reviewSectionTitle}>Event Details</Text>
-                <View style={styles.reviewItem}>
-                  <Text style={styles.reviewLabel}>Event:</Text>
-                  <Text style={styles.reviewValue}>{event.title}</Text>
-                </View>
-                <View style={styles.reviewItem}>
-                  <Text style={styles.reviewLabel}>Date:</Text>
-                  <Text style={styles.reviewValue}>
-                    {new Date(event.start_date).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric',
-                    })}
-                  </Text>
-                </View>
-                <View style={styles.reviewItem}>
-                  <Text style={styles.reviewLabel}>Location:</Text>
-                  <Text style={styles.reviewValue}>{event.location || event.city || 'TBA'}</Text>
-                </View>
-              </View>
-
-              {/* Ticket Details */}
-              <View style={styles.reviewSection}>
-                <Text style={styles.reviewSectionTitle}>Ticket Details</Text>
-                <View style={styles.reviewItem}>
-                  <Text style={styles.reviewLabel}>Ticket Type:</Text>
-                  <Text style={styles.reviewValue}>{selectedTicket?.name}</Text>
-                </View>
-                <View style={styles.reviewItem}>
-                  <Text style={styles.reviewLabel}>Quantity:</Text>
-                  <Text style={styles.reviewValue}>{quantity} {quantity === 1 ? 'ticket' : 'tickets'}</Text>
-                </View>
-                <View style={styles.reviewItem}>
-                  <Text style={styles.reviewLabel}>Attendees:</Text>
-                  <Text style={styles.reviewValue}>{attendees.length} {attendees.length === 1 ? 'person' : 'people'}</Text>
-                </View>
-              </View>
-
-              {/* Attendee List */}
-              <View style={styles.reviewSection}>
-                <Text style={styles.reviewSectionTitle}>Attendee Information</Text>
-                {attendees.map((attendee, index) => {
-                  // Get custom fields for display
-                  const applicableFields = selectedTicket 
-                    ? getFieldsForTicket(customFields, selectedTicket.id)
-                    : [];
-
-                  return (
-                    <View key={index} style={styles.attendeeReview}>
-                      <Text style={styles.attendeeReviewTitle}>Attendee {index + 1}</Text>
-                      <View style={styles.attendeeReviewGrid}>
-                        <View style={styles.attendeeReviewItem}>
-                          <Text style={styles.attendeeReviewLabel}>Name:</Text>
-                          <Text style={styles.attendeeReviewValue}>{attendee.name}</Text>
-                        </View>
-                        <View style={styles.attendeeReviewItem}>
-                          <Text style={styles.attendeeReviewLabel}>Email:</Text>
-                          <Text style={styles.attendeeReviewValue}>{attendee.email}</Text>
-                        </View>
-                        <View style={styles.attendeeReviewItem}>
-                          <Text style={styles.attendeeReviewLabel}>Mobile:</Text>
-                          <Text style={styles.attendeeReviewValue}>{attendee.mobile}</Text>
-                        </View>
-                        <View style={styles.attendeeReviewItem}>
-                          <Text style={styles.attendeeReviewLabel}>Gender:</Text>
-                          <Text style={styles.attendeeReviewValue}>{attendee.gender}</Text>
-                        </View>
-
-                        {/* Custom Fields */}
-                        {applicableFields.map((field) => {
-                          const value = attendee.customFields?.[field.id];
-                          let displayValue = value;
-
-                          // Format display value based on field type
-                          if (field.field_type === 'checkbox') {
-                            displayValue = value ? 'Yes' : 'No';
-                          } else if (field.field_type === 'multi_select' && Array.isArray(value)) {
-                            displayValue = value.join(', ');
-                          } else if (field.field_type === 'dropdown' || field.field_type === 'radio') {
-                            const option = field.options_json?.find(opt => opt.value === value);
-                            displayValue = option?.label || value;
-                          }
-
-                          return (
-                            <View key={field.id} style={styles.attendeeReviewItem}>
-                              <Text style={styles.attendeeReviewLabel}>{field.label}:</Text>
-                              <Text style={styles.attendeeReviewValue}>
-                                {displayValue || '-'}
-                              </Text>
-                            </View>
-                          );
-                        })}
-                      </View>
-                    </View>
-                  );
-                })}
-              </View>
-
-              {/* Total */}
-              <View style={styles.totalSection}>
-                <View style={styles.totalRow}>
-                  <Text style={styles.totalLabel}>Total Amount</Text>
-                  <Text style={styles.totalValue}>
-                    {calculateTotal() === 0 ? 'Free' : `${getCurrencySymbol()}${calculateTotal()}`}
-                  </Text>
-                </View>
-              </View>
-            </View>
-          )}
-
-          {/* Step 4: Payment */}
-          {step === 'payment' && (
-            <View>
-              <Text style={styles.sectionTitle}>Payment</Text>
-
-              {calculateTotal() === 0 ? (
-                <View style={styles.freeEventContainer}>
-                  <View style={styles.freeEventIcon}>
-                    <CheckCircle size={32} color={colors.primary} strokeWidth={2} />
-                  </View>
-                  <Text style={styles.freeEventTitle}>Free Event</Text>
-                  <Text style={styles.freeEventText}>
-                    No payment required. Click confirm to complete your registration.
-                  </Text>
-                </View>
-              ) : (
-                <View>
-                  <View style={styles.paymentAmount}>
-                    <View style={styles.paymentAmountRow}>
-                      <Text style={styles.paymentAmountLabel}>Amount to Pay</Text>
-                      <Text style={styles.paymentAmountValue}>{getCurrencySymbol()}{calculateTotal()}</Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.paymentMethods}>
-                    <Text style={styles.paymentMethodsTitle}>Select Payment Method</Text>
-
-                    {[
-                      { id: 'upi', name: 'UPI', icon: Smartphone },
-                      { id: 'card', name: 'Card', icon: CreditCard },
-                      { id: 'netbanking', name: 'Net Banking', icon: Building2 },
-                    ].map((method) => (
-                      <TouchableOpacity key={method.id} style={styles.paymentMethod}>
-                        <View style={styles.paymentMethodContent}>
-                          <method.icon size={20} color={colors.text} strokeWidth={2} />
-                          <Text style={styles.paymentMethodName}>{method.name}</Text>
-                        </View>
-                        <ArrowLeft
-                          size={16}
-                          color={colors.textMuted}
-                          strokeWidth={2}
-                          style={{ transform: [{ rotate: '180deg' }] }}
-                        />
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                </View>
-              )}
-            </View>
-          )}
-        </View>
-      </ScrollView>
-
-      {/* Navigation Buttons */}
-      <View style={styles.navigationContainer}>
-        {step !== 'ticket' && (
-          <TouchableOpacity style={styles.backNavButton} onPress={goToPreviousStep}>
-            <Text style={styles.backNavButtonText}>← Back</Text>
-          </TouchableOpacity>
-        )}
-
-        <View style={styles.navigationSpacer} />
-
-        {step !== 'payment' ? (
-          <TouchableOpacity
-            style={[
-              styles.nextButton,
-              ((step === 'ticket' && !selectedTicket) ||
-                (step === 'details' && !validateAttendees())) &&
-                styles.nextButtonDisabled,
-            ]}
-            onPress={goToNextStep}
-            disabled={
-              (step === 'ticket' && !selectedTicket) ||
-              (step === 'details' && !validateAttendees())
-            }
-          >
-            <LinearGradient
-              colors={['#3491ff', '#0062ff']}
-              style={styles.nextButtonGradient}
-            >
-              <Text style={styles.nextButtonText}>Continue →</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity 
-            style={[styles.submitButton, paymentLoading && styles.submitButtonDisabled]} 
-            onPress={handleSubmit}
-            disabled={paymentLoading}
-          >
-            <LinearGradient
-              colors={['#3491ff', '#0062ff']}
-              style={styles.submitButtonGradient}
-            >
-              {paymentLoading ? (
-                <ActivityIndicator color="#000000" />
-              ) : (
-                <Text style={styles.submitButtonText}>
-                  {calculateTotal() === 0 ? 'Confirm Registration' : 'Proceed to Payment'}
-                </Text>
-              )}
-            </LinearGradient>
-          </TouchableOpacity>
-        )}
-      </View>
-    </View>
-  );
-}
-const styles = StyleSheet.create({
+  const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -1526,3 +749,816 @@ const styles = StyleSheet.create({
     marginBottom: spacing[4],
   },
 });
+
+  const router = useRouter();
+  const params = useLocalSearchParams<{ eventId: string }>();
+  const eventId = params.eventId;
+  
+  // Event state
+  const [event, setEvent] = useState<Event | null>(null);
+  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [customFields, setCustomFields] = useState<CustomField[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  // Load event data and tickets
+  useEffect(() => {
+    const loadEventData = async () => {
+      try {
+        setLoading(true);
+        const [eventData, fieldsData] = await Promise.all([
+          getEventBySlug(eventId).catch(() => getEventById(eventId)),
+          getEventCustomFields(eventId).catch(() => ({ fields: [] })),
+        ]);
+        
+        setEvent(eventData);
+        // Use ticketTypes from event data directly
+        if (eventData?.ticketTypes && eventData.ticketTypes.length > 0) {
+          setTickets((eventData.ticketTypes.map((tt: any) => ({
+            id: tt.id,
+            event_id: eventData.id,
+            name: tt.name,
+            description: tt.description || '',
+            type: 'individual',
+            price_type: 'per_person',
+            price: parseFloat(tt.price) || 0,
+            currency: tt.currency || 'INR',
+            allow_partial_group: false,
+            require_all_member_details: false,
+            group_leader_required: false,
+            quantity_available: (tt.totalQuantity || 0) - (tt.soldCount || 0),
+            quantity_sold: tt.soldCount || 0,
+            min_purchase: 1,
+            max_purchase: tt.perUserLimit || 10,
+            visibility: 'public',
+            display_order: tt.order || 0,
+          }))) as any);
+        }
+        setCustomFields(fieldsData.fields || []);
+      } catch (error) {
+        console.error('Error loading event data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadEventData();
+  }, [eventId]);
+  
+  // Timer state
+  const [timerExpired, setTimerExpired] = useState(false);
+
+  // Registration flow state
+  const [step, setStep] = useState<StepType>('ticket');
+
+  // Ticket selection
+  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+  const [quantity, setQuantity] = useState(1);
+
+  // Attendee details
+  const [attendees, setAttendees] = useState<AttendeeInfo[]>([{
+    name: '',
+    email: '',
+    mobile: '',
+    gender: '',
+    customFields: {},
+  }]);
+
+  // Payment hook
+  const { processRegistration, loading: paymentLoading, error: paymentError } = useRegistrationPayment();
+
+  const CURRENCY_SYMBOLS: Record<string, string> = {
+    INR: '₹',
+    USD: '$',
+    EUR: '€',
+    GBP: '£',
+  };
+  
+  if (loading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <Text style={styles.loadingMoreText}>Loading...</Text>
+      </View>
+    );
+  }
+  
+  if (!event) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <Text style={styles.errorText}>Event not found</Text>
+      </View>
+    );
+  }
+
+  if (tickets.length === 0) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', padding: spacing[6] }]}>
+        <Text style={styles.errorText}>No tickets available</Text>
+        <Text style={[styles.errorText, { fontSize: typography.fontSize.sm, marginTop: spacing[2] }]}>
+          This event doesn't have any tickets configured yet.
+        </Text>
+        <TouchableOpacity
+          style={[styles.backButton, { marginTop: spacing[6] }]}
+          onPress={() => router.back()}
+        >
+          <LinearGradient
+            colors={['#3491ff', '#0062ff']}
+            style={styles.backButtonGradient}
+          >
+            <Text style={styles.backButtonText}>Back to Event</Text>
+          </LinearGradient>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  // Handle back button press with confirmation
+  const handleBackPress = () => {
+    Alert.alert(
+      'Cancel Registration?',
+      'Are you sure you want to cancel? Your progress will be lost.',
+      [
+        {
+          text: 'Continue Registration',
+          style: 'cancel',
+        },
+        {
+          text: 'Cancel',
+          style: 'destructive',
+          onPress: () => router.back(),
+        },
+      ],
+      { cancelable: true }
+    );
+  };
+
+  // Handle ticket selection
+  const handleTicketSelect = (ticket: Ticket) => {
+    setSelectedTicket(ticket);
+
+    if (ticket.type === 'group') {
+      const initialGroupSize = ticket.group_size || 5;
+      setQuantity(initialGroupSize);
+      setAttendees(Array(initialGroupSize).fill(null).map(() => ({
+        name: '',
+        email: '',
+        mobile: '',
+        gender: '',
+        customFields: {},
+      })));
+    } else {
+      setQuantity(1);
+      setAttendees([{
+        name: '',
+        email: '',
+        mobile: '',
+        gender: '',
+        customFields: {},
+      }]);
+    }
+  };
+
+  // Handle quantity change
+  const handleQuantityChange = (newQuantity: number) => {
+    if (!selectedTicket) return;
+
+    const minQty = selectedTicket.type === 'group' ? (selectedTicket.group_size || 5) : selectedTicket.min_purchase;
+    const maxQty = Math.min(
+      selectedTicket.max_purchase,
+      selectedTicket.quantity_available - selectedTicket.quantity_sold
+    );
+
+    if (newQuantity < minQty || newQuantity > maxQty) {
+      return;
+    }
+
+    setQuantity(newQuantity);
+    const newAttendees = Array(newQuantity).fill(null).map((_, i) =>
+      attendees[i] || {
+        name: '',
+        email: '',
+        mobile: '',
+        gender: '',
+        customFields: {},
+      }
+    );
+    setAttendees(newAttendees);
+  };
+
+  // Handle attendee info change
+  const fillFromProfile = (index: number) => {
+    if (!user) return;
+    const newAttendees = [...attendees];
+    newAttendees[index] = {
+      ...newAttendees[index],
+      name: user.fullName || '',
+      email: (user as any).email || '',
+      mobile: (user.mobileNumber || '').replace(/^\+91/, '').replace(/^\+/, ''),
+    };
+    setAttendees(newAttendees);
+  };
+
+  const handleAttendeeChange = (index: number, field: keyof AttendeeInfo, value: string) => {
+    const newAttendees = [...attendees];
+    newAttendees[index] = { ...newAttendees[index], [field]: value };
+    setAttendees(newAttendees);
+  };
+
+  // Handle custom field change
+  const handleCustomFieldChange = (attendeeIndex: number, fieldId: string, value: any) => {
+    const newAttendees = [...attendees];
+    newAttendees[attendeeIndex] = {
+      ...newAttendees[attendeeIndex],
+      customFields: {
+        ...newAttendees[attendeeIndex].customFields,
+        [fieldId]: value,
+      },
+    };
+    setAttendees(newAttendees);
+  };
+
+  // Validate attendee info
+  const validateAttendees = () => {
+    if (!selectedTicket) return false;
+
+    // Get applicable custom fields for this ticket
+    const applicableFields = getFieldsForTicket(customFields, selectedTicket.id);
+
+    return attendees.every(attendee => {
+      // Validate basic fields
+      const basicValid =
+        attendee.name.trim() !== '' &&
+        attendee.email.trim() !== '' &&
+        /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(attendee.email) &&
+        attendee.mobile.trim() !== '' &&
+        /^[0-9]{10}$/.test(attendee.mobile) &&
+        attendee.gender !== '';
+
+      if (!basicValid) return false;
+
+      // Validate required custom fields
+      const customFieldsValid = applicableFields
+        .filter(field => field.is_required)
+        .every(field => {
+          const value = attendee.customFields?.[field.id];
+          if (field.field_type === 'checkbox') {
+            return value === true;
+          }
+          if (field.field_type === 'multi_select') {
+            return Array.isArray(value) && value.length > 0;
+          }
+          return value !== undefined && value !== null && value !== '';
+        });
+
+      return customFieldsValid;
+    });
+  };
+
+  // Calculate total price
+  const calculateTotal = () => {
+    if (!selectedTicket) return 0;
+    return calculateTicketPrice(selectedTicket, quantity);
+  };
+
+  // Get currency symbol
+  const getCurrencySymbol = () => {
+    if (!selectedTicket) return '₹';
+    return CURRENCY_SYMBOLS[selectedTicket.currency] || selectedTicket.currency;
+  };
+
+  // Handle step navigation
+  const goToNextStep = () => {
+    if (step === 'ticket' && selectedTicket) {
+      setStep('details');
+    } else if (step === 'details' && validateAttendees()) {
+      setStep('review');
+    } else if (step === 'review') {
+      setStep('payment');
+    }
+  };
+
+  const goToPreviousStep = () => {
+    if (step === 'details') setStep('ticket');
+    else if (step === 'review') setStep('details');
+    else if (step === 'payment') setStep('review');
+  };
+
+  const handleSubmit = async () => {
+    if (!selectedTicket || !event) return;
+
+    try {
+      // Prepare registration data
+      const registrationData = {
+        eventId: event.id,
+        ticketTypeId: selectedTicket.id,
+        quantity,
+        attendees: attendees.map(a => ({
+          name: a.name,
+          email: a.email,
+          mobile: a.mobile,
+          gender: a.gender,
+          customFields: a.customFields,
+        })),
+      };
+
+      // Process registration with payment
+      const result = await processRegistration(
+        registrationData,
+        event.title,
+        event.coverImageUrl || undefined
+      );
+
+      if (result.success) {
+        // Navigate to success screen with registration data
+        router.replace({
+          pathname: '/registration-success',
+          params: {
+            eventId: event.id,
+            eventTitle: event.title,
+            ticketName: selectedTicket.name,
+            quantity: quantity.toString(),
+            total: calculateTotal().toString(),
+            currency: getCurrencySymbol(),
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      // Error is already handled in the hook with Alert
+    }
+  };
+
+  if (timerExpired) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.expiredContainer}>
+          <View style={styles.expiredIcon}>
+            <Clock size={32} color={colors.error} strokeWidth={2} />
+          </View>
+          <Text style={styles.expiredTitle}>Registration Time Expired</Text>
+          <Text style={styles.expiredText}>
+            Your registration session has expired. Please start a new registration.
+          </Text>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={handleBackPress}
+          >
+            <LinearGradient
+              colors={['#3491ff', '#0062ff']}
+              style={styles.backButtonGradient}
+            >
+              <Text style={styles.backButtonText}>Back to Event</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.headerBackButton}
+          onPress={handleBackPress}
+        >
+          <ArrowLeft size={24} color={colors.text} strokeWidth={2} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Event Registration</Text>
+      </View>
+
+      {/* Timer Bar */}
+      <RegistrationTimer
+        initialSeconds={REGISTRATION_TIME_LIMIT}
+        onExpire={() => setTimerExpired(true)}
+      />
+
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        {/* Event Info */}
+        <View style={styles.eventInfo}>
+          <Text style={styles.eventSubtitle}>Event Registration</Text>
+          <GradientText style={styles.eventTitle}>{event.title}</GradientText>
+          <Text style={styles.eventDetails}>
+            {new Date(event.startDateTime).toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+            })} · {event.venueName || event.city || 'TBA'}
+          </Text>
+        </View>
+
+        {/* Step Indicator */}
+        <StepIndicator
+          steps={[
+            { id: 'ticket', label: 'Select Ticket' },
+            { id: 'details', label: 'Attendee Details' },
+            { id: 'review', label: 'Review' },
+            { id: 'payment', label: 'Payment' },
+          ]}
+          currentStep={
+            step === 'ticket' ? 1 :
+            step === 'details' ? 2 :
+            step === 'review' ? 3 :
+            step === 'payment' ? 4 : 1
+          }
+        />
+
+        {/* Step Content */}
+        <View style={styles.stepContentContainer}>
+          {/* Step 1: Ticket Selection */}
+          {step === 'ticket' && (
+            <View>
+              <Text style={styles.sectionTitle}>Select Your Ticket</Text>
+              {tickets.length === 0 ? (
+                <View style={styles.emptyTickets}>
+                  <Text style={styles.emptyTicketsText}>No tickets available for this event</Text>
+                </View>
+              ) : (
+                <View style={styles.ticketOptions}>
+                  {tickets.map((ticket) => {
+                    const available = isTicketAvailable(ticket);
+                    const spotsLeft = ticket.quantity_available - ticket.quantity_sold;
+                    const currencySymbol = CURRENCY_SYMBOLS[ticket.currency] || ticket.currency;
+                    
+                    return (
+                      <TouchableOpacity
+                        key={ticket.id}
+                        style={[
+                          styles.ticketOption,
+                          selectedTicket?.id === ticket.id && styles.ticketOptionSelected,
+                          !available && styles.ticketOptionDisabled,
+                        ]}
+                        onPress={() => available && handleTicketSelect(ticket)}
+                        disabled={!available}
+                      >
+                        <View style={styles.ticketOptionContent}>
+                          <View style={styles.ticketOptionHeader}>
+                            <View style={styles.ticketOptionInfo}>
+                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing[2] }}>
+                                <Text style={styles.ticketOptionName}>{ticket.name}</Text>
+                                {ticket.type === 'group' && (
+                                  <View style={styles.groupBadge}>
+                                    <Text style={styles.groupBadgeText}>Group</Text>
+                                  </View>
+                                )}
+                              </View>
+                              {ticket.description && (
+                                <Text style={styles.ticketOptionDescription}>{ticket.description}</Text>
+                              )}
+                              {!available && (
+                                <Text style={styles.unavailableText}>
+                                  {spotsLeft === 0 ? 'Sold Out' : 'Not Available'}
+                                </Text>
+                              )}
+                              {available && spotsLeft <= 10 && (
+                                <Text style={styles.lowStockText}>
+                                  Only {spotsLeft} left!
+                                </Text>
+                              )}
+                            </View>
+                            <View
+                              style={[
+                                styles.radioButton,
+                                selectedTicket?.id === ticket.id && styles.radioButtonSelected,
+                                !available && styles.radioButtonDisabled,
+                              ]}
+                            >
+                              {selectedTicket?.id === ticket.id && (
+                                <View style={styles.radioButtonInner} />
+                              )}
+                            </View>
+                          </View>
+                          <View style={styles.ticketOptionPrice}>
+                            <Text style={styles.priceText}>
+                              {ticket.price === 0 ? 'Free' : `${currencySymbol}${ticket.price}`}
+                            </Text>
+                            {ticket.price_type === 'per_person' && (
+                              <Text style={styles.priceSubtext}>per person</Text>
+                            )}
+                            {ticket.price_type === 'per_group' && (
+                              <Text style={styles.priceSubtext}>per group</Text>
+                            )}
+                          </View>
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              )}
+
+              {/* Quantity Selector */}
+              {selectedTicket && (
+                <View style={styles.quantityContainer}>
+                  <Text style={styles.quantityLabel}>
+                    {selectedTicket.type === 'group' ? 'Number of Attendees' : 'Number of Tickets'}
+                  </Text>
+                  <View style={styles.quantitySelector}>
+                    <TouchableOpacity
+                      style={[
+                        styles.quantityButton,
+                        quantity <= (selectedTicket.type === 'group' ? (selectedTicket.group_size || 5) : selectedTicket.min_purchase) && styles.quantityButtonDisabled,
+                      ]}
+                      onPress={() => {
+                        const minQty = selectedTicket.type === 'group' ? (selectedTicket.group_size || 5) : selectedTicket.min_purchase;
+                        handleQuantityChange(Math.max(minQty, quantity - 1));
+                      }}
+                      disabled={quantity <= (selectedTicket.type === 'group' ? (selectedTicket.group_size || 5) : selectedTicket.min_purchase)}
+                    >
+                      <Minus size={20} color={colors.text} strokeWidth={2} />
+                    </TouchableOpacity>
+                    <Text style={styles.quantityValue}>{quantity}</Text>
+                    <TouchableOpacity
+                      style={[
+                        styles.quantityButton,
+                        quantity >= Math.min(selectedTicket.max_purchase, selectedTicket.quantity_available - selectedTicket.quantity_sold) && styles.quantityButtonDisabled,
+                      ]}
+                      onPress={() => {
+                        const maxQty = Math.min(selectedTicket.max_purchase, selectedTicket.quantity_available - selectedTicket.quantity_sold);
+                        handleQuantityChange(Math.min(maxQty, quantity + 1));
+                      }}
+                      disabled={quantity >= Math.min(selectedTicket.max_purchase, selectedTicket.quantity_available - selectedTicket.quantity_sold)}
+                    >
+                      <Plus size={20} color={colors.text} strokeWidth={2} />
+                    </TouchableOpacity>
+                  </View>
+                  <Text style={styles.quantityHint}>
+                    {selectedTicket.type === 'group' 
+                      ? `Min: ${selectedTicket.group_size || 5}, Max: ${Math.min(selectedTicket.max_purchase, selectedTicket.quantity_available - selectedTicket.quantity_sold)}`
+                      : `Min: ${selectedTicket.min_purchase}, Max: ${Math.min(selectedTicket.max_purchase, selectedTicket.quantity_available - selectedTicket.quantity_sold)}`
+                    }
+                  </Text>
+                </View>
+              )}
+            </View>
+          )}
+
+          {/* Step 2: Attendee Details */}
+          {step === 'details' && (
+            <View>
+              <Text style={styles.sectionTitle}>
+                Attendee Information
+                {attendees.length > 1 && (
+                  <Text style={styles.attendeeCount}> ({attendees.length} people)</Text>
+                )}
+              </Text>
+
+              {attendees.map((attendee, index) => {
+                // Get custom fields applicable to the selected ticket
+                const applicableFields = selectedTicket 
+                  ? getFieldsForTicket(customFields, selectedTicket.id)
+                  : [];
+
+                return (
+                  <View key={index}>
+                    <AttendeeForm
+                      attendee={attendee}
+                      index={index}
+                      onChange={handleAttendeeChange}
+                onFillFromProfile={() => fillFromProfile(index)}
+                      showTitle={attendees.length > 1}
+                    />
+
+                    {/* Custom Fields */}
+                    {applicableFields.length > 0 && (
+                      <View style={styles.customFieldsSection}>
+                        <Text style={styles.customFieldsTitle}>Additional Information</Text>
+                        {applicableFields.map((field) => (
+                          <CustomFieldInput
+                            key={field.id}
+                            field={field}
+                            value={attendee.customFields?.[field.id]}
+                            onChange={(value) => handleCustomFieldChange(index, field.id, value)}
+                          />
+                        ))}
+                      </View>
+                    )}
+                  </View>
+                );
+              })}
+            </View>
+          )}
+
+          {/* Step 3: Review */}
+          {step === 'review' && (
+            <View>
+              <Text style={styles.sectionTitle}>Review Your Registration</Text>
+
+              {/* Event Details */}
+              <View style={styles.reviewSection}>
+                <Text style={styles.reviewSectionTitle}>Event Details</Text>
+                <View style={styles.reviewItem}>
+                  <Text style={styles.reviewLabel}>Event:</Text>
+                  <Text style={styles.reviewValue}>{event.title}</Text>
+                </View>
+                <View style={styles.reviewItem}>
+                  <Text style={styles.reviewLabel}>Date:</Text>
+                  <Text style={styles.reviewValue}>
+                    {new Date(event.startDateTime).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })}
+                  </Text>
+                </View>
+                <View style={styles.reviewItem}>
+                  <Text style={styles.reviewLabel}>Location:</Text>
+                  <Text style={styles.reviewValue}>{event.venueName || event.city || 'TBA'}</Text>
+                </View>
+              </View>
+
+              {/* Ticket Details */}
+              <View style={styles.reviewSection}>
+                <Text style={styles.reviewSectionTitle}>Ticket Details</Text>
+                <View style={styles.reviewItem}>
+                  <Text style={styles.reviewLabel}>Ticket Type:</Text>
+                  <Text style={styles.reviewValue}>{selectedTicket?.name}</Text>
+                </View>
+                <View style={styles.reviewItem}>
+                  <Text style={styles.reviewLabel}>Quantity:</Text>
+                  <Text style={styles.reviewValue}>{quantity} {quantity === 1 ? 'ticket' : 'tickets'}</Text>
+                </View>
+                <View style={styles.reviewItem}>
+                  <Text style={styles.reviewLabel}>Attendees:</Text>
+                  <Text style={styles.reviewValue}>{attendees.length} {attendees.length === 1 ? 'person' : 'people'}</Text>
+                </View>
+              </View>
+
+              {/* Attendee List */}
+              <View style={styles.reviewSection}>
+                <Text style={styles.reviewSectionTitle}>Attendee Information</Text>
+                {attendees.map((attendee, index) => {
+                  // Get custom fields for display
+                  const applicableFields = selectedTicket 
+                    ? getFieldsForTicket(customFields, selectedTicket.id)
+                    : [];
+
+                  return (
+                    <View key={index} style={styles.attendeeReview}>
+                      <Text style={styles.attendeeReviewTitle}>Attendee {index + 1}</Text>
+                      <View style={styles.attendeeReviewGrid}>
+                        <View style={styles.attendeeReviewItem}>
+                          <Text style={styles.attendeeReviewLabel}>Name:</Text>
+                          <Text style={styles.attendeeReviewValue}>{attendee.name}</Text>
+                        </View>
+                        <View style={styles.attendeeReviewItem}>
+                          <Text style={styles.attendeeReviewLabel}>Email:</Text>
+                          <Text style={styles.attendeeReviewValue}>{attendee.email}</Text>
+                        </View>
+                        <View style={styles.attendeeReviewItem}>
+                          <Text style={styles.attendeeReviewLabel}>Mobile:</Text>
+                          <Text style={styles.attendeeReviewValue}>{attendee.mobile}</Text>
+                        </View>
+                        <View style={styles.attendeeReviewItem}>
+                          <Text style={styles.attendeeReviewLabel}>Gender:</Text>
+                          <Text style={styles.attendeeReviewValue}>{attendee.gender}</Text>
+                        </View>
+
+                        {/* Custom Fields */}
+                        {applicableFields.map((field) => {
+                          const value = attendee.customFields?.[field.id];
+                          let displayValue = value;
+
+                          // Format display value based on field type
+                          if (field.field_type === 'checkbox') {
+                            displayValue = value ? 'Yes' : 'No';
+                          } else if (field.field_type === 'multi_select' && Array.isArray(value)) {
+                            displayValue = value.join(', ');
+                          } else if (field.field_type === 'dropdown' || field.field_type === 'radio') {
+                            const option = field.options_json?.find(opt => opt.value === value);
+                            displayValue = option?.label || value;
+                          }
+
+                          return (
+                            <View key={field.id} style={styles.attendeeReviewItem}>
+                              <Text style={styles.attendeeReviewLabel}>{field.label}:</Text>
+                              <Text style={styles.attendeeReviewValue}>
+                                {displayValue || '-'}
+                              </Text>
+                            </View>
+                          );
+                        })}
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+
+              {/* Total */}
+              <View style={styles.totalSection}>
+                <View style={styles.totalRow}>
+                  <Text style={styles.totalLabel}>Total Amount</Text>
+                  <Text style={styles.totalValue}>
+                    {calculateTotal() === 0 ? 'Free' : `${getCurrencySymbol()}${calculateTotal()}`}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          )}
+
+          {/* Step 4: Payment */}
+          {step === 'payment' && (
+            <View>
+              <Text style={styles.sectionTitle}>Payment</Text>
+
+              {calculateTotal() === 0 ? (
+                <View style={styles.freeEventContainer}>
+                  <View style={styles.freeEventIcon}>
+                    <CheckCircle size={32} color={colors.primary} strokeWidth={2} />
+                  </View>
+                  <Text style={styles.freeEventTitle}>Free Event</Text>
+                  <Text style={styles.freeEventText}>
+                    No payment required. Click confirm to complete your registration.
+                  </Text>
+                </View>
+              ) : (
+                <View>
+                  <View style={styles.paymentAmount}>
+                    <View style={styles.paymentAmountRow}>
+                      <Text style={styles.paymentAmountLabel}>Amount to Pay</Text>
+                      <Text style={styles.paymentAmountValue}>{getCurrencySymbol()}{calculateTotal()}</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.paymentMethods}>
+                    <Text style={styles.paymentMethodsTitle}>Select Payment Method</Text>
+
+                    {[
+                      { id: 'upi', name: 'UPI', icon: Smartphone },
+                      { id: 'card', name: 'Card', icon: CreditCard },
+                      { id: 'netbanking', name: 'Net Banking', icon: Building2 },
+                    ].map((method) => (
+                      <TouchableOpacity key={method.id} style={styles.paymentMethod}>
+                        <View style={styles.paymentMethodContent}>
+                          <method.icon size={20} color={colors.text} strokeWidth={2} />
+                          <Text style={styles.paymentMethodName}>{method.name}</Text>
+                        </View>
+                        <ArrowLeft
+                          size={16}
+                          color={colors.textMuted}
+                          strokeWidth={2}
+                          style={{ transform: [{ rotate: '180deg' }] }}
+                        />
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              )}
+            </View>
+          )}
+        </View>
+      </ScrollView>
+
+      {/* Navigation Buttons */}
+      <View style={styles.navigationContainer}>
+        {step !== 'ticket' && (
+          <TouchableOpacity style={styles.backNavButton} onPress={goToPreviousStep}>
+            <Text style={styles.backNavButtonText}>← Back</Text>
+          </TouchableOpacity>
+        )}
+
+        <View style={styles.navigationSpacer} />
+
+        {step !== 'payment' ? (
+          <TouchableOpacity
+            style={[
+              styles.nextButton,
+              ((step === 'ticket' && !selectedTicket) ||
+                (step === 'details' && !validateAttendees())) &&
+                styles.nextButtonDisabled,
+            ]}
+            onPress={goToNextStep}
+            disabled={
+              (step === 'ticket' && !selectedTicket) ||
+              (step === 'details' && !validateAttendees())
+            }
+          >
+            <LinearGradient
+              colors={['#3491ff', '#0062ff']}
+              style={styles.nextButtonGradient}
+            >
+              <Text style={styles.nextButtonText}>Continue →</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity 
+            style={[styles.submitButton, paymentLoading && styles.submitButtonDisabled]} 
+            onPress={handleSubmit}
+            disabled={paymentLoading}
+          >
+            <LinearGradient
+              colors={['#3491ff', '#0062ff']}
+              style={styles.submitButtonGradient}
+            >
+              {paymentLoading ? (
+                <ActivityIndicator color="#000000" />
+              ) : (
+                <Text style={styles.submitButtonText}>
+                  {calculateTotal() === 0 ? 'Confirm Registration' : 'Proceed to Payment'}
+                </Text>
+              )}
+            </LinearGradient>
+          </TouchableOpacity>
+        )}
+      </View>
+    </View>
+  );
+}

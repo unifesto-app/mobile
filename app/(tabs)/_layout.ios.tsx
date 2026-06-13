@@ -1,15 +1,27 @@
-import { Platform, StatusBar } from 'react-native';
+import { StatusBar, DynamicColorIOS, Appearance } from 'react-native';
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { useEffect } from 'react';
-import * as SystemUI from 'expo-system-ui';
+import { useTheme } from '../../src/context/ThemeContext';
 
 export default function TabsLayout() {
+  const { colors, activeTheme } = useTheme();
+
   useEffect(() => {
-    StatusBar.setBarStyle('light-content');
-  }, []);
+    // Set status bar style based on theme
+    StatusBar.setBarStyle(activeTheme === 'light' ? 'dark-content' : 'light-content');
+    
+    // Force iOS appearance to match theme for tab bar background
+    // This will make the native tab bar respect the system dark/light mode
+    Appearance.setColorScheme(activeTheme);
+  }, [activeTheme]);
 
   return (
-    <NativeTabs>
+    <NativeTabs
+      tintColor={DynamicColorIOS({
+        dark: colors.primary,
+        light: colors.primary,
+      })}
+    >
       <NativeTabs.Trigger
         name="home"
         options={{

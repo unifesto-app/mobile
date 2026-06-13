@@ -52,15 +52,15 @@ const HEADER_TOP_OFFSET = 50;
 
 export default function AccountScreen() {
   const router = useRouter();
-  const { user, session, signOut } = useAuth();
+  const { user, isAuthenticated, logout } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [editingSection, setEditingSection] = useState<string | null>(null);
   const [editedUser, setEditedUser] = useState({
-    name: '',
+    fullName: '',
     username: '',
     bio: '',
-    phone: '',
+    mobileNumber: '',
   });
   const [saveError, setSaveError] = useState('');
   const [saveLoading, setSaveLoading] = useState(false);
@@ -72,18 +72,18 @@ export default function AccountScreen() {
   }, []);
 
   const loadProfile = async () => {
-    if (user && session) {
+    if (user && isAuthenticated) {
       const userProfile = await getProfile();
       if (userProfile) {
         setProfile(userProfile);
-        const displayPhone = userProfile.phone?.startsWith('+91')
-          ? userProfile.phone.substring(3)
-          : userProfile.phone || '';
+        const displayPhone = userProfile.mobileNumber?.startsWith('+91')
+          ? userProfile.mobileNumber.substring(3)
+          : userProfile.mobileNumber || '';
         setEditedUser({
-          name: userProfile.name || '',
+          fullName: userProfile.fullName || '',
           username: userProfile.username || '',
           bio: userProfile.bio || '',
-          phone: displayPhone,
+          mobileNumber: displayPhone,
         });
       }
     }
@@ -94,27 +94,26 @@ export default function AccountScreen() {
     setSaveError('');
     setSaveLoading(true);
     try {
-      let phoneToSave = editedUser.phone.trim();
+      let phoneToSave = editedUser.mobileNumber.trim();
       if (phoneToSave && !phoneToSave.startsWith('+')) {
         phoneToSave = '+91' + phoneToSave;
       }
 
       const updated = await updateProfile({
-        name: editedUser.name,
+        fullName: editedUser.fullName,
         username: editedUser.username,
         bio: editedUser.bio,
-        phone: phoneToSave === '' ? '' : phoneToSave,
       });
       if (updated) {
         setProfile(updated);
-        const displayPhone = updated.phone?.startsWith('+91')
-          ? updated.phone.substring(3)
-          : updated.phone || '';
+        const displayPhone = updated.mobileNumber?.startsWith('+91')
+          ? updated.mobileNumber.substring(3)
+          : updated.mobileNumber || '';
         setEditedUser({
-          name: updated.name || '',
+          fullName: updated.fullName || '',
           username: updated.username || '',
           bio: updated.bio || '',
-          phone: displayPhone,
+          mobileNumber: displayPhone,
         });
         setEditingSection(null);
         Alert.alert('Success', 'Profile updated successfully');
@@ -130,14 +129,14 @@ export default function AccountScreen() {
 
   const handleCancelEdit = () => {
     if (profile) {
-      const displayPhone = profile.phone?.startsWith('+91')
-        ? profile.phone.substring(3)
-        : profile.phone || '';
+      const displayPhone = profile.mobileNumber?.startsWith('+91')
+        ? profile.mobileNumber.substring(3)
+        : profile.mobileNumber || '';
       setEditedUser({
-        name: profile.name || '',
+        fullName: profile.fullName || '',
         username: profile.username || '',
         bio: profile.bio || '',
-        phone: displayPhone,
+        mobileNumber: displayPhone,
       });
     }
     setSaveError('');
@@ -213,7 +212,7 @@ export default function AccountScreen() {
             try {
               const result = await deleteAccount();
               if (result.success) {
-                await signOut();
+                await logout();
               } else {
                 Alert.alert('Error', result.error || 'Failed to delete account');
               }
@@ -318,8 +317,8 @@ export default function AccountScreen() {
               style={styles.avatarContainer}
               disabled={avatarLoading}
             >
-              {profile?.avatar_url ? (
-                <Image source={{ uri: profile.avatar_url }} style={styles.avatar} />
+              {profile?.avatarUrl ? (
+                <Image source={{ uri: profile.avatarUrl }} style={styles.avatar} />
               ) : (
                 <LinearGradient
                   colors={brandGradient}
@@ -328,7 +327,7 @@ export default function AccountScreen() {
                   style={styles.avatar}
                 >
                   <Text style={styles.avatarText}>
-                    {getInitials(profile?.name || editedUser.name || 'U')}
+                    {getInitials(profile?.fullName || editedUser.fullName || 'U')}
                   </Text>
                 </LinearGradient>
               )}
@@ -339,7 +338,7 @@ export default function AccountScreen() {
             </TouchableOpacity>
 
             <View style={styles.avatarMeta}>
-              <Text style={styles.avatarName}>{profile?.name || 'Your Name'}</Text>
+              <Text style={styles.avatarName}>{profile?.fullName || 'Your Name'}</Text>
               {profile?.username ? (
                 <Text style={styles.avatarUsername}>@{profile.username}</Text>
               ) : null}
@@ -352,7 +351,7 @@ export default function AccountScreen() {
                   <Camera size={13} color={colors.primary} strokeWidth={2} />
                   <Text style={styles.photoButtonText}>Change Photo</Text>
                 </TouchableOpacity>
-                {profile?.avatar_url && (
+                {profile?.avatarUrl && (
                   <TouchableOpacity
                     style={[styles.photoButton, styles.photoButtonDanger]}
                     onPress={handleDeleteAvatar}
@@ -393,8 +392,8 @@ export default function AccountScreen() {
                   <Text style={styles.inputLabel}>Full Name</Text>
                   <TextInput
                     style={styles.input}
-                    value={editedUser.name}
-                    onChangeText={(t) => setEditedUser({ ...editedUser, name: t })}
+                    value={editedUser.fullName}
+                    onChangeText={(t) => setEditedUser({ ...editedUser, fullName: t })}
                     placeholder="Enter your full name"
                     placeholderTextColor={colors.textMuted}
                   />
@@ -445,7 +444,7 @@ export default function AccountScreen() {
               </View>
             ) : (
               <>
-                <InfoRow icon={<User size={15} color={colors.primary} strokeWidth={2} />} label="Full Name" value={profile?.name || 'Not set'} />
+                <InfoRow icon={<User size={15} color={colors.primary} strokeWidth={2} />} label="Full Name" value={profile?.fullName || 'Not set'} />
                 <View style={styles.rowDivider} />
                 <InfoRow icon={<User size={15} color={colors.primary} strokeWidth={2} />} label="Username" value={profile?.username ? `@${profile.username}` : 'Not set'} />
                 <View style={styles.rowDivider} />
@@ -477,8 +476,8 @@ export default function AccountScreen() {
                     </View>
                     <TextInput
                       style={[styles.input, { flex: 1, marginBottom: 0 }]}
-                      value={editedUser.phone}
-                      onChangeText={(t) => setEditedUser({ ...editedUser, phone: t.replace(/\D/g, '') })}
+                      value={editedUser.mobileNumber}
+                      onChangeText={(t) => setEditedUser({ ...editedUser, mobileNumber: t.replace(/\D/g, '') })}
                       placeholder="10-digit number"
                       placeholderTextColor={colors.textMuted}
                       keyboardType="phone-pad"
@@ -503,14 +502,14 @@ export default function AccountScreen() {
               </View>
             ) : (
               <>
-                <InfoRow icon={<Mail size={15} color={colors.primary} strokeWidth={2} />} label="Email" value={profile?.email || user?.email || 'Not set'} />
+                <InfoRow icon={<Mail size={15} color={colors.primary} strokeWidth={2} />} label="Email" value={profile?.email || 'Not set'} />
                 <View style={styles.rowDivider} />
                 <InfoRow
                   icon={<Phone size={15} color="#10b981" strokeWidth={2} />}
                   label="Phone"
                   value={
-                    editedUser.phone
-                      ? `+91 ${editedUser.phone}`
+                    editedUser.mobileNumber
+                      ? `+91 ${editedUser.mobileNumber}`
                       : 'Not set'
                   }
                 />
@@ -529,8 +528,8 @@ export default function AccountScreen() {
               icon={<CalendarDays size={15} color="#f59e0b" strokeWidth={2} />}
               label="Member Since"
               value={
-                user?.created_at
-                  ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+                user?.createdAt
+                  ? new Date(user.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
                   : 'January 2024'
               }
             />

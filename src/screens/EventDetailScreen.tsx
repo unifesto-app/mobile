@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useLayoutEffect } from 'react';
+import { useHeaderHeight } from '@react-navigation/elements';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import {
   View,
   Text,
@@ -12,558 +14,26 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Calendar, Clock, MapPin, Users, Tag, ChevronRight, ExternalLink, Share2, LogIn } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import GradientText from '../components/GradientText';
 import Footer from '../components/Footer';
-import LoginModal from '../components/LoginModal';
-import { colors, spacing, typography, borderRadius, shadows } from '../theme';
-import { getEventById, isRegisteredForEvent, Event, getEventDisplayPrice } from '../lib/api/events';
+import Skeleton from '../components/Skeleton';
+import { spacing, typography, borderRadius, shadows } from '../theme';
+import { getEventById, getEventBySlug, isRegisteredForEvent, Event, getEventDisplayPrice } from '../lib/api/events';
+import { registerRSVP } from '../lib/api/registrations';
 import { getEventAdditionalInfo, AgendaItem, Speaker, Prize, Faq } from '../lib/api/additional-info';
 import { getEventTickets, Ticket, formatEventPrice } from '../lib/api/tickets';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 
 type TabType = 'overview' | 'agenda' | 'speakers' | 'rewards' | 'faq';
 
-interface EventDetailScreenProps {
-  route: { params: { eventId: string } };
-}
-
-export default function EventDetailScreen({ route }: EventDetailScreenProps) {
-  const router = useRouter();
-  const { eventId } = route.params;
-  const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<TabType>('overview');
-  const [event, setEvent] = useState<Event | null>(null);
-  const [tickets, setTickets] = useState<Ticket[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isRegistered, setIsRegistered] = useState(false);
-  const [showLoginModal, setShowLoginModal] = useState(false);
-  const [hasShownLoginPrompt, setHasShownLoginPrompt] = useState(false);
+export default function EventDetailScreen() {
+  const { colors } = useTheme();
   
-  // Additional info state
-  const [agenda, setAgenda] = useState<AgendaItem[]>([]);
-  const [speakers, setSpeakers] = useState<Speaker[]>([]);
-  const [prizes, setPrizes] = useState<Prize[]>([]);
-  const [faqs, setFaqs] = useState<Faq[]>([]);
-  
-  // Load event data
-  useEffect(() => {
-    const loadEvent = async () => {
-      try {
-        setLoading(true);
-        const eventData = await getEventById(eventId);
-        if (eventData) {
-          setEvent(eventData);
-          
-          // Load tickets only if user is authenticated
-          if (user) {
-            const ticketsData = await getEventTickets(eventData.id);
-            setTickets(ticketsData.tickets || []);
-          }
-          
-          // Load additional info (public data)
-          const additionalInfo = await getEventAdditionalInfo(eventData.id);
-          setAgenda(additionalInfo.agenda);
-          setSpeakers(additionalInfo.speakers);
-          setPrizes(additionalInfo.prizes);
-          setFaqs(additionalInfo.faqs);
-          
-          // Check if user is registered
-          if (user) {
-            const registered = await isRegisteredForEvent(eventId);
-            setIsRegistered(registered);
-          }
-        }
-      } catch (error) {
-        console.error('Error loading event:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    loadEvent();
-  }, [eventId, user]);
-
-  // Show login modal automatically if user is not authenticated (only once)
-  useEffect(() => {
-    if (!loading && !user && !hasShownLoginPrompt) {
-      // Small delay to ensure the screen is fully loaded
-      const timer = setTimeout(() => {
-        setShowLoginModal(true);
-        setHasShownLoginPrompt(true);
-      }, 500);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [loading, user, hasShownLoginPrompt]);
-  
-  if (loading) {
-    return (
-      <View style={[styles.container, styles.loadingContainer]}>
-        <ActivityIndicator size="large" color="#0062ff" />
-        <Text style={styles.loadingText}>Loading event...</Text>
-      </View>
-    );
-  }
-  
-  if (!event) {
-    return (
-      <View style={[styles.container, styles.loadingContainer]}>
-        <Text style={styles.errorText}>Event not found</Text>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.backText}>Go Back</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-  
-  const isFree = tickets.length === 0 || tickets.every(t => t.price === 0);
-  const isCompleted = event.status === 'completed' || event.status === 'cancelled';
-  const hasSpots = event.max_attendees ? event.max_attendees > 0 : true;
-  const priceDisplay = formatEventPrice(tickets);
-
-  const handleRegister = () => {
-    if (!user) {
-      // User is not authenticated, show sign-in prompt
-      Alert.alert(
-        'Sign In Required',
-        'Please sign in to register for this event and access all features.',
-        [
-          {
-            text: 'Cancel',
-            style: 'cancel',
-          },
-          {
-            text: 'Sign In',
-            onPress: () => setShowLoginModal(true),
-          },
-        ]
-      );
-    } else if (isRegistered) {
-      // User is already registered
-      Alert.alert(
-        'Already Registered',
-        'You are already registered for this event. Check your registrations for more details.',
-        [{ text: 'OK' }]
-      );
-    } else if (!hasSpots) {
-      // Event is sold out
-      Alert.alert(
-        'Event Full',
-        'Sorry, this event has reached maximum capacity.',
-        [{ text: 'OK' }]
-      );
-    } else {
-      // User is authenticated, proceed to registration
-      router.push({ pathname: '/event-registration', params: { eventId: event.id } });
-    }
-  };
-
-  const handleShare = async () => {
-    try {
-      const eventUrl = `https://www.unifesto.app/events/${event.slug || event.id}`;
-      
-      const shareMessage = Platform.OS === 'ios'
-        ? `Check out this event: ${event.title}\n\n📅 ${new Date(event.start_date).toLocaleDateString()}\n📍 ${event.location || event.city}\n${isFree ? '🎉 Free Event!' : `💰 ${priceDisplay}`}\n\nRegister now on Unifesto!`
-        : `Check out this event: ${event.title}\n\n📅 ${new Date(event.start_date).toLocaleDateString()}\n📍 ${event.location || event.city}\n${isFree ? '🎉 Free Event!' : `💰 ${priceDisplay}`}\n\n${eventUrl}\n\nRegister now on Unifesto!`;
-      
-      const result = await Share.share({
-        message: shareMessage,
-        title: event.title,
-        ...(Platform.OS === 'ios' && { url: eventUrl }),
-      });
-    } catch (error) {
-      console.error('Error sharing event:', error);
-    }
-  };
-
-  const renderTabContent = () => {
-    switch (activeTab) {
-      case 'overview':
-        return (
-          <View style={styles.tabContent}>
-            <Text style={styles.sectionTitle}>About This Event</Text>
-            <Text style={styles.descriptionText}>
-              {event.description || event.short_description || 'Join us for an amazing event filled with learning, networking, and fun.'}
-            </Text>
-          </View>
-        );
-
-      case 'agenda':
-        return (
-          <View style={styles.tabContent}>
-            <Text style={styles.sectionTitle}>Event Schedule</Text>
-            {agenda.length > 0 ? (
-              <View style={styles.agendaList}>
-                {agenda.map((item) => (
-                  <View key={item.id} style={styles.agendaItem}>
-                    <View style={styles.agendaTimeContainer}>
-                      <Clock size={16} color={colors.primary} strokeWidth={2} />
-                      <Text style={styles.agendaTime}>
-                        {new Date(item.start_time).toLocaleTimeString('en-US', {
-                          hour: 'numeric',
-                          minute: '2-digit',
-                          hour12: true
-                        })}
-                        {item.end_time && ` - ${new Date(item.end_time).toLocaleTimeString('en-US', {
-                          hour: 'numeric',
-                          minute: '2-digit',
-                          hour12: true
-                        })}`}
-                      </Text>
-                    </View>
-                    <View style={styles.agendaContent}>
-                      <Text style={styles.agendaTitle}>{item.title}</Text>
-                      {item.description && (
-                        <Text style={styles.agendaDescription}>{item.description}</Text>
-                      )}
-                      {item.location && (
-                        <View style={styles.agendaLocation}>
-                          <MapPin size={12} color={colors.textMuted} strokeWidth={2} />
-                          <Text style={styles.agendaLocationText}>{item.location}</Text>
-                        </View>
-                      )}
-                    </View>
-                  </View>
-                ))}
-              </View>
-            ) : (
-              <Text style={styles.emptyText}>Schedule will be announced soon</Text>
-            )}
-          </View>
-        );
-
-      case 'speakers':
-        return (
-          <View style={styles.tabContent}>
-            <Text style={styles.sectionTitle}>Featured Speakers</Text>
-            {speakers.length > 0 ? (
-              <View style={styles.speakersList}>
-                {speakers.map((speaker) => (
-                  <View key={speaker.id} style={styles.speakerCard}>
-                    {speaker.profile_image_url ? (
-                      <Image
-                        source={{ uri: speaker.profile_image_url }}
-                        style={styles.speakerImage}
-                        resizeMode="cover"
-                      />
-                    ) : (
-                      <View style={styles.speakerImagePlaceholder}>
-                        <Text style={styles.speakerInitial}>
-                          {speaker.name.charAt(0).toUpperCase()}
-                        </Text>
-                      </View>
-                    )}
-                    <View style={styles.speakerInfo}>
-                      <Text style={styles.speakerName}>{speaker.name}</Text>
-                      {speaker.title && (
-                        <Text style={styles.speakerTitle}>{speaker.title}</Text>
-                      )}
-                      {speaker.bio && (
-                        <Text style={styles.speakerBio} numberOfLines={3}>{speaker.bio}</Text>
-                      )}
-                      {speaker.is_featured && (
-                        <View style={styles.featuredBadge}>
-                          <Text style={styles.featuredText}>Featured Speaker</Text>
-                        </View>
-                      )}
-                    </View>
-                  </View>
-                ))}
-              </View>
-            ) : (
-              <Text style={styles.emptyText}>Speakers will be announced soon</Text>
-            )}
-          </View>
-        );
-
-      case 'rewards':
-        return (
-          <View style={styles.tabContent}>
-            <Text style={styles.sectionTitle}>Prizes & Incentives</Text>
-            {prizes.length > 0 ? (
-              <View style={styles.prizesList}>
-                {prizes.map((prize) => (
-                  <View key={prize.id} style={styles.prizeCard}>
-                    <View style={styles.prizeIcon}>
-                      <Text style={styles.prizeEmoji}>
-                        {prize.position === 1 ? '🥇' : 
-                         prize.position === 2 ? '🥈' : 
-                         prize.position === 3 ? '🥉' : '🏆'}
-                      </Text>
-                    </View>
-                    <View style={styles.prizeInfo}>
-                      {prize.position && (
-                        <Text style={styles.prizePosition}>
-                          {prize.position === 1 ? '1st Place' : 
-                           prize.position === 2 ? '2nd Place' : 
-                           prize.position === 3 ? '3rd Place' : 
-                           `#${prize.position}`}
-                        </Text>
-                      )}
-                      <Text style={styles.prizeName}>{prize.name}</Text>
-                      {prize.description && (
-                        <Text style={styles.prizeDescription}>{prize.description}</Text>
-                      )}
-                      {prize.value && (
-                        <Text style={styles.prizeValue}>{prize.value}</Text>
-                      )}
-                    </View>
-                  </View>
-                ))}
-              </View>
-            ) : (
-              <Text style={styles.emptyText}>Rewards will be announced soon</Text>
-            )}
-          </View>
-        );
-
-      case 'faq':
-        return (
-          <View style={styles.tabContent}>
-            <Text style={styles.sectionTitle}>Frequently Asked Questions</Text>
-            {faqs.length > 0 ? (
-              <View style={styles.faqList}>
-                {faqs.map((faq) => (
-                  <View key={faq.id} style={styles.faqItem}>
-                    <Text style={styles.faqQuestion}>{faq.question}</Text>
-                    <Text style={styles.faqAnswer}>{faq.answer}</Text>
-                    {faq.category && (
-                      <View style={styles.faqCategoryBadge}>
-                        <Text style={styles.faqCategoryText}>{faq.category}</Text>
-                      </View>
-                    )}
-                  </View>
-                ))}
-              </View>
-            ) : (
-              <Text style={styles.emptyText}>FAQs will be announced soon</Text>
-            )}
-          </View>
-        );
-
-      default:
-        return null;
-    }
-  };
-
-  return (
-    <View style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Hero Image */}
-        <View style={styles.heroContainer}>
-          {event.banner_url || event.thumbnail_url || event.image_url ? (
-            <Image
-              source={{ uri: event.banner_url || event.thumbnail_url || event.image_url }}
-              style={styles.heroImage}
-              resizeMode="cover"
-            />
-          ) : (
-            <LinearGradient
-              colors={['#3491ff', '#0062ff']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.heroImage}
-            />
-          )}
-          <LinearGradient
-            colors={['transparent', 'rgba(0, 0, 0, 0.9)']}
-            style={styles.heroGradient}
-          />
-          
-          {/* Share Button */}
-          <TouchableOpacity
-            style={styles.shareButton}
-            onPress={handleShare}
-            activeOpacity={0.8}
-          >
-            <View style={styles.shareButtonInner}>
-              <Share2 size={20} color={colors.text} strokeWidth={2} />
-            </View>
-          </TouchableOpacity>
-        </View>
-
-        {/* Content */}
-        <View style={styles.content}>
-          {/* Organization Info */}
-          {event.organization && (
-            <TouchableOpacity
-              style={styles.parentEventCard}
-              onPress={() => router.push(`/organization/${event.organization_id}`)}
-              activeOpacity={0.7}
-            >
-              <View style={styles.parentEventContent}>
-                <Text style={styles.parentEventLabel}>ORGANIZED BY</Text>
-                <Text style={styles.parentEventTitle}>{event.organization.name}</Text>
-              </View>
-              <ChevronRight size={20} color={colors.textMuted} strokeWidth={2} />
-            </TouchableOpacity>
-          )}
-
-          {/* Title & Category */}
-          <View style={styles.titleSection}>
-            <View style={styles.categoryBadge}>
-              <Text style={styles.categoryText}>{event.category}</Text>
-            </View>
-            <GradientText style={styles.eventTitle}>{event.title}</GradientText>
-            <Text style={styles.organizerText}>{event.organization?.name || 'Event Organizer'}</Text>
-          </View>
-
-          {/* Event Info Card */}
-          <View style={styles.infoCard}>
-            <View style={styles.infoRow}>
-              <View style={styles.infoIconContainer}>
-                <Calendar size={20} color={colors.primary} strokeWidth={2} />
-              </View>
-              <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Date</Text>
-                <Text style={styles.infoValue}>
-                  {new Date(event.start_date).toLocaleDateString('en-US', {
-                    weekday: 'long',
-                    month: 'long',
-                    day: 'numeric',
-                    year: 'numeric'
-                  })}
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.infoRow}>
-              <View style={styles.infoIconContainer}>
-                <Clock size={20} color={colors.primary} strokeWidth={2} />
-              </View>
-              <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Time</Text>
-                <Text style={styles.infoValue}>
-                  {new Date(event.start_date).toLocaleTimeString('en-US', {
-                    hour: 'numeric',
-                    minute: '2-digit',
-                    hour12: true
-                  })}
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.infoRow}>
-              <View style={styles.infoIconContainer}>
-                <MapPin size={20} color={colors.primary} strokeWidth={2} />
-              </View>
-              <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Location</Text>
-                <Text style={styles.infoValue}>{event.location || event.venue || event.city || 'TBA'}</Text>
-              </View>
-            </View>
-
-            {event.max_attendees && (
-              <View style={styles.infoRow}>
-                <View style={styles.infoIconContainer}>
-                  <Users size={20} color={colors.primary} strokeWidth={2} />
-                </View>
-                <View style={styles.infoContent}>
-                  <Text style={styles.infoLabel}>Capacity</Text>
-                  <Text style={styles.infoValue}>{event.max_attendees} attendees</Text>
-                </View>
-              </View>
-            )}
-          </View>
-
-          {/* Tabs */}
-          <View style={styles.tabsContainer}>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.tabsScroll}
-            >
-              {[
-                { id: 'overview', label: 'Overview', show: true },
-                { id: 'agenda', label: 'Agenda', show: agenda.length > 0 },
-                { id: 'speakers', label: 'Speakers', show: speakers.length > 0 },
-                { id: 'rewards', label: 'Prizes', show: prizes.length > 0 },
-                { id: 'faq', label: 'FAQ', show: faqs.length > 0 },
-              ].filter(tab => tab.show).map((tab) => (
-                <TouchableOpacity
-                  key={tab.id}
-                  style={[
-                    styles.tab,
-                    activeTab === tab.id && styles.tabActive,
-                  ]}
-                  onPress={() => setActiveTab(tab.id as TabType)}
-                  activeOpacity={0.7}
-                >
-                  <Text
-                    style={[
-                      styles.tabText,
-                      activeTab === tab.id && styles.tabTextActive,
-                    ]}
-                  >
-                    {tab.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-
-          {/* Tab Content */}
-          {renderTabContent()}
-
-          {/* Footer */}
-          <Footer />
-        </View>
-      </ScrollView>
-
-      {/* Bottom CTA */}
-      {!isCompleted && (
-        <View style={styles.bottomCTA}>
-          <View style={styles.ctaInfo}>
-            <Text style={styles.ctaLabel}>Price</Text>
-            <Text style={styles.ctaPrice}>
-              {priceDisplay}
-            </Text>
-          </View>
-          <TouchableOpacity 
-            style={styles.ctaButton} 
-            activeOpacity={0.8}
-            onPress={handleRegister}
-          >
-            <LinearGradient
-              colors={['#3491ff', '#0062ff']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.ctaButtonGradient}
-            >
-              {!user && (
-                <LogIn size={16} color={colors.text} strokeWidth={2} style={{ marginRight: spacing[2] }} />
-              )}
-              <Text style={styles.ctaButtonText}>
-                {!user ? 'Sign In to Register' : isRegistered ? 'Already Registered' : isFree ? 'Register Free' : 'Register Now'}
-              </Text>
-            </LinearGradient>
-          </TouchableOpacity>
-        </View>
-      )}
-      
-      {/* Login Modal */}
-      <LoginModal 
-        visible={showLoginModal} 
-        onClose={() => setShowLoginModal(false)}
-        onSuccess={async () => {
-          setShowLoginModal(false);
-          // Reload tickets after successful login
-          if (event) {
-            const ticketsData = await getEventTickets(event.id);
-            setTickets(ticketsData.tickets || []);
-            const registered = await isRegisteredForEvent(eventId);
-            setIsRegistered(registered);
-          }
-        }}
-      />
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
+  const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -604,23 +74,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: '40%',
-  },
-  shareButton: {
-    position: 'absolute',
-    top: spacing[6],
-    right: spacing[6],
-    zIndex: 10,
-  },
-  shareButtonInner: {
-    width: 44,
-    height: 44,
-    borderRadius: borderRadius.full,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-    ...shadows.lg,
   },
   content: {
     padding: spacing[8],
@@ -1278,3 +731,627 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.bold,
   },
 });
+
+  const router = useRouter();
+  const navigation = useNavigation();
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const eventId = id; // Route parameter is 'id', but we use 'eventId' throughout the component
+  const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState<TabType>('overview');
+  const [event, setEvent] = useState<Event | null>(null);
+  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isRegistered, setIsRegistered] = useState(false);
+  const [hasShownLoginPrompt, setHasShownLoginPrompt] = useState(false);
+  
+  // Additional info state
+  const [agenda, setAgenda] = useState<AgendaItem[]>([]);
+  const [speakers, setSpeakers] = useState<Speaker[]>([]);
+  const [prizes, setPrizes] = useState<Prize[]>([]);
+  const [faqs, setFaqs] = useState<Faq[]>([]);
+
+  const handleShare = async () => {
+    if (!event) return;
+    
+    try {
+      const eventUrl = `https://www.unifesto.app/events/${event.slug || event.id}`;
+      const isFree = tickets.length === 0 || tickets.every(t => t.price === 0);
+      const priceDisplay = formatEventPrice(tickets);
+      
+      const shareMessage = Platform.OS === 'ios'
+        ? `Check out this event: ${event.title}\n\n📅 ${new Date(event.startDateTime).toLocaleDateString()}\n📍 ${event.venueName || event.city}\n${isFree ? '🎉 Free Event!' : `💰 ${priceDisplay}`}\n\nRegister now on Unifesto!`
+        : `Check out this event: ${event.title}\n\n📅 ${new Date(event.startDateTime).toLocaleDateString()}\n📍 ${event.venueName || event.city}\n${isFree ? '🎉 Free Event!' : `💰 ${priceDisplay}`}\n\n${eventUrl}\n\nRegister now on Unifesto!`;
+      
+      const result = await Share.share({
+        message: shareMessage,
+        title: event.title,
+        ...(Platform.OS === 'ios' && { url: eventUrl }),
+      });
+    } catch (error) {
+      console.error('Error sharing event:', error);
+    }
+  };
+
+  // Set header right button
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <View style={{ flexDirection: 'row', alignItems: 'center', paddingRight: 4 }}>
+          <TouchableOpacity
+            onPress={handleShare}
+            style={{ width: 36, height: 36, alignItems: 'center', justifyContent: 'center' }}
+            disabled={!event}
+            activeOpacity={0.7}
+          >
+            <Share2 size={24} color="#ffffff" strokeWidth={2} />
+          </TouchableOpacity>
+        </View>
+      ),
+    });
+  }, [navigation, event, tickets]);
+  
+  // Load event data
+  const loadEvent = useCallback(async () => {
+    if (!eventId) {
+      setLoading(false);
+      return;
+    }
+    
+    try {
+      // Reset all state when eventId changes to prevent stale data
+      setLoading(true);
+      setEvent(null);
+      setTickets([]);
+      setAgenda([]);
+      setSpeakers([]);
+      setPrizes([]);
+      setFaqs([]);
+      setIsRegistered(false);
+      setActiveTab('overview');
+      
+      console.log('[EventDetail] Loading event:', eventId);
+      const eventData = await getEventBySlug(eventId).catch((e) => {
+        console.log('[EventDetail] getEventBySlug failed:', e);
+        return getEventById(eventId);
+      });
+      console.log('[EventDetail] eventData:', eventData ? 'found' : 'null');
+      if (eventData) {
+        setEvent(eventData);
+        
+        // Use ticketTypes from event data directly
+        if (eventData.ticketTypes && eventData.ticketTypes.length > 0) {
+          setTickets((eventData.ticketTypes.map((tt: any) => ({
+            id: tt.id,
+            name: tt.name,
+            description: tt.description,
+            price: parseFloat(tt.price) || 0,
+            currency: tt.currency || 'INR',
+            quantity_available: tt.totalQuantity - tt.soldCount,
+            quantity_sold: tt.soldCount,
+            visibility: 'public',
+            perUserLimit: tt.perUserLimit,
+          }))) as any);
+        }
+        
+        // Load additional info (public data) - non-blocking
+        getEventAdditionalInfo(eventData.id).then(additionalInfo => {
+          setAgenda(additionalInfo.agenda || []);
+          setSpeakers(additionalInfo.speakers || []);
+          setPrizes(additionalInfo.prizes || []);
+          setFaqs(additionalInfo.faqs || []);
+        }).catch(() => {});
+        
+        // Check if user is registered
+        if (user) {
+          const registered = await isRegisteredForEvent(eventId);
+          setIsRegistered(registered);
+        }
+      } else {
+        // Event not found - set event to null to show error state
+        setEvent(null);
+      }
+    } catch (error) {
+      console.error('Error loading event:', error);
+      setEvent(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [eventId, user]);
+
+  useEffect(() => {
+    loadEvent();
+  }, [loadEvent]);
+
+  // useFocusEffect removed - was causing infinite reload loop
+
+  // Don't auto-redirect - let users view event details without login
+  // Login prompt shown only when they try to register
+  
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <ScrollView showsVerticalScrollIndicator={false}>
+          {/* Hero Image Skeleton */}
+          <View style={styles.heroContainer}>
+            <Skeleton width="100%" height={200} borderRadius={0} />
+          </View>
+
+          {/* Content Skeleton */}
+          <View style={styles.content}>
+            {/* Title Section Skeleton */}
+            <View style={styles.titleSection}>
+              <Skeleton width={80} height={24} borderRadius={borderRadius.full} style={{ marginBottom: spacing[3] }} />
+              <Skeleton width="90%" height={36} borderRadius={borderRadius.md} style={{ marginBottom: spacing[2] }} />
+              <Skeleton width="60%" height={20} borderRadius={borderRadius.sm} />
+            </View>
+
+            {/* Info Card Skeleton */}
+            <View style={styles.infoCard}>
+              {[1, 2, 3, 4].map((i) => (
+                <View key={i} style={styles.infoRow}>
+                  <Skeleton width={44} height={44} borderRadius={borderRadius.md} />
+                  <View style={styles.infoContent}>
+                    <Skeleton width={60} height={12} borderRadius={borderRadius.sm} style={{ marginBottom: spacing[1] }} />
+                    <Skeleton width="80%" height={16} borderRadius={borderRadius.sm} />
+                  </View>
+                </View>
+              ))}
+            </View>
+
+            {/* Tabs Skeleton */}
+            <View style={styles.tabsContainer}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabsScroll}>
+                {[1, 2, 3, 4].map((i) => (
+                  <Skeleton key={i} width={80} height={36} borderRadius={borderRadius.md} style={{ marginRight: spacing[2] }} />
+                ))}
+              </ScrollView>
+            </View>
+
+            {/* Content Skeleton */}
+            <View style={styles.tabContent}>
+              <Skeleton width="60%" height={24} borderRadius={borderRadius.md} style={{ marginBottom: spacing[4] }} />
+              <Skeleton width="100%" height={16} borderRadius={borderRadius.sm} style={{ marginBottom: spacing[2] }} />
+              <Skeleton width="100%" height={16} borderRadius={borderRadius.sm} style={{ marginBottom: spacing[2] }} />
+              <Skeleton width="90%" height={16} borderRadius={borderRadius.sm} style={{ marginBottom: spacing[2] }} />
+              <Skeleton width="85%" height={16} borderRadius={borderRadius.sm} />
+            </View>
+          </View>
+        </ScrollView>
+
+        {/* Bottom CTA Skeleton */}
+        <View style={styles.bottomCTA}>
+          <View style={styles.ctaInfo}>
+            <Skeleton width={60} height={12} borderRadius={borderRadius.sm} style={{ marginBottom: spacing[1] }} />
+            <Skeleton width={100} height={24} borderRadius={borderRadius.sm} />
+          </View>
+          <Skeleton width={120} height={44} borderRadius={borderRadius.full} />
+        </View>
+      </View>
+    );
+  }
+  
+  if (!event) {
+    return (
+      <View style={[styles.container, styles.loadingContainer]}>
+        <Text style={styles.errorText}>
+          {!eventId ? 'No event ID provided' : 'Event not found'}
+        </Text>
+        {__DEV__ && (
+          <Text style={styles.loadingText}>Event ID: {eventId || 'undefined'}</Text>
+        )}
+        <TouchableOpacity onPress={() => router.back()}>
+          <Text style={styles.backText}>Go Back</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+  
+  const isFree = tickets.length === 0 || tickets.every(t => t.price === 0);
+  const isCompleted = event.status === 'COMPLETED' || event.status === 'CANCELLED';
+  const hasSpots = event.capacity ? event.capacity > 0 : true;
+  const priceDisplay = formatEventPrice(tickets);
+
+  const handleRegister = async () => {
+    if (!user) {
+      // User is not authenticated, show sign-in prompt
+      Alert.alert(
+        'Sign In Required',
+        'Please sign in to register for this event and access all features.',
+        [
+          {
+            text: 'Cancel',
+            style: 'cancel',
+          },
+          {
+            text: 'Sign In',
+            onPress: () => router.push('/login'),
+          },
+        ]
+      );
+    } else if (isRegistered) {
+      // User is already registered
+      Alert.alert(
+        'Already Registered',
+        'You are already registered for this event. Check your registrations for more details.',
+        [{ text: 'OK' }]
+      );
+    } else if (!hasSpots) {
+      // Event is sold out
+      Alert.alert(
+        'Event Full',
+        'Sorry, this event has reached maximum capacity.',
+        [{ text: 'OK' }]
+      );
+    } else if (event.registrationType === 'RSVP') {
+      // RSVP event - register directly
+      try {
+        await registerRSVP(event.id, { quantity: 1 });
+        setIsRegistered(true);
+        Alert.alert("RSVP Confirmed", "You have successfully registered for this event!", [{ text: "OK" }]);
+      } catch (error: any) {
+        Alert.alert('Error', error?.message || 'Failed to RSVP');
+      }
+    } else {
+      // Ticketed event - go to registration screen
+      router.push({ pathname: '/event-registration', params: { eventId: event.id } });
+    }
+  };
+
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'overview':
+        return (
+          <View style={styles.tabContent}>
+            <Text style={styles.sectionTitle}>About This Event</Text>
+            <Text style={styles.descriptionText}>
+              {event.description || event.description || 'Join us for an amazing event filled with learning, networking, and fun.'}
+            </Text>
+          </View>
+        );
+
+      case 'agenda':
+        return (
+          <View style={styles.tabContent}>
+            <Text style={styles.sectionTitle}>Event Schedule</Text>
+            {agenda.length > 0 ? (
+              <View style={styles.agendaList}>
+                {agenda.map((item) => (
+                  <View key={item.id} style={styles.agendaItem}>
+                    <View style={styles.agendaTimeContainer}>
+                      <Clock size={16} color={colors.primary} strokeWidth={2} />
+                      <Text style={styles.agendaTime}>
+                        {new Date(item.start_time).toLocaleTimeString('en-US', {
+                          hour: 'numeric',
+                          minute: '2-digit',
+                          hour12: true
+                        })}
+                        {item.end_time && ` - ${new Date(item.end_time).toLocaleTimeString('en-US', {
+                          hour: 'numeric',
+                          minute: '2-digit',
+                          hour12: true
+                        })}`}
+                      </Text>
+                    </View>
+                    <View style={styles.agendaContent}>
+                      <Text style={styles.agendaTitle}>{item.title}</Text>
+                      {item.description && (
+                        <Text style={styles.agendaDescription}>{item.description}</Text>
+                      )}
+                      {item.location && (
+                        <View style={styles.agendaLocation}>
+                          <MapPin size={12} color={colors.textMuted} strokeWidth={2} />
+                          <Text style={styles.agendaLocationText}>{item.location}</Text>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                ))}
+              </View>
+            ) : (
+              <Text style={styles.emptyText}>Schedule will be announced soon</Text>
+            )}
+          </View>
+        );
+
+      case 'speakers':
+        return (
+          <View style={styles.tabContent}>
+            <Text style={styles.sectionTitle}>Featured Speakers</Text>
+            {speakers.length > 0 ? (
+              <View style={styles.speakersList}>
+                {speakers.map((speaker) => (
+                  <View key={speaker.id} style={styles.speakerCard}>
+                    {speaker.profile_image_url ? (
+                      <Image
+                        source={{ uri: speaker.profile_image_url }}
+                        style={styles.speakerImage}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <View style={styles.speakerImagePlaceholder}>
+                        <Text style={styles.speakerInitial}>
+                          {speaker.name.charAt(0).toUpperCase()}
+                        </Text>
+                      </View>
+                    )}
+                    <View style={styles.speakerInfo}>
+                      <Text style={styles.speakerName}>{speaker.name}</Text>
+                      {speaker.title && (
+                        <Text style={styles.speakerTitle}>{speaker.title}</Text>
+                      )}
+                      {speaker.bio && (
+                        <Text style={styles.speakerBio} numberOfLines={3}>{speaker.bio}</Text>
+                      )}
+                      {speaker.is_featured && (
+                        <View style={styles.featuredBadge}>
+                          <Text style={styles.featuredText}>Featured Speaker</Text>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                ))}
+              </View>
+            ) : (
+              <Text style={styles.emptyText}>Speakers will be announced soon</Text>
+            )}
+          </View>
+        );
+
+      case 'rewards':
+        return (
+          <View style={styles.tabContent}>
+            <Text style={styles.sectionTitle}>Prizes & Incentives</Text>
+            {prizes.length > 0 ? (
+              <View style={styles.prizesList}>
+                {prizes.map((prize) => (
+                  <View key={prize.id} style={styles.prizeCard}>
+                    <View style={styles.prizeIcon}>
+                      <Text style={styles.prizeEmoji}>
+                        {prize.position === 1 ? '🥇' : 
+                         prize.position === 2 ? '🥈' : 
+                         prize.position === 3 ? '🥉' : '🏆'}
+                      </Text>
+                    </View>
+                    <View style={styles.prizeInfo}>
+                      {prize.position && (
+                        <Text style={styles.prizePosition}>
+                          {prize.position === 1 ? '1st Place' : 
+                           prize.position === 2 ? '2nd Place' : 
+                           prize.position === 3 ? '3rd Place' : 
+                           `#${prize.position}`}
+                        </Text>
+                      )}
+                      <Text style={styles.prizeName}>{prize.name}</Text>
+                      {prize.description && (
+                        <Text style={styles.prizeDescription}>{prize.description}</Text>
+                      )}
+                      {prize.value && (
+                        <Text style={styles.prizeValue}>{prize.value}</Text>
+                      )}
+                    </View>
+                  </View>
+                ))}
+              </View>
+            ) : (
+              <Text style={styles.emptyText}>Rewards will be announced soon</Text>
+            )}
+          </View>
+        );
+
+      case 'faq':
+        return (
+          <View style={styles.tabContent}>
+            <Text style={styles.sectionTitle}>Frequently Asked Questions</Text>
+            {faqs.length > 0 ? (
+              <View style={styles.faqList}>
+                {faqs.map((faq) => (
+                  <View key={faq.id} style={styles.faqItem}>
+                    <Text style={styles.faqQuestion}>{faq.question}</Text>
+                    <Text style={styles.faqAnswer}>{faq.answer}</Text>
+                    {faq.category && (
+                      <View style={styles.faqCategoryBadge}>
+                        <Text style={styles.faqCategoryText}>{faq.category}</Text>
+                      </View>
+                    )}
+                  </View>
+                ))}
+              </View>
+            ) : (
+              <Text style={styles.emptyText}>FAQs will be announced soon</Text>
+            )}
+          </View>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <View style={styles.container}>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {/* Hero Image */}
+        <View style={styles.heroContainer}>
+          {event.coverImageUrl ? (
+            <Image
+              source={{ uri: event.coverImageUrl }}
+              style={styles.heroImage}
+              resizeMode="cover"
+            />
+          ) : (
+            <LinearGradient
+              colors={['#3491ff', '#0062ff']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.heroImage}
+            />
+          )}
+          <LinearGradient
+            colors={['transparent', 'rgba(0, 0, 0, 0.9)']}
+            style={styles.heroGradient}
+          />
+        </View>
+
+        {/* Content */}
+        <View style={styles.content}>
+          {/* Space Info */}
+          {event.space && (
+            <TouchableOpacity
+              style={styles.parentEventCard}
+              onPress={() => router.push(`/space/${event.spaceId}`)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.parentEventContent}>
+                <Text style={styles.parentEventLabel}>ORGANIZED BY</Text>
+                <Text style={styles.parentEventTitle}>{event.space.name}</Text>
+              </View>
+              <ChevronRight size={20} color={colors.textMuted} strokeWidth={2} />
+            </TouchableOpacity>
+          )}
+
+          {/* Title & Category */}
+          <View style={styles.titleSection}>
+            <View style={styles.categoryBadge}>
+              <Text style={styles.categoryText}>{event.category}</Text>
+            </View>
+            <GradientText style={styles.eventTitle}>{event.title}</GradientText>
+            <Text style={styles.organizerText}>{event.space?.name || 'Event Organizer'}</Text>
+          </View>
+
+          {/* Event Info Card */}
+          <View style={styles.infoCard}>
+            <View style={styles.infoRow}>
+              <View style={styles.infoIconContainer}>
+                <Calendar size={20} color={colors.primary} strokeWidth={2} />
+              </View>
+              <View style={styles.infoContent}>
+                <Text style={styles.infoLabel}>Date</Text>
+                <Text style={styles.infoValue}>
+                  {new Date(event.startDateTime).toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    month: 'long',
+                    day: 'numeric',
+                    year: 'numeric'
+                  })}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.infoRow}>
+              <View style={styles.infoIconContainer}>
+                <Clock size={20} color={colors.primary} strokeWidth={2} />
+              </View>
+              <View style={styles.infoContent}>
+                <Text style={styles.infoLabel}>Time</Text>
+                <Text style={styles.infoValue}>
+                  {new Date(event.startDateTime).toLocaleTimeString('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true
+                  })}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.infoRow}>
+              <View style={styles.infoIconContainer}>
+                <MapPin size={20} color={colors.primary} strokeWidth={2} />
+              </View>
+              <View style={styles.infoContent}>
+                <Text style={styles.infoLabel}>Location</Text>
+                <Text style={styles.infoValue}>{event.venueName || event.city || 'TBA'}</Text>
+              </View>
+            </View>
+
+            {event.capacity && (
+              <View style={styles.infoRow}>
+                <View style={styles.infoIconContainer}>
+                  <Users size={20} color={colors.primary} strokeWidth={2} />
+                </View>
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>Capacity</Text>
+                  <Text style={styles.infoValue}>{event.capacity} attendees</Text>
+                </View>
+              </View>
+            )}
+          </View>
+
+          {/* Tabs */}
+          <View style={styles.tabsContainer}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.tabsScroll}
+            >
+              {[
+                { id: 'overview', label: 'Overview', show: true },
+                { id: 'agenda', label: 'Agenda', show: agenda.length > 0 },
+                { id: 'speakers', label: 'Speakers', show: speakers.length > 0 },
+                { id: 'rewards', label: 'Prizes', show: prizes.length > 0 },
+                { id: 'faq', label: 'FAQ', show: faqs.length > 0 },
+              ].filter(tab => tab.show).map((tab) => (
+                <TouchableOpacity
+                  key={tab.id}
+                  style={[
+                    styles.tab,
+                    activeTab === tab.id && styles.tabActive,
+                  ]}
+                  onPress={() => setActiveTab(tab.id as TabType)}
+                  activeOpacity={0.7}
+                >
+                  <Text
+                    style={[
+                      styles.tabText,
+                      activeTab === tab.id && styles.tabTextActive,
+                    ]}
+                  >
+                    {tab.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+
+          {/* Tab Content */}
+          {renderTabContent()}
+
+          {/* Footer */}
+          <Footer />
+        </View>
+      </ScrollView>
+
+      {/* Bottom CTA */}
+      {!isCompleted && (
+        <View style={styles.bottomCTA}>
+          <View style={styles.ctaInfo}>
+            <Text style={styles.ctaLabel}>Price</Text>
+            <Text style={styles.ctaPrice}>
+              {priceDisplay}
+            </Text>
+          </View>
+          <TouchableOpacity 
+            style={styles.ctaButton} 
+            activeOpacity={0.8}
+            onPress={handleRegister}
+          >
+            <LinearGradient
+              colors={['#3491ff', '#0062ff']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.ctaButtonGradient}
+            >
+              {!user && (
+                <LogIn size={16} color={colors.text} strokeWidth={2} style={{ marginRight: spacing[2] }} />
+              )}
+              <Text style={styles.ctaButtonText}>
+                {!user ? 'Sign In to Register' : isRegistered ? 'Already Registered' : isFree ? 'Register Free' : 'Register Now'}
+              </Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
+      )}
+      
+    </View>
+  );
+}
+

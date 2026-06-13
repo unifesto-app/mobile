@@ -9,7 +9,7 @@ import { Event } from './events';
  * Format event date for display
  */
 export function formatEventDate(event: Event): string {
-  const startDate = new Date(event.start_date);
+  const startDate = new Date(event.startDateTime);
   return startDate.toLocaleDateString('en-US', {
     weekday: 'long',
     year: 'numeric',
@@ -22,8 +22,8 @@ export function formatEventDate(event: Event): string {
  * Format event time for display
  */
 export function formatEventTime(event: Event): string {
-  const startDate = new Date(event.start_date);
-  const endDate = new Date(event.end_date);
+  const startDate = new Date(event.startDateTime);
+  const endDate = new Date(event.endDateTime);
   
   const startTime = startDate.toLocaleTimeString('en-US', {
     hour: '2-digit',
@@ -42,12 +42,12 @@ export function formatEventTime(event: Event): string {
  * Get event location display string
  */
 export function getEventLocation(event: Event): string {
-  if (event.event_type === 'online') {
+  if (event.type === 'ONLINE') {
     return 'Online Event';
   }
   
-  if (event.venue) {
-    return event.venue;
+  if (event.venueName) {
+    return event.venueName;
   }
   
   if (event.city && event.state) {
@@ -58,8 +58,8 @@ export function getEventLocation(event: Event): string {
     return event.city;
   }
   
-  if (event.location) {
-    return event.location;
+  if (event.venueAddress) {
+    return event.venueAddress;
   }
   
   return 'Location TBA';
@@ -69,21 +69,24 @@ export function getEventLocation(event: Event): string {
  * Get event organizer name
  */
 export function getEventOrganizer(event: Event): string {
-  return event.organization?.name || 'Organizer';
+  return event.space?.name || 'Organizer';
 }
 
 /**
  * Format event price for display
  */
 export function formatEventPrice(event: Event): string {
-  if (event.is_free) {
+  if (event.isFree) {
     return 'Free';
   }
   
-  const currency = event.currency || '₹';
-  const price = event.price || 0;
+  if (event.ticketTypes && event.ticketTypes.length > 0) {
+    const minPrice = Math.min(...event.ticketTypes.map(t => parseFloat(t.price)));
+    const currency = event.ticketTypes[0].currency === 'INR' ? '₹' : event.ticketTypes[0].currency;
+    return `${currency}${minPrice}`;
+  }
   
-  return `${currency}${price}`;
+  return 'Free';
 }
 
 /**
@@ -91,8 +94,8 @@ export function formatEventPrice(event: Event): string {
  */
 export function isEventOngoing(event: Event): boolean {
   const now = new Date();
-  const startDate = new Date(event.start_date);
-  const endDate = new Date(event.end_date);
+  const startDate = new Date(event.startDateTime);
+  const endDate = new Date(event.endDateTime);
   
   return startDate <= now && endDate >= now;
 }
@@ -102,7 +105,7 @@ export function isEventOngoing(event: Event): boolean {
  */
 export function isEventUpcoming(event: Event): boolean {
   const now = new Date();
-  const startDate = new Date(event.start_date);
+  const startDate = new Date(event.startDateTime);
   
   return startDate > now;
 }
@@ -112,7 +115,7 @@ export function isEventUpcoming(event: Event): boolean {
  */
 export function isEventPast(event: Event): boolean {
   const now = new Date();
-  const endDate = new Date(event.end_date);
+  const endDate = new Date(event.endDateTime);
   
   return endDate < now;
 }
@@ -140,9 +143,10 @@ export function getEventStatusBadge(event: Event): string | null {
  * Get short date format (e.g., "Mar 16")
  */
 export function getShortDate(event: Event): string {
-  const startDate = new Date(event.start_date);
+  const startDate = new Date(event.startDateTime);
   return startDate.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
   });
 }
+

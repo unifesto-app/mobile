@@ -1,8 +1,9 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Check } from 'lucide-react-native';
-import { colors, spacing, typography, borderRadius } from '../theme';
+import { spacing, typography, borderRadius } from '../theme';
 import { getFontFamily } from '../theme/fontHelpers';
+import { useTheme } from '../context/ThemeContext';
 
 interface Step {
   id: string;
@@ -15,6 +16,82 @@ interface StepIndicatorProps {
 }
 
 export default function StepIndicator({ steps, currentStep }: StepIndicatorProps) {
+  const { colors } = useTheme();
+  
+  const styles = StyleSheet.create({
+    container: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginBottom: spacing[8],
+      paddingHorizontal: spacing[2],
+    },
+    stepContainer: {
+      flex: 1,
+      alignItems: 'center',
+    },
+    stepCircleContainer: {
+      position: 'relative',
+      alignItems: 'center',
+      width: '100%',
+      marginBottom: spacing[2],
+    },
+    stepCircle: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 2,
+      zIndex: 2,
+    },
+    stepCircleCompleted: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    stepCircleCurrent: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    stepCircleUpcoming: {
+      backgroundColor: colors.card,
+      borderColor: colors.borderMuted,
+    },
+    stepNumber: {
+      fontSize: typography.fontSize.sm,
+      fontFamily: typography.fontFamily.bold,
+    },
+    stepNumberCurrent: {
+      color: colors.background,
+    },
+    stepNumberUpcoming: {
+      color: colors.textMuted,
+    },
+    connector: {
+      position: 'absolute',
+      top: 18,
+      left: '50%',
+      right: '-50%',
+      height: 2,
+      backgroundColor: colors.borderMuted,
+      zIndex: 1,
+    },
+    connectorCompleted: {
+      backgroundColor: colors.primary,
+    },
+    stepLabel: {
+      fontSize: typography.fontSize.xs,
+      textAlign: 'center',
+      fontFamily: typography.fontFamily.bold,
+    },
+    stepLabelCurrent: {
+      color: colors.text,
+      fontFamily: typography.fontFamily.bold,
+    },
+    stepLabelUpcoming: {
+      color: colors.textMuted,
+    },
+  });
+
   return (
     <View style={styles.container}>
       {steps.map((step, index) => {
@@ -77,77 +154,3 @@ export default function StepIndicator({ steps, currentStep }: StepIndicatorProps
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: spacing[8],
-    paddingHorizontal: spacing[2],
-  },
-  stepContainer: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  stepCircleContainer: {
-    position: 'relative',
-    alignItems: 'center',
-    width: '100%',
-    marginBottom: spacing[2],
-  },
-  stepCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    zIndex: 2,
-  },
-  stepCircleCompleted: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  stepCircleCurrent: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  stepCircleUpcoming: {
-    backgroundColor: colors.card,
-    borderColor: colors.borderMuted,
-  },
-  stepNumber: {
-    fontSize: typography.fontSize.sm,
-    fontFamily: typography.fontFamily.bold,
-  },
-  stepNumberCurrent: {
-    color: colors.background,
-  },
-  stepNumberUpcoming: {
-    color: colors.textMuted,
-  },
-  connector: {
-    position: 'absolute',
-    top: 18,
-    left: '50%',
-    right: '-50%',
-    height: 2,
-    backgroundColor: colors.borderMuted,
-    zIndex: 1,
-  },
-  connectorCompleted: {
-    backgroundColor: colors.primary,
-  },
-  stepLabel: {
-    fontSize: typography.fontSize.xs,
-    textAlign: 'center',
-    fontFamily: typography.fontFamily.bold,
-  },
-  stepLabelCurrent: {
-    color: colors.text,
-    fontFamily: typography.fontFamily.bold,
-  },
-  stepLabelUpcoming: {
-    color: colors.textMuted,
-  },
-});

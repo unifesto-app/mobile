@@ -1,10 +1,4 @@
-/**
- * Registrations API Client for Mobile App
- * Handles event registration and payment flow
- */
-
-import { API_URL } from '../constants';
-import { supabase } from '../../config/supabase';
+import { makeAuthenticatedRequest } from './helpers';
 
 export interface AttendeeData {
   name: string;
@@ -16,229 +10,88 @@ export interface AttendeeData {
 
 export interface CreateRegistrationData {
   eventId: string;
-  ticketId: string;
+  ticketTypeId: string;
   quantity: number;
-  attendees: AttendeeData[];
-  buyerName: string;
-  buyerEmail: string;
-  buyerPhone: string;
+  attendees?: AttendeeData[];
+  formResponses?: Record<string, any>;
 }
 
-export interface RegistrationResponse {
-  registrations: any[];
-  groupId: string | null;
-  totalAmount: number;
-  currency: string;
-  razorpayOrder: {
-    orderId: string;
-    amount: number;
-    currency: string;
-    receipt: string;
-  } | null;
-  requiresPayment: boolean;
-}
+export const registerRSVP = async (eventId: string, data: {
+  quantity: number;
+  formResponses?: Record<string, any>;
+}) => {
+  const response = await makeAuthenticatedRequest(`/events/${eventId}/register`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
 
-export interface VerifyPaymentData {
-  registrationIds: string[];
+  if (!response?.ok) {
+    const error = await response?.json();
+    throw new Error(error?.message || 'Registration failed');
+  }
+  return response.json();
+};
+
+export const createPaymentOrder = async (eventId: string, data: {
+  ticketTypeId: string;
+  quantity: number;
+  coinsToUse?: number;
+  formResponses?: Record<string, any>;
+}) => {
+  const response = await makeAuthenticatedRequest(`/events/${eventId}/register/create-order`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+
+  if (!response?.ok) {
+    const error = await response?.json();
+    throw new Error(error?.message || 'Failed to create order');
+  }
+  return response.json();
+};
+
+export const createRegistration = createPaymentOrder; // Alias for backward compatibility
+
+export const getRazorpayConfig = async () => {
+  const response = await makeAuthenticatedRequest('/payments/razorpay/config');
+  if (!response?.ok) {
+    throw new Error('Failed to fetch Razorpay config');
+  }
+  return response.json();
+};
+
+export const verifyPayment = async (eventId: string, data: {
   razorpayOrderId: string;
   razorpayPaymentId: string;
   razorpaySignature: string;
-}
+  registrationId: string;
+}) => {
+  const response = await makeAuthenticatedRequest(`/events/${eventId}/register/verify`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
 
-/**
- * Create event registration
- */
-export async function createRegistration(
-  data: CreateRegistrationData
-): Promise<RegistrationResponse> {
-  try {
-    if (!supabase) {
-      throw new Error('Supabase not configured');
-    }
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      throw new Error('Not authenticated');
-    }
-
-    const response = await fetch(`${API_URL}/registrations`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${session.access_token}`,
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to create registration');
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error('Error creating registration:', error);
-    throw error;
+  if (!response?.ok) {
+    const error = await response?.json();
+    throw new Error(error?.message || 'Payment verification failed');
   }
-}
+  return response.json();
+};
 
-/**
- * Verify payment after Razorpay checkout
- */
-export async function verifyPayment(data: VerifyPaymentData): Promise<any> {
-  try {
-    if (!supabase) {
-      throw new Error('Supabase not configured');
-    }
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      throw new Error('Not authenticated');
-    }
+export const cancelRegistration = async (eventId: string) => {
+  const response = await makeAuthenticatedRequest(`/events/${eventId}/register`, {
+    method: 'DELETE',
+  });
 
-    const response = await fetch(`${API_URL}/registrations/verify-payment`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${session.access_token}`,
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to verify payment');
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error('Error verifying payment:', error);
-    throw error;
+  if (!response?.ok) {
+    const error = await response?.json();
+    throw new Error(error?.message || 'Cancellation failed');
   }
-}
+  return response.json();
+};
 
-/**
- * Get Razorpay configuration
- */
-export async function getRazorpayConfig(): Promise<{ keyId: string }> {
-  try {
-    if (!supabase) {
-      throw new Error('Supabase not configured');
-    }
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      throw new Error('Not authenticated');
-    }
-
-    const response = await fetch(`${API_URL}/registrations/razorpay-config`, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${session.access_token}`,
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch Razorpay config');
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error('Error fetching Razorpay config:', error);
-    throw error;
-  }
-}
-
-/**
- * Get user's registrations
- */
-export async function getUserRegistrations(eventId?: string): Promise<any> {
-  try {
-    if (!supabase) {
-      throw new Error('Supabase not configured');
-    }
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      throw new Error('Not authenticated');
-    }
-
-    const url = eventId
-      ? `${API_URL}/registrations/my/event/${eventId}`
-      : `${API_URL}/registrations/my`;
-
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${session.access_token}`,
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch registrations');
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error('Error fetching registrations:', error);
-    throw error;
-  }
-}
-
-/**
- * Get registration by ID
- */
-export async function getRegistration(registrationId: string): Promise<any> {
-  try {
-    if (!supabase) {
-      throw new Error('Supabase not configured');
-    }
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      throw new Error('Not authenticated');
-    }
-
-    const response = await fetch(`${API_URL}/registrations/${registrationId}`, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${session.access_token}`,
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch registration');
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error('Error fetching registration:', error);
-    throw error;
-  }
-}
-
-/**
- * Cancel registration
- */
-export async function cancelRegistration(registrationId: string): Promise<any> {
-  try {
-    if (!supabase) {
-      throw new Error('Supabase not configured');
-    }
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      throw new Error('Not authenticated');
-    }
-
-    const response = await fetch(`${API_URL}/registrations/${registrationId}`, {
-      method: 'DELETE',
-      headers: {
-        Authorization: `Bearer ${session.access_token}`,
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to cancel registration');
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error('Error cancelling registration:', error);
-    throw error;
-  }
-}
+export const getMyRegistrations = async (page = 1, limit = 20) => {
+  const response = await makeAuthenticatedRequest(`/users/me/registrations?page=${page}&limit=${limit}`);
+  if (!response?.ok) return null;
+  return response.json();
+};

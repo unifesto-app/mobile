@@ -10,7 +10,7 @@ module.exports = () => {
     slug: "unifesto",
     version: "1.0.1",
     orientation: "default",
-    userInterfaceStyle: "dark",
+    userInterfaceStyle: "automatic",
     scheme: "unifesto",
     icon: "./assets/app-icon-transparent.png",
     splash: {
@@ -47,7 +47,7 @@ module.exports = () => {
       associatedDomains: [
         "applinks:unifesto.app",
         "applinks:www.unifesto.app",
-        "applinks:auth.unifesto.app"
+        "applinks:api.unifesto.app"
       ],
       appClip: {
         bundleIdentifier: "com.unifesto.app.Clip"
@@ -110,7 +110,7 @@ module.exports = () => {
             },
             {
               scheme: "https",
-              host: "auth.unifesto.app",
+              host: "api.unifesto.app",
               pathPrefix: "/auth/callback"
             }
           ],
@@ -170,7 +170,8 @@ module.exports = () => {
         }
       ],
       "@react-native-firebase/app",
-      "expo-dev-client"
+      "expo-dev-client",
+      ["@react-native-google-signin/google-signin", { "iosUrlScheme": "com.googleusercontent.apps.1013647520532-kv0g8vf89h92l0s63vgj7jdfilqp41qq" }]
     ],
     extra: {
       eas: {

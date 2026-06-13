@@ -8,7 +8,8 @@ import {
   Platform,
 } from 'react-native';
 import { CustomField } from '../lib/api/tickets';
-import { colors, spacing, typography, borderRadius } from '../theme';
+import { useTheme } from '../context/ThemeContext';
+import { spacing, typography, borderRadius } from '../theme';
 
 interface CustomFieldInputProps {
   field: CustomField;
@@ -23,6 +24,190 @@ export default function CustomFieldInput({
   onChange,
   error,
 }: CustomFieldInputProps) {
+  const { colors } = useTheme();
+  
+  const styles = StyleSheet.create({
+    container: {
+      marginBottom: spacing[4],
+    },
+    label: {
+      fontSize: typography.fontSize.sm,
+      fontFamily: typography.fontFamily.bold,
+      color: colors.text,
+      marginBottom: spacing[2],
+    },
+    required: {
+      color: colors.error,
+    },
+    helpText: {
+      fontSize: typography.fontSize.xs,
+      color: colors.textMuted,
+      marginBottom: spacing[2],
+    },
+    input: {
+      backgroundColor: colors.backgroundSecondary,
+      borderRadius: borderRadius.xl,
+      borderWidth: 1,
+      borderColor: colors.borderMuted,
+      paddingHorizontal: spacing[4],
+      paddingVertical: spacing[3],
+      fontSize: typography.fontSize.sm,
+      color: colors.text,
+      fontFamily: typography.fontFamily.primary,
+    },
+    inputError: {
+      borderColor: colors.error,
+    },
+    textarea: {
+      minHeight: 100,
+      paddingTop: spacing[3],
+    },
+    errorText: {
+      fontSize: typography.fontSize.xs,
+      color: colors.error,
+      marginTop: spacing[1],
+    },
+    checkboxContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    checkbox: {
+      width: 20,
+      height: 20,
+      borderRadius: 4,
+      borderWidth: 2,
+      borderColor: colors.borderMuted,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: spacing[2],
+    },
+    checkboxChecked: {
+      borderColor: colors.primary,
+      backgroundColor: colors.primary,
+    },
+    checkboxInner: {
+      width: 10,
+      height: 10,
+      borderRadius: 2,
+      backgroundColor: '#000000',
+    },
+    checkboxLabel: {
+      fontSize: typography.fontSize.sm,
+      color: colors.text,
+      fontFamily: typography.fontFamily.primary,
+    },
+    optionsContainer: {
+      gap: spacing[2],
+    },
+    radioOption: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: spacing[4],
+      paddingVertical: spacing[3],
+      borderRadius: borderRadius.xl,
+      borderWidth: 1,
+      borderColor: colors.borderMuted,
+      backgroundColor: colors.backgroundSecondary,
+    },
+    radioOptionSelected: {
+      borderColor: colors.primary,
+      backgroundColor: 'rgba(52, 145, 255, 0.05)',
+    },
+    radioButton: {
+      width: 20,
+      height: 20,
+      borderRadius: 10,
+      borderWidth: 2,
+      borderColor: colors.borderMuted,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: spacing[3],
+    },
+    radioButtonInner: {
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+      backgroundColor: colors.primary,
+    },
+    radioLabel: {
+      fontSize: typography.fontSize.sm,
+      color: colors.textSecondary,
+      fontFamily: typography.fontFamily.primary,
+    },
+    radioLabelSelected: {
+      color: colors.primary,
+      fontFamily: typography.fontFamily.bold,
+    },
+    dropdownContainer: {
+      gap: spacing[2],
+    },
+    dropdownOption: {
+      paddingHorizontal: spacing[4],
+      paddingVertical: spacing[3],
+      borderRadius: borderRadius.xl,
+      borderWidth: 1,
+      borderColor: colors.borderMuted,
+      backgroundColor: colors.backgroundSecondary,
+    },
+    dropdownOptionSelected: {
+      borderColor: colors.primary,
+      backgroundColor: 'rgba(52, 145, 255, 0.05)',
+    },
+    dropdownLabel: {
+      fontSize: typography.fontSize.sm,
+      color: colors.textSecondary,
+      fontFamily: typography.fontFamily.primary,
+    },
+    dropdownLabelSelected: {
+      color: colors.primary,
+      fontFamily: typography.fontFamily.bold,
+    },
+    multiSelectOption: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: spacing[4],
+      paddingVertical: spacing[3],
+      borderRadius: borderRadius.xl,
+      borderWidth: 1,
+      borderColor: colors.borderMuted,
+      backgroundColor: colors.backgroundSecondary,
+    },
+    multiSelectOptionSelected: {
+      borderColor: colors.primary,
+      backgroundColor: 'rgba(52, 145, 255, 0.05)',
+    },
+    multiSelectLabel: {
+      fontSize: typography.fontSize.sm,
+      color: colors.textSecondary,
+      fontFamily: typography.fontFamily.primary,
+    },
+    multiSelectLabelSelected: {
+      color: colors.primary,
+      fontFamily: typography.fontFamily.bold,
+    },
+    fileUploadContainer: {
+      gap: spacing[2],
+    },
+    fileUploadButton: {
+      backgroundColor: colors.backgroundSecondary,
+      borderRadius: borderRadius.xl,
+      borderWidth: 1,
+      borderColor: colors.borderMuted,
+      paddingHorizontal: spacing[4],
+      paddingVertical: spacing[3],
+      alignItems: 'center',
+    },
+    fileUploadButtonText: {
+      fontSize: typography.fontSize.sm,
+      fontFamily: typography.fontFamily.bold,
+      color: colors.text,
+    },
+    fileUploadText: {
+      fontSize: typography.fontSize.xs,
+      color: colors.textMuted,
+    },
+  });
+
   const renderField = () => {
     switch (field.field_type) {
       case 'text':
@@ -282,190 +467,3 @@ export default function CustomFieldInput({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    marginBottom: spacing[4],
-  },
-  label: {
-    fontSize: typography.fontSize.sm,
-    fontFamily: typography.fontFamily.bold,
-    color: colors.text,
-    marginBottom: spacing[2],
-  },
-  required: {
-    color: colors.error,
-  },
-  helpText: {
-    fontSize: typography.fontSize.xs,
-    color: colors.textMuted,
-    marginBottom: spacing[2],
-  },
-  input: {
-    backgroundColor: colors.backgroundSecondary,
-    borderRadius: borderRadius.xl,
-    borderWidth: 1,
-    borderColor: colors.borderMuted,
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[3],
-    fontSize: typography.fontSize.sm,
-    color: colors.text,
-    fontFamily: typography.fontFamily.primary,
-  },
-  inputError: {
-    borderColor: colors.error,
-  },
-  textarea: {
-    minHeight: 100,
-    paddingTop: spacing[3],
-  },
-  errorText: {
-    fontSize: typography.fontSize.xs,
-    color: colors.error,
-    marginTop: spacing[1],
-  },
-  // Checkbox
-  checkboxContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  checkbox: {
-    width: 20,
-    height: 20,
-    borderRadius: 4,
-    borderWidth: 2,
-    borderColor: colors.borderMuted,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: spacing[2],
-  },
-  checkboxChecked: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primary,
-  },
-  checkboxInner: {
-    width: 10,
-    height: 10,
-    borderRadius: 2,
-    backgroundColor: '#000000',
-  },
-  checkboxLabel: {
-    fontSize: typography.fontSize.sm,
-    color: colors.text,
-    fontFamily: typography.fontFamily.primary,
-  },
-  // Radio
-  optionsContainer: {
-    gap: spacing[2],
-  },
-  radioOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[3],
-    borderRadius: borderRadius.xl,
-    borderWidth: 1,
-    borderColor: colors.borderMuted,
-    backgroundColor: colors.backgroundSecondary,
-  },
-  radioOptionSelected: {
-    borderColor: colors.primary,
-    backgroundColor: 'rgba(52, 145, 255, 0.05)',
-  },
-  radioButton: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: colors.borderMuted,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: spacing[3],
-  },
-  radioButtonInner: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: colors.primary,
-  },
-  radioLabel: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
-    fontFamily: typography.fontFamily.primary,
-  },
-  radioLabelSelected: {
-    color: colors.primary,
-    fontFamily: typography.fontFamily.bold,
-  },
-  // Dropdown
-  dropdownContainer: {
-    gap: spacing[2],
-  },
-  dropdownOption: {
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[3],
-    borderRadius: borderRadius.xl,
-    borderWidth: 1,
-    borderColor: colors.borderMuted,
-    backgroundColor: colors.backgroundSecondary,
-  },
-  dropdownOptionSelected: {
-    borderColor: colors.primary,
-    backgroundColor: 'rgba(52, 145, 255, 0.05)',
-  },
-  dropdownLabel: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
-    fontFamily: typography.fontFamily.primary,
-  },
-  dropdownLabelSelected: {
-    color: colors.primary,
-    fontFamily: typography.fontFamily.bold,
-  },
-  // Multi-select
-  multiSelectOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[3],
-    borderRadius: borderRadius.xl,
-    borderWidth: 1,
-    borderColor: colors.borderMuted,
-    backgroundColor: colors.backgroundSecondary,
-  },
-  multiSelectOptionSelected: {
-    borderColor: colors.primary,
-    backgroundColor: 'rgba(52, 145, 255, 0.05)',
-  },
-  multiSelectLabel: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
-    fontFamily: typography.fontFamily.primary,
-  },
-  multiSelectLabelSelected: {
-    color: colors.primary,
-    fontFamily: typography.fontFamily.bold,
-  },
-  // File upload
-  fileUploadContainer: {
-    gap: spacing[2],
-  },
-  fileUploadButton: {
-    backgroundColor: colors.backgroundSecondary,
-    borderRadius: borderRadius.xl,
-    borderWidth: 1,
-    borderColor: colors.borderMuted,
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[3],
-    alignItems: 'center',
-  },
-  fileUploadButtonText: {
-    fontSize: typography.fontSize.sm,
-    fontFamily: typography.fontFamily.bold,
-    color: colors.text,
-  },
-  fileUploadText: {
-    fontSize: typography.fontSize.xs,
-    color: colors.textMuted,
-  },
-});

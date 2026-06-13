@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Clock } from 'lucide-react-native';
-import { colors, spacing, typography, borderRadius } from '../theme';
+import { spacing, typography, borderRadius } from '../theme';
 import { getFontFamily } from '../theme/fontHelpers';
+import { useTheme } from '../context/ThemeContext';
 
 interface RegistrationTimerProps {
   initialSeconds: number;
@@ -10,6 +11,65 @@ interface RegistrationTimerProps {
 }
 
 export default function RegistrationTimer({ initialSeconds, onExpire }: RegistrationTimerProps) {
+  const { colors } = useTheme();
+  
+  const styles = StyleSheet.create({
+    container: {
+      marginBottom: spacing[6],
+    },
+    timerCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.card,
+      borderRadius: borderRadius.lg,
+      padding: spacing[4],
+      borderWidth: 1,
+      borderColor: colors.borderMuted,
+      gap: spacing[3],
+    },
+    expiredCard: {
+      borderColor: '#ef4444',
+      backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    },
+    timerContent: {
+      flex: 1,
+    },
+    timerText: {
+      fontSize: typography.fontSize.xl,
+      fontFamily: getFontFamily('bold'),
+      marginBottom: spacing[1],
+    },
+    timerLabel: {
+      fontSize: typography.fontSize.xs,
+      color: colors.textMuted,
+      textTransform: 'uppercase',
+      letterSpacing: typography.letterSpacing.wider,
+    },
+    expiredText: {
+      fontSize: typography.fontSize.base,
+      fontFamily: getFontFamily('bold'),
+      color: '#ef4444',
+    },
+    progressBar: {
+      height: 4,
+      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+      borderRadius: borderRadius.full,
+      marginTop: spacing[3],
+      overflow: 'hidden',
+    },
+    progressFill: {
+      height: '100%',
+      borderRadius: borderRadius.full,
+    },
+    warningText: {
+      fontSize: typography.fontSize.xs,
+      color: '#ef4444',
+      textAlign: 'center',
+      marginTop: spacing[2],
+      fontFamily: getFontFamily('bold'),
+    },
+  });
+
   const [timeLeft, setTimeLeft] = useState(initialSeconds);
   const [isExpired, setIsExpired] = useState(false);
 
@@ -88,60 +148,3 @@ export default function RegistrationTimer({ initialSeconds, onExpire }: Registra
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    marginBottom: spacing[6],
-  },
-  timerCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.card,
-    borderRadius: borderRadius.lg,
-    padding: spacing[4],
-    borderWidth: 1,
-    borderColor: colors.borderMuted,
-    gap: spacing[3],
-  },
-  expiredCard: {
-    borderColor: '#ef4444',
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-  },
-  timerContent: {
-    flex: 1,
-  },
-  timerText: {
-    fontSize: typography.fontSize.xl,
-    fontFamily: getFontFamily('bold'),
-    marginBottom: spacing[1],
-  },
-  timerLabel: {
-    fontSize: typography.fontSize.xs,
-    color: colors.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: typography.letterSpacing.wider,
-  },
-  expiredText: {
-    fontSize: typography.fontSize.base,
-    fontFamily: getFontFamily('bold'),
-    color: '#ef4444',
-  },
-  progressBar: {
-    height: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: borderRadius.full,
-    marginTop: spacing[3],
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: borderRadius.full,
-  },
-  warningText: {
-    fontSize: typography.fontSize.xs,
-    color: '#ef4444',
-    textAlign: 'center',
-    marginTop: spacing[2],
-    fontFamily: getFontFamily('bold'),
-  },
-});
