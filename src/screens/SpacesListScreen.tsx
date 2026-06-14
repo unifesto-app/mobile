@@ -28,7 +28,7 @@ const ORG_TYPE_LABELS: Record<string, string> = {
   club: 'Club',
   community: 'Community',
   company: 'Company',
-  other: 'Organization',
+  other: 'Space',
 };
 
 const TYPE_FILTERS = [
@@ -424,7 +424,7 @@ export default function SpacesListScreen() {
         {/* Organizations List */}
         <View style={styles.orgsList}>
           <Text style={styles.resultsCount}>
-            {filteredSpaces.length} organization{filteredSpaces.length !== 1 ? 's' : ''} found
+            {filteredSpaces.length} space{filteredSpaces.length !== 1 ? 's' : ''} found
           </Text>
 
           {filteredSpaces.length === 0 ? (
@@ -434,7 +434,7 @@ export default function SpacesListScreen() {
               <Text style={styles.emptyStateText}>
                 {searchQuery || selectedType !== 'all'
                   ? 'Try adjusting your search or filters'
-                  : 'Organizations will appear here'}
+                  : 'Spaces will appear here'}
               </Text>
             </View>
           ) : (

@@ -140,17 +140,29 @@ export function getCurrencySymbol(currency: string): string {
  * Get display price for an event card
  */
 export function getEventCardPrice(event: { isFree?: boolean; ticketTypes?: TicketType[] }): string {
-  if (event.isFree) {
-    return 'Free';
-  }
-  
+  // Check if event has ticket types data
   if (event.ticketTypes && event.ticketTypes.length > 0) {
     const minPrice = Math.min(...event.ticketTypes.map(t => parseFloat(t.price)));
+    
+    // If min price is 0, it's free
+    if (minPrice === 0) {
+      return 'Free';
+    }
+    
     const currency = event.ticketTypes[0].currency;
     const symbol = getCurrencySymbol(currency);
-    return `From ${symbol}${minPrice}`;
+    return `Starting from ${symbol}${minPrice}`;
   }
   
+  // Fall back to isFree flag
+  if (event.isFree === true) {
+    return 'Free';
+  }
+  if (event.isFree === false) {
+    return 'Paid';
+  }
+  
+  // Default
   return 'Free';
 }
 

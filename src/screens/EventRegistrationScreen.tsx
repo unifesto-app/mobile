@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { 
@@ -24,6 +26,9 @@ import GradientText from '../components/GradientText';
 import RegistrationTimer from '../components/RegistrationTimer';
 import StepIndicator from '../components/StepIndicator';
 import AttendeeForm from '../components/AttendeeForm';
+import RazorpayWebView from '../components/RazorpayWebView';
+import { verifyPayment, createRegistration } from '../lib/api/registrations';
+import { getWallet } from '../lib/api/wallet';
 import { spacing, typography, borderRadius } from '../theme';
 import { getEventById, getEventBySlug, Event } from '../lib/api/events';
 import { getEventTickets, getEventCustomFields, getFieldsForTicket, Ticket, CustomField, calculateTicketPrice, isTicketAvailable } from '../lib/api/tickets';
@@ -223,22 +228,26 @@ export default function EventRegistrationScreen() {
     alignItems: 'center',
   },
   stepCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing[2],
   },
   stepCircleActive: {
     backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   stepCircleCompleted: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(52, 145, 255, 0.2)',
+    borderColor: colors.primary,
   },
   stepNumber: {
-    fontSize: typography.fontSize.xs,
+    fontSize: typography.fontSize.sm,
     fontFamily: typography.fontFamily.bold,
     color: colors.textMuted,
   },
@@ -246,7 +255,7 @@ export default function EventRegistrationScreen() {
     color: '#000000',
   },
   stepNumberCompleted: {
-    color: colors.text,
+    color: colors.primary,
   },
   stepLabel: {
     fontSize: typography.fontSize.xs,
@@ -340,7 +349,7 @@ export default function EventRegistrationScreen() {
     gap: spacing[2],
   },
   priceText: {
-    fontSize: typography.fontSize['2xl'],
+    fontSize: typography.fontSize.lg,
     fontFamily: typography.fontFamily.bold,
     color: colors.text,
   },
@@ -590,7 +599,7 @@ export default function EventRegistrationScreen() {
     color: colors.textMuted,
   },
   paymentAmountValue: {
-    fontSize: typography.fontSize['2xl'],
+    fontSize: typography.fontSize.base,
     fontFamily: typography.fontFamily.bold,
     color: colors.text,
   },
@@ -814,6 +823,11 @@ export default function EventRegistrationScreen() {
   const [quantity, setQuantity] = useState(1);
 
   // Attendee details
+  const [walletBalance, setWalletBalance] = useState(0);
+  const [coinsToUse, setCoinsToUse] = useState(0);
+  const [razorpayVisible, setRazorpayVisible] = useState(false);
+  const [razorpayOptions, setRazorpayOptions] = useState<any>(null);
+  const [pendingRegistrationId, setPendingRegistrationId] = useState<string>('');
   const [attendees, setAttendees] = useState<AttendeeInfo[]>([{
     name: '',
     email: '',
@@ -834,8 +848,55 @@ export default function EventRegistrationScreen() {
   
   if (loading) {
     return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <Text style={styles.loadingMoreText}>Loading...</Text>
+      <View style={styles.container}>
+        {/* Header Skeleton */}
+        <View style={styles.header}>
+          <View style={[styles.headerBackButton, { backgroundColor: 'rgba(255, 255, 255, 0.05)' }]} />
+          <View style={{ width: 150, height: 20, backgroundColor: 'rgba(255, 255, 255, 0.05)', borderRadius: 4 }} />
+        </View>
+
+        {/* Timer Skeleton */}
+        <View style={[styles.timerContainer, { paddingVertical: spacing[3] }]}>
+          <View style={{ width: '100%', height: 20, backgroundColor: 'rgba(255, 255, 255, 0.05)', borderRadius: 4 }} />
+        </View>
+
+        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+          {/* Event Info Skeleton */}
+          <View style={styles.eventInfo}>
+            <View style={{ width: 120, height: 12, backgroundColor: 'rgba(255, 255, 255, 0.05)', borderRadius: 4, marginBottom: spacing[2] }} />
+            <View style={{ width: '80%', height: 32, backgroundColor: 'rgba(255, 255, 255, 0.05)', borderRadius: 4, marginBottom: spacing[3] }} />
+            <View style={{ width: 180, height: 14, backgroundColor: 'rgba(255, 255, 255, 0.05)', borderRadius: 4 }} />
+          </View>
+
+          {/* Step Indicator Skeleton */}
+          <View style={styles.stepIndicator}>
+            {[1, 2, 3, 4].map((i) => (
+              <View key={i} style={styles.stepItem}>
+                <View style={styles.stepContent}>
+                  <View style={[styles.stepCircle, { backgroundColor: 'rgba(255, 255, 255, 0.05)' }]} />
+                  <View style={{ width: 60, height: 12, backgroundColor: 'rgba(255, 255, 255, 0.05)', borderRadius: 4 }} />
+                </View>
+              </View>
+            ))}
+          </View>
+
+          {/* Content Skeleton */}
+          <View style={styles.stepContentContainer}>
+            <View style={{ width: 150, height: 24, backgroundColor: 'rgba(255, 255, 255, 0.05)', borderRadius: 4, marginBottom: spacing[6] }} />
+            {[1, 2, 3].map((i) => (
+              <View
+                key={i}
+                style={{
+                  backgroundColor: 'rgba(255, 255, 255, 0.03)',
+                  borderRadius: borderRadius.xl,
+                  padding: spacing[5],
+                  marginBottom: spacing[4],
+                  height: 120,
+                }}
+              />
+            ))}
+          </View>
+        </ScrollView>
       </View>
     );
   }
@@ -1032,6 +1093,7 @@ export default function EventRegistrationScreen() {
       setStep('review');
     } else if (step === 'review') {
       setStep('payment');
+      getWallet().then(w => { if (w) setWalletBalance(w.balance); }).catch(() => {});
     }
   };
 
@@ -1043,46 +1105,68 @@ export default function EventRegistrationScreen() {
 
   const handleSubmit = async () => {
     if (!selectedTicket || !event) return;
-
     try {
-      // Prepare registration data
-      const registrationData = {
-        eventId: event.id,
+      setLoading(true);
+      const orderResponse = await createRegistration(event.id, {
         ticketTypeId: selectedTicket.id,
         quantity,
-        attendees: attendees.map(a => ({
-          name: a.name,
-          email: a.email,
-          mobile: a.mobile,
-          gender: a.gender,
-          customFields: a.customFields,
-        })),
-      };
-
-      // Process registration with payment
-      const result = await processRegistration(
-        registrationData,
-        event.title,
-        event.coverImageUrl || undefined
-      );
-
-      if (result.success) {
-        // Navigate to success screen with registration data
-        router.replace({
-          pathname: '/registration-success',
-          params: {
-            eventId: event.id,
-            eventTitle: event.title,
-            ticketName: selectedTicket.name,
-            quantity: quantity.toString(),
-            total: calculateTotal().toString(),
-            currency: getCurrencySymbol(),
-          }
+        coinsToUse: coinsToUse > 0 ? coinsToUse : undefined,
+      });
+      if (orderResponse.razorpayOrderId) {
+        setPendingRegistrationId(orderResponse.registrationId || '');
+        setRazorpayOptions({
+          orderId: orderResponse.razorpayOrderId,
+          amount: orderResponse.amount,
+          currency: orderResponse.currency || 'INR',
+          name: 'Unifesto',
+          description: event.title,
+          image: event.coverImageUrl || undefined,
+          prefill: {
+            name: attendees[0]?.name || '',
+            email: attendees[0]?.email || '',
+            contact: attendees[0]?.mobile || '',
+          },
+          keyId: orderResponse.razorpayKeyId,
         });
+        setRazorpayVisible(true);
+      } else {
+        navigateToSuccess();
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Registration error:', error);
-      // Error is already handled in the hook with Alert
+      Alert.alert('Error', error?.message || 'Registration failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
+  const navigateToSuccess = () => {
+    router.replace({
+      pathname: '/registration-success',
+      params: {
+        eventId: event?.id || '',
+        eventTitle: event?.title || '',
+        ticketName: selectedTicket?.name || '',
+        quantity: quantity.toString(),
+        total: calculateTotal().toString(),
+        currency: getCurrencySymbol(),
+      }
+    });
+  };
+
+  const handlePaymentSuccess = async (paymentResponse: any) => {
+    setRazorpayVisible(false);
+    try {
+      await verifyPayment(event?.id || '', {
+        registrationId: pendingRegistrationId,
+        razorpayOrderId: paymentResponse.razorpay_order_id,
+        razorpayPaymentId: paymentResponse.razorpay_payment_id,
+        razorpaySignature: paymentResponse.razorpay_signature,
+      });
+      navigateToSuccess();
+    } catch (error: any) {
+      Alert.alert('Payment Verification Failed', error?.message || 'Please contact support');
     }
   };
 
@@ -1132,7 +1216,12 @@ export default function EventRegistrationScreen() {
         onExpire={() => setTimerExpired(true)}
       />
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={100}
+      >
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         {/* Event Info */}
         <View style={styles.eventInfo}>
           <Text style={styles.eventSubtitle}>Event Registration</Text>
@@ -1473,33 +1562,42 @@ export default function EventRegistrationScreen() {
                 <View>
                   <View style={styles.paymentAmount}>
                     <View style={styles.paymentAmountRow}>
-                      <Text style={styles.paymentAmountLabel}>Amount to Pay</Text>
-                      <Text style={styles.paymentAmountValue}>{getCurrencySymbol()}{calculateTotal()}</Text>
+                      <Text style={styles.paymentAmountLabel}>Ticket Price</Text>
+                      <Text style={styles.paymentAmountValue}>{getCurrencySymbol()}{(parseFloat(selectedTicket?.price as any || '0') * quantity).toFixed(2)}</Text>
+                    </View>
+                    <View style={styles.paymentAmountRow}>
+                      <Text style={styles.paymentAmountLabel}>Processing Fee (~4%)</Text>
+                      <Text style={styles.paymentAmountValue}>{getCurrencySymbol()}{(parseFloat(selectedTicket?.price as any || '0') * quantity * 0.04).toFixed(2)}</Text>
+                    </View>
+                    <View style={[styles.paymentAmountRow, { borderTopWidth: 1, borderTopColor: colors.borderMuted, paddingTop: 8, marginTop: 4 }]}>
+                      <Text style={[styles.paymentAmountLabel, { fontWeight: '700' }]}>Total</Text>
+                      <Text style={[styles.paymentAmountValue, { color: colors.primary, fontWeight: '700', fontSize: typography.fontSize.xl }]}>{getCurrencySymbol()}{calculateTotal().toFixed(2)}</Text>
                     </View>
                   </View>
-
-                  <View style={styles.paymentMethods}>
-                    <Text style={styles.paymentMethodsTitle}>Select Payment Method</Text>
-
-                    {[
-                      { id: 'upi', name: 'UPI', icon: Smartphone },
-                      { id: 'card', name: 'Card', icon: CreditCard },
-                      { id: 'netbanking', name: 'Net Banking', icon: Building2 },
-                    ].map((method) => (
-                      <TouchableOpacity key={method.id} style={styles.paymentMethod}>
-                        <View style={styles.paymentMethodContent}>
-                          <method.icon size={20} color={colors.text} strokeWidth={2} />
-                          <Text style={styles.paymentMethodName}>{method.name}</Text>
-                        </View>
-                        <ArrowLeft
-                          size={16}
-                          color={colors.textMuted}
-                          strokeWidth={2}
-                          style={{ transform: [{ rotate: '180deg' }] }}
-                        />
-                      </TouchableOpacity>
-                    ))}
-                  </View>
+                  {walletBalance > 0 && (
+                    <View style={{ backgroundColor: colors.card, borderRadius: 12, padding: 16, marginTop: 12, borderWidth: 1, borderColor: colors.borderMuted }}>
+                      <Text style={{ color: colors.text, fontWeight: '600', marginBottom: 8 }}>🪙 Pocket Balance: {walletBalance} coins</Text>
+                      <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 8 }}>1 coin = ₹1. Use coins to reduce payment.</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <TouchableOpacity onPress={() => setCoinsToUse(Math.max(0, coinsToUse - 10))} style={{ backgroundColor: colors.backgroundSecondary, borderRadius: 8, padding: 8 }}>
+                          <Text style={{ color: colors.text, fontWeight: '700' }}>−</Text>
+                        </TouchableOpacity>
+                        <Text style={{ color: colors.text, fontWeight: '700', flex: 1, textAlign: 'center' }}>{coinsToUse} coins</Text>
+                        <TouchableOpacity onPress={() => setCoinsToUse(Math.min(walletBalance, coinsToUse + 10))} style={{ backgroundColor: colors.backgroundSecondary, borderRadius: 8, padding: 8 }}>
+                          <Text style={{ color: colors.text, fontWeight: '700' }}>+</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => setCoinsToUse(Math.min(walletBalance, Math.floor(calculateTotal())))} style={{ backgroundColor: colors.primary, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8 }}>
+                          <Text style={{ color: '#fff', fontSize: 12, fontWeight: '600' }}>Use All</Text>
+                        </TouchableOpacity>
+                      </View>
+                      {coinsToUse > 0 && (
+                        <Text style={{ color: colors.primary, fontSize: 12, marginTop: 8 }}>Saving ₹{coinsToUse} with coins</Text>
+                      )}
+                    </View>
+                  )}
+                  <Text style={{ color: colors.textMuted, fontSize: 12, textAlign: 'center', marginTop: 8 }}>
+                    You will be redirected to secure payment gateway
+                  </Text>
                 </View>
               )}
             </View>
@@ -1559,6 +1657,16 @@ export default function EventRegistrationScreen() {
           </TouchableOpacity>
         )}
       </View>
+      </KeyboardAvoidingView>
+      {razorpayOptions && (
+        <RazorpayWebView
+          visible={razorpayVisible}
+          options={razorpayOptions}
+          onSuccess={handlePaymentSuccess}
+          onError={(e) => { setRazorpayVisible(false); Alert.alert('Payment Failed', e?.message || 'Payment failed'); }}
+          onDismiss={() => setRazorpayVisible(false)}
+        />
+      )}
     </View>
   );
 }

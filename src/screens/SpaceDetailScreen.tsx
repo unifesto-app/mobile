@@ -180,7 +180,7 @@ export default function SpaceDetailScreen({ route, onMembershipChange }: SpaceDe
     return (
       <View style={[styles.container, styles.centerContent, { backgroundColor: colors.background }]}>
         <Building2 size={48} color={colors.textMuted} strokeWidth={1.5} />
-        <Text style={[styles.errorText, { color: colors.textMuted }]}>Organization not found</Text>
+        <Text style={[styles.errorText, { color: colors.textMuted }]}>Space not found</Text>
       </View>
     );
   }
@@ -326,7 +326,7 @@ export default function SpaceDetailScreen({ route, onMembershipChange }: SpaceDe
         {subSpaces.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Sub-Organizations</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Sub-Spaces</Text>
               <Text style={[styles.sectionCount, { color: colors.textMuted }]}>{subSpaces.length}</Text>
             </View>
             <View style={styles.subSpacesList}>

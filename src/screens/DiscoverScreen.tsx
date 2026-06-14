@@ -256,13 +256,13 @@ export default function DiscoverScreen() {
         style={styles.featuredEventGradient}
       />
       <View style={styles.featuredEventContent}>
-        {/* Badges at top */}
+        {/* Price badge at top right */}
         <View style={styles.featuredEventBadgesTop}>
-          {event.category && (
-            <View style={styles.featuredEventBadge}>
-              <Text style={styles.featuredEventBadgeText}>{event.category}</Text>
-            </View>
-          )}
+          <View style={styles.featuredEventPriceBadge}>
+            <Text style={styles.featuredEventPriceBadgeText}>
+              {getEventCardPrice(event)}
+            </Text>
+          </View>
         </View>
 
         {/* Title and info at bottom */}
@@ -271,31 +271,28 @@ export default function DiscoverScreen() {
             {event.title}
           </Text>
           <View style={styles.featuredEventMeta}>
-            <View style={styles.featuredEventMetaItem}>
-              <Calendar size={12} color={colors.textMuted} strokeWidth={2} />
-              <Text style={styles.featuredEventMetaText}>
-                {new Date(event.startDateTime).toLocaleDateString('en-US', {
-                  month: 'short',
-                  day: 'numeric',
-                })}
-              </Text>
-            </View>
-            {event.capacity && (
-              <View style={styles.featuredEventMetaItem}>
-                <Users size={12} color={colors.textMuted} strokeWidth={2} />
+            <Text style={styles.featuredEventMetaText}>
+              {new Date(event.startDateTime).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+              })}
+            </Text>
+            {event.category && (
+              <>
+                <Text style={styles.featuredEventMetaText}>•</Text>
                 <Text style={styles.featuredEventMetaText}>
-                  {event.registeredCount || 0}/{event.capacity}
+                  {event.category}
                 </Text>
-              </View>
+              </>
             )}
-          </View>
-          <View style={styles.featuredEventFooter}>
-            <Text style={styles.featuredEventOrganizer} numberOfLines={1}>
-              {event.space?.name || 'Organizer'}
-            </Text>
-            <Text style={styles.featuredEventPrice}>
-              {getEventCardPrice(event)}
-            </Text>
+            {event.space?.name && (
+              <>
+                <Text style={styles.featuredEventMetaText}>•</Text>
+                <Text style={styles.featuredEventMetaText} numberOfLines={1}>
+                  {event.space.name}
+                </Text>
+              </>
+            )}
           </View>
         </View>
       </View>
@@ -327,11 +324,16 @@ export default function DiscoverScreen() {
         style={styles.featuredEventGradient}
       />
       <View style={styles.featuredEventContent}>
-        {/* Trending Badge at top */}
+        {/* Badges at top */}
         <View style={styles.featuredEventBadgesTop}>
           <View style={styles.trendingBadgeOnImage}>
             <TrendingUp size={8} color={colors.text} strokeWidth={2.5} />
             <Text style={styles.trendingBadgeText}>Trending</Text>
+          </View>
+          <View style={styles.featuredEventPriceBadge}>
+            <Text style={styles.featuredEventPriceBadgeText}>
+              {getEventCardPrice(event)}
+            </Text>
           </View>
         </View>
 
@@ -341,31 +343,28 @@ export default function DiscoverScreen() {
             {event.title}
           </Text>
           <View style={styles.featuredEventMeta}>
-            <View style={styles.featuredEventMetaItem}>
-              <Calendar size={12} color={colors.textMuted} strokeWidth={2} />
-              <Text style={styles.featuredEventMetaText}>
-                {new Date(event.startDateTime).toLocaleDateString('en-US', {
-                  month: 'short',
-                  day: 'numeric',
-                })}
-              </Text>
-            </View>
-            {event.capacity && (
-              <View style={styles.featuredEventMetaItem}>
-                <Users size={12} color={colors.textMuted} strokeWidth={2} />
+            <Text style={styles.featuredEventMetaText}>
+              {new Date(event.startDateTime).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+              })}
+            </Text>
+            {event.category && (
+              <>
+                <Text style={styles.featuredEventMetaText}>•</Text>
                 <Text style={styles.featuredEventMetaText}>
-                  {event.registeredCount || 0}/{event.capacity}
+                  {event.category}
                 </Text>
-              </View>
+              </>
             )}
-          </View>
-          <View style={styles.featuredEventFooter}>
-            <Text style={styles.featuredEventOrganizer} numberOfLines={1}>
-              {event.space?.name || 'Organizer'}
-            </Text>
-            <Text style={styles.featuredEventPrice}>
-              {getEventCardPrice(event)}
-            </Text>
+            {event.space?.name && (
+              <>
+                <Text style={styles.featuredEventMetaText}>•</Text>
+                <Text style={styles.featuredEventMetaText} numberOfLines={1}>
+                  {event.space.name}
+                </Text>
+              </>
+            )}
           </View>
         </View>
       </View>
@@ -457,10 +456,9 @@ export default function DiscoverScreen() {
       {/* Category Info Section - Right Side */}
       <View style={styles.categoryInfo}>
         <Text style={styles.categoryName} numberOfLines={2}>{category.name}</Text>
-        <View style={styles.categoryMeta}>
-          <Grid size={12} color={colors.textMuted} strokeWidth={2} />
-          <Text style={styles.categoryMetaText}>View events</Text>
-        </View>
+        <Text style={styles.categoryMetaText}>
+          {category.event_count || 0} events
+        </Text>
       </View>
     </TouchableOpacity>
   );
@@ -658,6 +656,7 @@ export default function DiscoverScreen() {
   },
   featuredEventBadgesTop: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     gap: spacing[2],
     flexWrap: 'wrap',
   },
@@ -679,6 +678,18 @@ export default function DiscoverScreen() {
     borderColor: 'rgba(255, 255, 255, 0.2)',
   },
   featuredEventBadgeText: {
+    fontSize: typography.fontSize.xs,
+    color: colors.text,
+    fontFamily: getFontFamily('bold'),
+  },
+  featuredEventPriceBadge: {
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[1],
+    borderRadius: borderRadius.md,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  featuredEventPriceBadgeText: {
     fontSize: typography.fontSize.xs,
     color: colors.text,
     fontFamily: getFontFamily('bold'),
@@ -711,12 +722,8 @@ export default function DiscoverScreen() {
   featuredEventMeta: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing[3],
-  },
-  featuredEventMetaItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
     gap: spacing[1],
+    flexWrap: 'wrap',
   },
   featuredEventMetaText: {
     fontSize: typography.fontSize.xs,
@@ -724,14 +731,8 @@ export default function DiscoverScreen() {
   },
   featuredEventFooter: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     alignItems: 'center',
-  },
-  featuredEventOrganizer: {
-    fontSize: typography.fontSize.xs,
-    color: colors.textMuted,
-    flex: 1,
-    marginRight: spacing[2],
   },
   featuredEventPrice: {
     fontSize: typography.fontSize.sm,
@@ -1340,11 +1341,6 @@ export default function DiscoverScreen() {
     fontSize: typography.fontSize.sm,
     fontFamily: getFontFamily('bold'),
     color: colors.text,
-  },
-  categoryMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[1],
   },
   categoryMetaText: {
     fontSize: typography.fontSize.xs,

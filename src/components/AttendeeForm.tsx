@@ -129,8 +129,18 @@ export default function AttendeeForm({
           </Text>
         )}
         {onFillFromProfile && index === 0 && (
-          <TouchableOpacity onPress={onFillFromProfile} style={{ paddingVertical: 4, paddingHorizontal: 10, backgroundColor: 'rgba(52,145,255,0.1)', borderRadius: 8 }}>
-            <Text style={{ color: colors.primary, fontSize: 12, fontFamily: getFontFamily('semibold') }}>Fill from Profile</Text>
+          <TouchableOpacity 
+            onPress={onFillFromProfile} 
+            style={{ 
+              paddingVertical: 6, 
+              paddingHorizontal: 12, 
+              backgroundColor: 'rgba(52,145,255,0.12)', 
+              borderRadius: 20,
+              borderWidth: 1,
+              borderColor: 'rgba(52,145,255,0.3)',
+            }}
+          >
+            <Text style={{ color: colors.primary, fontSize: 12, fontFamily: getFontFamily('semibold') }}>✦ Fill from Profile</Text>
           </TouchableOpacity>
         )}
       </View>

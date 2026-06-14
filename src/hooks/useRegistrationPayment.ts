@@ -38,43 +38,35 @@ export function useRegistrationPayment() {
       });
 
       // Step 2: Handle payment if required
-      if (registrationResponse.requiresPayment && registrationResponse.razorpayOrder) {
+      if (registrationResponse.razorpayOrderId) {
         console.log('Payment required, opening Razorpay...');
-        
-        // Get Razorpay config
-        const config = await getRazorpayConfig();
-
         // Open Razorpay checkout
         const paymentResponse = await openRazorpayCheckout({
-          orderId: registrationResponse.razorpayOrder.orderId,
-          amount: registrationResponse.razorpayOrder.amount,
-          currency: registrationResponse.razorpayOrder.currency,
+          orderId: registrationResponse.razorpayOrderId,
+          amount: registrationResponse.amount,
+          currency: registrationResponse.currency || 'INR',
           name: 'Unifesto',
           description: eventTitle,
           image: eventBanner,
           prefill: {
-            name: registrationData.attendees?.[0]?.name || '',
-            email: registrationData.attendees?.[0]?.email || '',
-            contact: registrationData.attendees?.[0]?.mobile || '',
+            name: (registrationData as any).attendees?.[0]?.name || '',
+            email: (registrationData as any).attendees?.[0]?.email || '',
+            contact: (registrationData as any).attendees?.[0]?.mobile || '',
           },
-          keyId: config.keyId,
+          keyId: registrationResponse.razorpayKeyId,
         });
-
         console.log('Payment successful, verifying...');
-
         // Step 3: Verify payment
         const verificationResponse = await verifyPayment(eventId, {
-          registrationId: registrationResponse.registrations[0]?.id || '',
+          registrationId: registrationResponse.registrationId || '',
           razorpayOrderId: paymentResponse.razorpay_order_id,
           razorpayPaymentId: paymentResponse.razorpay_payment_id,
           razorpaySignature: paymentResponse.razorpay_signature,
         });
-
         console.log('Payment verified successfully');
-
         return {
           success: true,
-          registrations: registrationResponse.registrations,
+          registrations: [],
           paymentId: verificationResponse.paymentId,
           requiresPayment: true,
         };

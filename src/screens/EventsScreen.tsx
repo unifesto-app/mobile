@@ -65,7 +65,7 @@ export default function EventsScreen() {
   },
   header: {
     paddingHorizontal: spacing[6],
-    paddingTop: spacing[6],
+    paddingTop: spacing[24],
     paddingBottom: spacing[4],
   },
   headerLabel: {
@@ -184,17 +184,24 @@ export default function EventsScreen() {
     paddingBottom: spacing[6],
   },
   eventCard: {
-    backgroundColor: colors.card,
-    borderRadius: borderRadius.xl,
-    marginBottom: spacing[4],
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing[4],
+    gap: spacing[4],
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderMuted,
+  },
+  eventImageContainer: {
+    width: 120,
+    aspectRatio: 4 / 3,
+    borderRadius: borderRadius.lg,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: colors.borderMuted,
-    ...shadows.md,
+    position: 'relative',
+    backgroundColor: colors.backgroundSecondary,
   },
   eventImage: {
     width: '100%',
-    aspectRatio: 4 / 3,
+    height: '100%',
     backgroundColor: colors.backgroundSecondary,
   },
   statusBadgeAbsolute: {
@@ -218,71 +225,62 @@ export default function EventsScreen() {
     textTransform: 'capitalize',
   },
   eventContent: {
-    padding: spacing[4],
+    flex: 1,
+    gap: spacing[2],
   },
   eventTitle: {
-    fontSize: typography.fontSize.lg,
+    fontSize: typography.fontSize.base,
     fontFamily: typography.fontFamily.primary,
     color: colors.text,
-    marginBottom: spacing[2],
+    marginBottom: spacing[1],
+    lineHeight: typography.fontSize.base * 1.3,
   },
   eventDescription: {
-    fontSize: typography.fontSize.sm,
+    fontSize: typography.fontSize.xs,
     color: colors.textSecondary,
-    marginBottom: spacing[3],
-    lineHeight: typography.lineHeight.relaxed * typography.fontSize.sm,
+    marginBottom: spacing[2],
+    lineHeight: typography.lineHeight.relaxed * typography.fontSize.xs,
   },
   eventImagePlaceholder: {
     width: '100%',
-    aspectRatio: 4 / 3,
-    borderRadius: borderRadius.lg,
+    height: '100%',
     overflow: 'hidden',
-    marginBottom: spacing[4],
   },
   eventImageGradient: {
     width: '100%',
     height: '100%',
   },
   badgesContainer: {
+    position: 'absolute',
+    bottom: spacing[2],
+    left: spacing[2],
+    right: spacing[2],
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing[2],
-    marginBottom: spacing[3],
+    gap: spacing[1],
   },
   categoryBadge: {
-    backgroundColor: 'rgba(52, 145, 255, 0.1)',
-    paddingHorizontal: spacing[3],
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    paddingHorizontal: spacing[2],
     paddingVertical: spacing[1],
-    borderRadius: borderRadius.md,
-    borderWidth: 1,
-    borderColor: 'rgba(52, 145, 255, 0.3)',
+    borderRadius: borderRadius.sm,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
   },
   categoryBadgeText: {
     fontSize: typography.fontSize.xs,
-    color: colors.primary,
+    color: colors.text,
     fontFamily: getFontFamily('bold'),
-  },
-  freeBadge: {
-    backgroundColor: 'rgba(34, 197, 94, 0.1)',
-    paddingHorizontal: spacing[3],
-    paddingVertical: spacing[1],
-    borderRadius: borderRadius.md,
-    borderWidth: 1,
-    borderColor: 'rgba(34, 197, 94, 0.3)',
   },
   freeBadgeText: {
     fontSize: typography.fontSize.xs,
-    color: '#22c55e',
+    color: colors.text,
     fontFamily: getFontFamily('bold'),
   },
   eventFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: spacing[3],
-    paddingTop: spacing[3],
-    borderTopWidth: 1,
-    borderTopColor: colors.borderMuted,
+    marginTop: spacing[1],
   },
   organizerText: {
     flex: 1,
@@ -304,17 +302,19 @@ export default function EventsScreen() {
     marginBottom: spacing[2],
   },
   eventMeta: {
-    gap: spacing[2],
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[1],
+    flexWrap: 'wrap',
   },
   detailRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing[2],
+    gap: spacing[1],
   },
   detailText: {
-    fontSize: typography.fontSize.sm,
+    fontSize: typography.fontSize.xs,
     color: colors.textMuted,
-    flex: 1,
   },
   emptyContainer: {
     alignItems: 'center',
@@ -436,22 +436,16 @@ export default function EventsScreen() {
 
   const renderSkeletonCard = () => (
     <View style={styles.eventCard}>
-      <Skeleton width="100%" height={200} borderRadius={0} />
+      <Skeleton width={120} height={90} borderRadius={borderRadius.lg} />
       <View style={styles.eventContent}>
-        <View style={{ flexDirection: 'row', gap: spacing[2], marginBottom: spacing[3] }}>
-          <Skeleton width={80} height={24} borderRadius={borderRadius.md} />
-          <Skeleton width={50} height={24} borderRadius={borderRadius.md} />
+        <Skeleton width="90%" height={18} borderRadius={borderRadius.md} style={{ marginBottom: spacing[2] }} />
+        <View style={{ gap: spacing[1], marginBottom: spacing[2] }}>
+          <Skeleton width={100} height={12} borderRadius={borderRadius.sm} />
+          <Skeleton width={120} height={12} borderRadius={borderRadius.sm} />
         </View>
-        <Skeleton width="90%" height={24} borderRadius={borderRadius.md} style={{ marginBottom: spacing[2] }} />
-        <Skeleton width="100%" height={16} borderRadius={borderRadius.sm} style={{ marginBottom: spacing[1] }} />
-        <Skeleton width="80%" height={16} borderRadius={borderRadius.sm} style={{ marginBottom: spacing[4] }} />
-        <View style={{ gap: spacing[2], marginBottom: spacing[4] }}>
-          <Skeleton width={120} height={14} borderRadius={borderRadius.sm} />
-          <Skeleton width={150} height={14} borderRadius={borderRadius.sm} />
-        </View>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingTop: spacing[3], borderTopWidth: 1, borderTopColor: colors.borderMuted }}>
-          <Skeleton width={100} height={14} borderRadius={borderRadius.sm} />
-          <Skeleton width={60} height={14} borderRadius={borderRadius.sm} />
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+          <Skeleton width={80} height={12} borderRadius={borderRadius.sm} />
+          <Skeleton width={50} height={12} borderRadius={borderRadius.sm} />
         </View>
       </View>
     </View>
@@ -461,70 +455,59 @@ export default function EventsScreen() {
     <TouchableOpacity
       style={styles.eventCard}
       onPress={() => router.push(`/event/${item.slug || item.id}`)}
-      activeOpacity={0.9}
+      activeOpacity={0.7}
     >
-      {/* Event Image */}
-      {item.coverImageUrl ? (
-        <Image
-          source={{ uri: item.coverImageUrl }}
-          style={styles.eventImage}
-          resizeMode="cover"
-        />
-      ) : (
-        <View style={styles.eventImagePlaceholder}>
-          <LinearGradient
-            colors={['#3491ff', '#0062ff']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.eventImageGradient}
+      {/* Event Image - Left Side */}
+      <View style={styles.eventImageContainer}>
+        {item.coverImageUrl ? (
+          <Image
+            source={{ uri: item.coverImageUrl }}
+            style={styles.eventImage}
+            resizeMode="cover"
           />
-        </View>
-      )}
+        ) : (
+          <View style={styles.eventImagePlaceholder}>
+            <LinearGradient
+              colors={['#3491ff', '#0062ff']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.eventImageGradient}
+            />
+          </View>
+        )}
+      </View>
       
+      {/* Event Content - Right Side */}
       <View style={styles.eventContent}>
-        {/* Category and Free Badge */}
-        <View style={styles.badgesContainer}>
-          {item.category && (
-            <View style={styles.categoryBadge}>
-              <Text style={styles.categoryBadgeText}>{item.category}</Text>
-            </View>
-          )}
-          {item.isFree && (
-            <View style={styles.freeBadge}>
-              <Text style={styles.freeBadgeText}>Free</Text>
-            </View>
-          )}
-        </View>
-        
         <Text style={styles.eventTitle} numberOfLines={2}>
           {item.title}
         </Text>
         
-        {item.description && (
-          <Text style={styles.eventDescription} numberOfLines={2}>
-            {item.description}
-          </Text>
-        )}
-        
         <View style={styles.eventMeta}>
-          <View style={styles.detailRow}>
-            <Calendar size={14} color={colors.textMuted} strokeWidth={2} />
-            <Text style={styles.detailText}>
-              {new Date(item.startDateTime).toLocaleDateString('en-US', { 
-                month: 'short', 
-                day: 'numeric',
-                year: 'numeric'
-              })}
-            </Text>
-          </View>
+          <Text style={styles.detailText}>
+            {new Date(item.startDateTime).toLocaleDateString('en-US', { 
+              month: 'short', 
+              day: 'numeric',
+              year: 'numeric'
+            })}
+          </Text>
           
           {(item.venueName || item.city) && (
-            <View style={styles.detailRow}>
-              <MapPin size={14} color={colors.textMuted} strokeWidth={2} />
+            <>
+              <Text style={styles.detailText}>•</Text>
               <Text style={styles.detailText} numberOfLines={1}>
                 {item.venueName || item.city}
               </Text>
-            </View>
+            </>
+          )}
+          
+          {item.category && (
+            <>
+              <Text style={styles.detailText}>•</Text>
+              <Text style={styles.detailText}>
+                {item.category}
+              </Text>
+            </>
           )}
         </View>
         
@@ -545,21 +528,6 @@ export default function EventsScreen() {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <GradientText style={styles.headerLabel}>
-          DISCOVER
-        </GradientText>
-        <Text style={styles.headerTitle}>All Events</Text>
-        {selectedCategory !== 'All' && (
-          <TouchableOpacity
-            onPress={() => setSelectedCategory('All')}
-            style={styles.clearFilterButton}
-          >
-            <Text style={styles.clearFilterText}>
-              Viewing: {selectedCategory}
-            </Text>
-            <X size={16} color={colors.primary} strokeWidth={2} />
-          </TouchableOpacity>
-        )}
       </View>
 
       {/* Search Bar */}
