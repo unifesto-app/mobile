@@ -77,7 +77,7 @@ export default function SpaceDetailScreen({ route, onMembershipChange }: SpaceDe
       }
       
       // Load sub-spaces
-      promises.push(getSubSpaces(spaceId));
+      promises.push(getSubSpaces(spaceId).catch(() => ({ spaces: [] })));
       
       const [eventsData, parentSpaceData, subSpacesData] = await Promise.all(promises);
       
@@ -271,6 +271,22 @@ export default function SpaceDetailScreen({ route, onMembershipChange }: SpaceDe
           </View>
         )}
 
+        {/* Organiser/Creator */}
+        {space.creator && (
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Organisers</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing[3], backgroundColor: colors.card, padding: spacing[4], borderRadius: borderRadius.xl }}>
+              <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={{ color: '#fff', fontWeight: '700', fontSize: 18 }}>{(space.creator.fullName || space.creator.username || 'U')[0].toUpperCase()}</Text>
+              </View>
+              <View>
+                <Text style={{ color: colors.text, fontWeight: '600' }}>{space.creator.fullName || space.creator.username}</Text>
+                {space.creator.username && <Text style={{ color: colors.textMuted, fontSize: 12 }}>@{space.creator.username}</Text>}
+              </View>
+            </View>
+          </View>
+        )}
+
         {/* Website Link */}
         {(space.websiteUrl || space.website_url) && (
           <View style={styles.section}>
@@ -436,23 +452,23 @@ export default function SpaceDetailScreen({ route, onMembershipChange }: SpaceDe
       </ScrollView>
 
       {/* Floating Join Button - Only show if user is logged in and NOT a member */}
-      {user && !isMember && (
-        <View style={styles.floatingButtonContainer}>
-          <TouchableOpacity 
-            style={[
-              styles.joinButton,
-              joiningLoading && styles.joinButtonDisabled,
-            ]}
-            activeOpacity={0.8}
-            onPress={handleJoinLeave}
-            disabled={joiningLoading}
-          >
-            <LinearGradient
-              colors={brandGradient}
-              start={brandGradientStart}
-              end={brandGradientEnd}
-              style={styles.joinButtonGradient}
-            >
+      <View style={styles.floatingButtonContainer}>
+        <TouchableOpacity
+          style={[styles.joinButton, joiningLoading && styles.joinButtonDisabled]}
+          activeOpacity={0.8}
+          onPress={handleJoinLeave}
+          disabled={joiningLoading}
+        >
+          {isMember ? (
+            <View style={[styles.joinButtonGradient, { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.borderMuted }]}>
+              {joiningLoading ? (
+                <ActivityIndicator size="small" color={colors.textMuted} />
+              ) : (
+                <Text style={[styles.joinButtonText, { color: colors.textMuted }]}>Leave Space</Text>
+              )}
+            </View>
+          ) : (
+            <LinearGradient colors={brandGradient} start={brandGradientStart} end={brandGradientEnd} style={styles.joinButtonGradient}>
               {joiningLoading ? (
                 <ActivityIndicator size="small" color={colors.text} />
               ) : (
@@ -462,9 +478,9 @@ export default function SpaceDetailScreen({ route, onMembershipChange }: SpaceDe
                 </>
               )}
             </LinearGradient>
-          </TouchableOpacity>
-        </View>
-      )}
+          )}
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }

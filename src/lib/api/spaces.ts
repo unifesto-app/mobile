@@ -451,7 +451,7 @@ export async function getSpaceEvents(
   spaceId: string,
   page: number = 1,
   limit: number = 20
-): Promise<{ events: Event[]; pagination: any }> {
+): Promise<{ events: any[]; pagination: any }> {
   try {
     const queryParams = new URLSearchParams({
       page: page.toString(),

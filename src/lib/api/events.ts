@@ -161,8 +161,7 @@ export function getEventCardPrice(event: { isFree?: boolean; ticketTypes?: Ticke
   if (event.isFree === false) {
     return 'Paid';
   }
-  
-  // Default
+
   return 'Free';
 }
 
