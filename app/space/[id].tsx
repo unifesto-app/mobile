@@ -13,6 +13,7 @@ import {
   Pressable,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { Host, Menu, Button } from '@expo/ui/swift-ui';
 
 import { useTheme } from '../../src/context/ThemeContext';
 import { useAuth } from '../../src/context/AuthContext';
@@ -154,52 +155,38 @@ export default function SpaceDetail() {
             color: activeTheme === 'dark' ? '#ffffff' : '#000000',
           },
           headerRight: () => (
-            <View style={styles.headerRight}>
-              {/* Leave Button - Only show if user is a member */}
-              {user && isMember && (
-                <>
-                  <TouchableOpacity
-                    onPress={handleJoinLeave}
-                    disabled={loading}
-                    style={styles.leaveButton}
-                    activeOpacity={0.7}
-                  >
-                    {loading ? (
-                      <ActivityIndicator size="small" color="#EF4444" />
-                    ) : (
-                      <Text style={styles.leaveText}>Leave</Text>
-                    )}
-                  </TouchableOpacity>
-                  <View style={dynamicStyles.divider} />
-                </>
-              )}
-
-              {/* Share Button */}
-              <TouchableOpacity
-                onPress={handleShare}
-                style={styles.iconButton}
-                activeOpacity={0.7}
-              >
-                <Ionicons
-                  name="share-outline"
-                  size={24}
-                  color='#ffffff'
-                />
-              </TouchableOpacity>
-
-              {/* More Options Button */}
-              <TouchableOpacity
-                onPress={handleMore}
-                style={styles.iconButton}
-                activeOpacity={0.7}
-              >
-                <Ionicons
-                  name="ellipsis-horizontal"
-                  size={24}
-                  color='#ffffff'
-                />
-              </TouchableOpacity>
-            </View>
+            <Host matchContents>
+              <View style={styles.headerRight}>
+                <TouchableOpacity
+                  onPress={handleShare}
+                  style={styles.iconButton}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="share-outline" size={24} color='#ffffff' />
+                </TouchableOpacity>
+                <Menu label="More" systemImage="ellipsis.circle">
+                  {user && isMember && (
+                    <Button
+                      label="Leave Space"
+                      systemImage="arrow.right.square"
+                      role="destructive"
+                      onPress={handleJoinLeave}
+                    />
+                  )}
+                  <Button
+                    label="Copy Link"
+                    systemImage="link"
+                    onPress={handleCopyLink}
+                  />
+                  <Button
+                    label="Report Space"
+                    systemImage="flag"
+                    role="destructive"
+                    onPress={handleReport}
+                  />
+                </Menu>
+              </View>
+            </Host>
           ),
         }}
       />
