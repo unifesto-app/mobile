@@ -286,8 +286,6 @@ const styles = StyleSheet.create({
   leaveButton: {
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 6,
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
     minWidth: 60,
     alignItems: 'center',
     justifyContent: 'center',
