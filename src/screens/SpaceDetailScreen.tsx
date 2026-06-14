@@ -452,35 +452,7 @@ export default function SpaceDetailScreen({ route, onMembershipChange }: SpaceDe
       </ScrollView>
 
       {/* Floating Join Button - Only show if user is logged in and NOT a member */}
-      <View style={styles.floatingButtonContainer}>
-        <TouchableOpacity
-          style={[styles.joinButton, joiningLoading && styles.joinButtonDisabled]}
-          activeOpacity={0.8}
-          onPress={handleJoinLeave}
-          disabled={joiningLoading}
-        >
-          {isMember ? (
-            <View style={[styles.joinButtonGradient, { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.borderMuted }]}>
-              {joiningLoading ? (
-                <ActivityIndicator size="small" color={colors.textMuted} />
-              ) : (
-                <Text style={[styles.joinButtonText, { color: colors.textMuted }]}>Leave Space</Text>
-              )}
-            </View>
-          ) : (
-            <LinearGradient colors={brandGradient} start={brandGradientStart} end={brandGradientEnd} style={styles.joinButtonGradient}>
-              {joiningLoading ? (
-                <ActivityIndicator size="small" color={colors.text} />
-              ) : (
-                <>
-                  <Users size={20} color={colors.text} strokeWidth={2.5} />
-                  <Text style={[styles.joinButtonText, { color: colors.text }]}>Join Space</Text>
-                </>
-              )}
-            </LinearGradient>
-          )}
-        </TouchableOpacity>
-      </View>
+
     </View>
   );
 }
