@@ -242,12 +242,6 @@ export default function SpaceDetailScreen({ route, onMembershipChange }: SpaceDe
               <Text style={[styles.spaceName, { color: colors.text }]}>{space.name}</Text>
               
               <View style={styles.metaRow}>
-                {space.type && (
-                  <>
-                    <Text style={[styles.metaText, { color: colors.textMuted }]}>{space.type}</Text>
-                    <Text style={[styles.metaDot, { color: colors.textMuted }]}>•</Text>
-                  </>
-                )}
                 {space.city && (
                   <>
                     <Text style={[styles.metaText, { color: colors.textMuted }]}>
