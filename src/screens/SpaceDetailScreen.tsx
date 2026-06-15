@@ -268,14 +268,13 @@ export default function SpaceDetailScreen({ route, onMembershipChange }: SpaceDe
         {/* Organiser/Creator */}
         {space.creator && (
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Organisers</Text>
+            <Text style={[styles.organiserTitle, { color: colors.text }]}>Organisers</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing[3], backgroundColor: colors.card, padding: spacing[4], borderRadius: borderRadius.xl }}>
               <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' }}>
                 <Text style={{ color: '#fff', fontWeight: '700', fontSize: 18 }}>{(space.creator.fullName || space.creator.username || 'U')[0].toUpperCase()}</Text>
               </View>
               <View>
                 <Text style={{ color: colors.text, fontWeight: '600' }}>{space.creator.fullName || space.creator.username}</Text>
-                {space.creator.username && <Text style={{ color: colors.textMuted, fontSize: 12 }}>@{space.creator.username}</Text>}
               </View>
             </View>
           </View>
@@ -414,9 +413,9 @@ export default function SpaceDetailScreen({ route, onMembershipChange }: SpaceDe
                         />
                       ) : (
                         <LinearGradient
-                          colors={['#667eea', '#764ba2']}
-                          start={{ x: 0, y: 0 }}
-                          end={{ x: 1, y: 1 }}
+                          colors={brandGradient}
+                          start={brandGradientStart}
+                          end={brandGradientEnd}
                           style={styles.eventImage}
                         />
                       )}
@@ -545,6 +544,11 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.xl,
     fontFamily: getFontFamily('bold'),
   },
+  organiserTitle: {
+    fontSize: typography.fontSize.base,
+    fontFamily: getFontFamily('bold'),
+    paddingBottom: spacing[2]
+  },
   sectionCount: {
     fontSize: typography.fontSize.base,
     fontFamily: getFontFamily('bold'),
@@ -627,8 +631,8 @@ const styles = StyleSheet.create({
     ...shadows.sm,
   },
   eventImageContainer: {
-    width: 120,
-    height: 120,
+    width: 160,
+    aspectRatio: 4 / 3,
   },
   eventImage: {
     width: '100%',

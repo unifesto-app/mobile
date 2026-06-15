@@ -17,7 +17,7 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { MenuView } from '@react-native-menu/menu';
 import { Ionicons } from '@expo/vector-icons';
-import { ChevronRight, LogIn } from 'lucide-react-native';
+import { Clock, MapPin, Calendar, Users, ChevronRight, LogIn } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import GradientText from '../components/GradientText';
 import Footer from '../components/Footer';
@@ -102,12 +102,7 @@ export default function EventDetailScreen() {
   eventTitle: {
     fontSize: typography.fontSize['3xl'],
     fontFamily: typography.fontFamily.primary,
-    marginBottom: spacing[3],
     lineHeight: typography.fontSize['3xl'] * 1.2,
-  },
-  organizerText: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
   },
   infoCard: {
     marginBottom: spacing[6],
@@ -352,9 +347,29 @@ export default function EventDetailScreen() {
     marginBottom: spacing[6],
     borderWidth: 1,
     borderColor: colors.borderMuted,
+    gap: spacing[3],
+  },
+  parentEventLogo: {
+    width: 48,
+    height: 48,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  parentEventLogoImage: {
+    width: 48,
+    height: 48,
+    borderRadius: borderRadius.md,
+  },
+  parentEventLogoText: {
+    fontSize: typography.fontSize.xl,
+    fontFamily: typography.fontFamily.bold,
+    color: colors.background,
   },
   parentEventContent: {
     flex: 1,
+    justifyContent: 'center',
   },
   parentEventLabel: {
     fontSize: typography.fontSize.xs,
@@ -832,13 +847,9 @@ export default function EventDetailScreen() {
           }))) as any);
         }
         
-        // Load additional info (public data) - non-blocking
-        getEventAdditionalInfo(eventData.id).then(additionalInfo => {
-          setAgenda(additionalInfo.agenda || []);
-          setSpeakers(additionalInfo.speakers || []);
-          setPrizes(additionalInfo.prizes || []);
-          setFaqs(additionalInfo.faqs || []);
-        }).catch(() => {});
+        // Use agenda/speakers from event data directly
+        if (eventData.agenda) setAgenda(eventData.agenda as any);
+        if (eventData.speakers) setSpeakers(eventData.speakers as any);
         
         // Check if user is registered
         if (user) {
@@ -1006,17 +1017,17 @@ export default function EventDetailScreen() {
             <Text style={styles.sectionTitle}>Event schedule</Text>
             {agenda.length > 0 ? (
               <View style={styles.agendaList}>
-                {agenda.map((item) => (
+                {agenda.map((item: any) => (
                   <View key={item.id} style={styles.agendaItem}>
                     <View style={styles.agendaTimeContainer}>
                       <Clock size={16} color={colors.primary} strokeWidth={2} />
                       <Text style={styles.agendaTime}>
-                        {new Date(item.start_time).toLocaleTimeString('en-US', {
+                        {new Date(item.startTime || item.start_time).toLocaleTimeString('en-US', {
                           hour: 'numeric',
                           minute: '2-digit',
                           hour12: true
                         })}
-                        {item.end_time && ` - ${new Date(item.end_time).toLocaleTimeString('en-US', {
+                        {(item.endTime || item.end_time) && ` - ${new Date(item.endTime || item.end_time).toLocaleTimeString('en-US', {
                           hour: 'numeric',
                           minute: '2-digit',
                           hour12: true
@@ -1028,10 +1039,10 @@ export default function EventDetailScreen() {
                       {item.description && (
                         <Text style={styles.agendaDescription}>{item.description}</Text>
                       )}
-                      {item.location && (
+                      {(item.location || item.speakerName) && (
                         <View style={styles.agendaLocation}>
                           <MapPin size={12} color={colors.textMuted} strokeWidth={2} />
-                          <Text style={styles.agendaLocationText}>{item.location}</Text>
+                          <Text style={styles.agendaLocationText}>{item.location || item.speakerName}</Text>
                         </View>
                       )}
                     </View>
@@ -1050,11 +1061,11 @@ export default function EventDetailScreen() {
             <Text style={styles.sectionTitle}>Featured speakers</Text>
             {speakers.length > 0 ? (
               <View style={styles.speakersList}>
-                {speakers.map((speaker) => (
+                {speakers.map((speaker: any) => (
                   <View key={speaker.id} style={styles.speakerCard}>
-                    {speaker.profile_image_url ? (
+                    {(speaker.profile_image_url || speaker.avatarUrl) ? (
                       <Image
-                        source={{ uri: speaker.profile_image_url }}
+                        source={{ uri: speaker.profile_image_url || speaker.avatarUrl }}
                         style={styles.speakerImage}
                         resizeMode="cover"
                       />
@@ -1067,13 +1078,13 @@ export default function EventDetailScreen() {
                     )}
                     <View style={styles.speakerInfo}>
                       <Text style={styles.speakerName}>{speaker.name}</Text>
-                      {speaker.title && (
-                        <Text style={styles.speakerTitle}>{speaker.title}</Text>
+                      {(speaker.title || speaker.designation) && (
+                        <Text style={styles.speakerTitle}>{speaker.title || speaker.designation}{(speaker.company) ? ` · ${speaker.company}` : ''}</Text>
                       )}
                       {speaker.bio && (
                         <Text style={styles.speakerBio} numberOfLines={3}>{speaker.bio}</Text>
                       )}
-                      {speaker.is_featured && (
+                      {((speaker.is_featured || speaker.isFeatured) || speaker.isFeatured) && (
                         <View style={styles.featuredBadge}>
                           <Text style={styles.featuredText}>Featured Speaker</Text>
                         </View>
@@ -1192,6 +1203,19 @@ export default function EventDetailScreen() {
               onPress={() => router.push(`/space/${event.spaceId}`)}
               activeOpacity={0.7}
             >
+              {event.space.logoUrl ? (
+                <Image
+                  source={{ uri: event.space.logoUrl }}
+                  style={styles.parentEventLogoImage}
+                  resizeMode="cover"
+                />
+              ) : (
+                <View style={styles.parentEventLogo}>
+                  <Text style={styles.parentEventLogoText}>
+                    {event.space.name.charAt(0).toUpperCase()}
+                  </Text>
+                </View>
+              )}
               <View style={styles.parentEventContent}>
                 <Text style={styles.parentEventLabel}>ORGANIZED BY</Text>
                 <Text style={styles.parentEventTitle}>{event.space.name}</Text>
@@ -1206,7 +1230,6 @@ export default function EventDetailScreen() {
               <Text style={styles.categoryText}>{event.category}</Text>
             </View>
             <GradientText style={styles.eventTitle}>{event.title}</GradientText>
-            <Text style={styles.organizerText}>{event.space?.name || 'Event Organizer'}</Text>
           </View>
 
           {/* Event Info */}
@@ -1230,12 +1253,6 @@ export default function EventDetailScreen() {
               </Text>
               <Text style={styles.infoDivider}>•</Text>
               <Text style={styles.infoText}>{event.venueName || event.city || 'TBA'}</Text>
-              {event.capacity && (
-                <>
-                  <Text style={styles.infoDivider}>•</Text>
-                  <Text style={styles.infoText}>{event.capacity} attendees</Text>
-                </>
-              )}
             </View>
           </View>
 

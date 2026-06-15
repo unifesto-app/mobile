@@ -422,11 +422,11 @@ export default function DiscoverScreen() {
               </>
             )}
             <Text style={styles.spaceStackStatText}>
-              {space.member_count || 0} members
+              {space.member_count || space._count?.userRoles || 0} members
             </Text>
             <Text style={styles.spaceStackStatDot}>•</Text>
             <Text style={styles.spaceStackStatText}>
-              {space.event_count || 0} events
+              {space.event_count || space._count?.events || 0} events
             </Text>
           </View>
         </View>
