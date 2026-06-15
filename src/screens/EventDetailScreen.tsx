@@ -17,7 +17,7 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { MenuView } from '@react-native-menu/menu';
 import { Ionicons } from '@expo/vector-icons';
-import { Calendar, Clock, MapPin, Users, Tag, ChevronRight, ExternalLink, Share2, LogIn } from 'lucide-react-native';
+import { ChevronRight, LogIn } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import GradientText from '../components/GradientText';
 import Footer from '../components/Footer';
@@ -110,41 +110,22 @@ export default function EventDetailScreen() {
     color: colors.textSecondary,
   },
   infoCard: {
-    backgroundColor: colors.card,
-    borderRadius: borderRadius.xl,
-    padding: spacing[6],
-    marginBottom: spacing[8],
-    borderWidth: 1,
-    borderColor: colors.borderMuted,
-    gap: spacing[5],
-    ...shadows.md,
+    marginBottom: spacing[6],
   },
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing[4],
+    flexWrap: 'wrap',
+    gap: spacing[2],
   },
-  infoIconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: borderRadius.md,
-    backgroundColor: 'rgba(52, 145, 255, 0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  infoContent: {
-    flex: 1,
-  },
-  infoLabel: {
-    fontSize: typography.fontSize.xs,
-    color: colors.textMuted,
-    marginBottom: spacing[1],
-    fontFamily: typography.fontFamily.bold,
-  },
-  infoValue: {
-    fontSize: typography.fontSize.base,
-    color: colors.text,
+  infoText: {
+    fontSize: typography.fontSize.sm,
+    color: colors.textSecondary,
     fontFamily: typography.fontFamily.primary,
+  },
+  infoDivider: {
+    fontSize: typography.fontSize.sm,
+    color: colors.textMuted,
   },
   tabsContainer: {
     marginBottom: spacing[6],
@@ -903,17 +884,9 @@ export default function EventDetailScreen() {
               <Skeleton width="60%" height={20} borderRadius={borderRadius.sm} />
             </View>
 
-            {/* Info Card Skeleton */}
+            {/* Info Skeleton */}
             <View style={styles.infoCard}>
-              {[1, 2, 3, 4].map((i) => (
-                <View key={i} style={styles.infoRow}>
-                  <Skeleton width={44} height={44} borderRadius={borderRadius.md} />
-                  <View style={styles.infoContent}>
-                    <Skeleton width={60} height={12} borderRadius={borderRadius.sm} style={{ marginBottom: spacing[1] }} />
-                    <Skeleton width="80%" height={16} borderRadius={borderRadius.sm} />
-                  </View>
-                </View>
-              ))}
+              <Skeleton width="100%" height={16} borderRadius={borderRadius.sm} />
             </View>
 
             {/* Tabs Skeleton */}
@@ -1020,7 +993,7 @@ export default function EventDetailScreen() {
       case 'overview':
         return (
           <View style={styles.tabContent}>
-            <Text style={styles.sectionTitle}>About This Event</Text>
+            <Text style={styles.sectionTitle}>About this event</Text>
             <Text style={styles.descriptionText}>
               {event.description || event.description || 'Join us for an amazing event filled with learning, networking, and fun.'}
             </Text>
@@ -1030,7 +1003,7 @@ export default function EventDetailScreen() {
       case 'agenda':
         return (
           <View style={styles.tabContent}>
-            <Text style={styles.sectionTitle}>Event Schedule</Text>
+            <Text style={styles.sectionTitle}>Event schedule</Text>
             {agenda.length > 0 ? (
               <View style={styles.agendaList}>
                 {agenda.map((item) => (
@@ -1074,7 +1047,7 @@ export default function EventDetailScreen() {
       case 'speakers':
         return (
           <View style={styles.tabContent}>
-            <Text style={styles.sectionTitle}>Featured Speakers</Text>
+            <Text style={styles.sectionTitle}>Featured speakers</Text>
             {speakers.length > 0 ? (
               <View style={styles.speakersList}>
                 {speakers.map((speaker) => (
@@ -1118,7 +1091,7 @@ export default function EventDetailScreen() {
       case 'rewards':
         return (
           <View style={styles.tabContent}>
-            <Text style={styles.sectionTitle}>Prizes & Incentives</Text>
+            <Text style={styles.sectionTitle}>Prizes & incentives</Text>
             {prizes.length > 0 ? (
               <View style={styles.prizesList}>
                 {prizes.map((prize) => (
@@ -1159,7 +1132,7 @@ export default function EventDetailScreen() {
       case 'faq':
         return (
           <View style={styles.tabContent}>
-            <Text style={styles.sectionTitle}>Frequently Asked Questions</Text>
+            <Text style={styles.sectionTitle}>Frequently asked questions</Text>
             {faqs.length > 0 ? (
               <View style={styles.faqList}>
                 {faqs.map((faq) => (
@@ -1236,62 +1209,34 @@ export default function EventDetailScreen() {
             <Text style={styles.organizerText}>{event.space?.name || 'Event Organizer'}</Text>
           </View>
 
-          {/* Event Info Card */}
+          {/* Event Info */}
           <View style={styles.infoCard}>
             <View style={styles.infoRow}>
-              <View style={styles.infoIconContainer}>
-                <Calendar size={20} color={colors.primary} strokeWidth={2} />
-              </View>
-              <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Date</Text>
-                <Text style={styles.infoValue}>
-                  {new Date(event.startDateTime).toLocaleDateString('en-US', {
-                    weekday: 'long',
-                    month: 'long',
-                    day: 'numeric',
-                    year: 'numeric'
-                  })}
-                </Text>
-              </View>
+              <Text style={styles.infoText}>
+                {new Date(event.startDateTime).toLocaleDateString('en-US', {
+                  weekday: 'long',
+                  month: 'long',
+                  day: 'numeric',
+                  year: 'numeric'
+                })}
+              </Text>
+              <Text style={styles.infoDivider}>•</Text>
+              <Text style={styles.infoText}>
+                {new Date(event.startDateTime).toLocaleTimeString('en-US', {
+                  hour: 'numeric',
+                  minute: '2-digit',
+                  hour12: true
+                })}
+              </Text>
+              <Text style={styles.infoDivider}>•</Text>
+              <Text style={styles.infoText}>{event.venueName || event.city || 'TBA'}</Text>
+              {event.capacity && (
+                <>
+                  <Text style={styles.infoDivider}>•</Text>
+                  <Text style={styles.infoText}>{event.capacity} attendees</Text>
+                </>
+              )}
             </View>
-
-            <View style={styles.infoRow}>
-              <View style={styles.infoIconContainer}>
-                <Clock size={20} color={colors.primary} strokeWidth={2} />
-              </View>
-              <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Time</Text>
-                <Text style={styles.infoValue}>
-                  {new Date(event.startDateTime).toLocaleTimeString('en-US', {
-                    hour: 'numeric',
-                    minute: '2-digit',
-                    hour12: true
-                  })}
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.infoRow}>
-              <View style={styles.infoIconContainer}>
-                <MapPin size={20} color={colors.primary} strokeWidth={2} />
-              </View>
-              <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Location</Text>
-                <Text style={styles.infoValue}>{event.venueName || event.city || 'TBA'}</Text>
-              </View>
-            </View>
-
-            {event.capacity && (
-              <View style={styles.infoRow}>
-                <View style={styles.infoIconContainer}>
-                  <Users size={20} color={colors.primary} strokeWidth={2} />
-                </View>
-                <View style={styles.infoContent}>
-                  <Text style={styles.infoLabel}>Capacity</Text>
-                  <Text style={styles.infoValue}>{event.capacity} attendees</Text>
-                </View>
-              </View>
-            )}
           </View>
 
           {/* Tabs */}
@@ -1342,7 +1287,7 @@ export default function EventDetailScreen() {
       {!isCompleted && (
         <View style={styles.bottomCTA}>
           <View style={styles.ctaInfo}>
-            <Text style={styles.ctaLabel}>Price</Text>
+            <Text style={styles.ctaLabel}>price</Text>
             <Text style={styles.ctaPrice}>
               {priceDisplay}
             </Text>

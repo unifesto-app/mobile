@@ -473,7 +473,8 @@ export async function getSpaceEvents(
       throw new Error(error.message || 'Failed to fetch space events');
     }
 
-    return response.json();
+    const result = await response.json();
+    return { events: result.data || result.events || [], pagination: result.pagination || {} };
   } catch (error) {
     throw error;
   }
