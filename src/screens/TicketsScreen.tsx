@@ -260,7 +260,7 @@ export default function TicketsScreen() {
         return;
       }
 
-      const allEvents = (response?.data || response?.events || []).map((r: any) => r.event ? { ...r.event, qrCode: r.qrCode, registrationId: r.id, status: r.status } : r);
+      const allEvents = (response?.data || response?.events || []).map((r: any) => r.event ? { ...r.event, qrCode: r.qrCode, registrationId: r.id, registrationStatus: r.status, paymentStatus: r.paymentStatus } : r);
 
       // Filter based on active tab
       const now = new Date();
@@ -314,7 +314,7 @@ export default function TicketsScreen() {
           pathname: '/ticket/[id]', 
           params: { 
             id: event.id, 
-            ticket: JSON.stringify(event)
+            ticket: JSON.stringify({ ...event, qrCode: event.qrCode })
           } 
         })}
         activeOpacity={0.9}
