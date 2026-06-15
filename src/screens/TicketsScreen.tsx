@@ -260,7 +260,7 @@ export default function TicketsScreen() {
         return;
       }
 
-      const allEvents = (response?.data || response?.events || []).map((r: any) => r.event || r);
+      const allEvents = (response?.data || response?.events || []).map((r: any) => r.event ? { ...r.event, qrCode: r.qrCode, registrationId: r.id, status: r.status } : r);
 
       // Filter based on active tab
       const now = new Date();

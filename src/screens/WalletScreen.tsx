@@ -970,8 +970,6 @@ export default function WalletScreen() {
     backgroundColor: colors.card,
     borderRadius: borderRadius.xl,
     padding: spacing[5],
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   statCardFull: {
     minWidth: '100%',
@@ -1004,8 +1002,6 @@ export default function WalletScreen() {
     alignItems: 'center',
     backgroundColor: colors.card,
     borderRadius: borderRadius.xl,
-    borderWidth: 1,
-    borderColor: colors.borderMuted,
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[4],
     ...shadows.sm,
@@ -1794,11 +1790,11 @@ export default function WalletScreen() {
           <View style={styles.section}>
             <View style={styles.statsGrid}>
               <View style={styles.statCard}>
-                <Text style={styles.statValue}>+{walletBalance.balance || 0}</Text>
+                <Text style={styles.statValue}>{walletBalance.balance || 0}</Text>
                 <Text style={styles.statLabel}>Total Earned</Text>
               </View>
               <View style={styles.statCard}>
-                <Text style={[styles.statValue, styles.statValueSpent]}>-0</Text>
+                <Text style={[styles.statValue, styles.statValueSpent]}>0</Text>
                 <Text style={styles.statLabel}>Total Spent</Text>
               </View>
               <View style={[styles.statCard, styles.statCardFull]}>

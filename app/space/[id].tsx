@@ -160,8 +160,6 @@ export default function SpaceDetail() {
     },
   });
 
-  console.log('activeTheme =', activeTheme);
-
   return (
     <>
       <Stack.Screen

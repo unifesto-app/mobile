@@ -29,7 +29,7 @@ export default function TicketDetail() {
           title: 'Your Ticket',
           headerShown: true,
           headerTransparent: true,
-          headerTintColor: '#ffffff',
+          headerTintColor: activeTheme === 'dark' ? '#ffffff' : '#000000',
           headerBackButtonDisplayMode: 'minimal',
           headerShadowVisible: false,
           headerTitleStyle: {

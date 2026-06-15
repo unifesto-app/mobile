@@ -10,7 +10,7 @@ export default function Tickets() {
     <>
       <Stack.Screen
         options={{
-          title: 'My Tickets',
+          title: 'Tickets',
           headerShown: true,
           headerTransparent: true,
           headerTintColor: colors.text,

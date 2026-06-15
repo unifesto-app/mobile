@@ -8,10 +8,9 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Calendar, Clock, MapPin, Download, Share2, QrCode } from 'lucide-react-native';
+import QRCode from 'react-native-qrcode-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 import GradientText from '../components/GradientText';
-import GradientButton from '../components/GradientButton';
 import Footer from '../components/Footer';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, typography, borderRadius, shadows, brandGradient } from '../theme';
@@ -48,64 +47,30 @@ export default function TicketDetailScreen({ route }: TicketDetailScreenProps) {
     padding: spacing[6],
   },
   titleSection: {
-    marginBottom: spacing[8],
+    marginBottom: spacing[6],
   },
   eventTitle: {
     fontSize: typography.fontSize['3xl'],
-    marginBottom: spacing[4],
+    marginBottom: spacing[3],
     lineHeight: typography.fontSize['3xl'] * 1.2,
     fontFamily: typography.fontFamily.primary,
   },
-  categoryBadge: {
-    backgroundColor: 'rgba(52, 145, 255, 0.15)',
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[2],
-    borderRadius: borderRadius.full,
-    alignSelf: 'flex-start',
-    borderWidth: 1,
-    borderColor: 'rgba(52, 145, 255, 0.3)',
-  },
-  categoryText: {
-    fontSize: typography.fontSize.sm,
-    color: colors.primary,
-    fontFamily: typography.fontFamily.bold,
-  },
-  detailsSection: {
-    backgroundColor: colors.card,
-    borderRadius: borderRadius.xl,
-    padding: spacing[6],
-    marginBottom: spacing[8],
-    borderWidth: 1,
-    borderColor: colors.borderMuted,
-    gap: spacing[5],
-    ...shadows.md,
-  },
-  detailRow: {
+  eventMetaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing[4],
+    flexWrap: 'wrap',
   },
-  detailIconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: borderRadius.md,
-    backgroundColor: 'rgba(52, 145, 255, 0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  detailContent: {
-    flex: 1,
-  },
-  detailLabel: {
-    fontSize: typography.fontSize.xs,
-    color: colors.textMuted,
-    marginBottom: spacing[1],
-    fontFamily: typography.fontFamily.bold,
-  },
-  detailValue: {
-    fontSize: typography.fontSize.base,
-    color: colors.text,
+  eventMetaText: {
+    fontSize: typography.fontSize.sm,
+    color: colors.textSecondary,
     fontFamily: typography.fontFamily.primary,
+    lineHeight: typography.fontSize.sm * 1.5,
+  },
+  eventMetaDivider: {
+    fontSize: typography.fontSize.sm,
+    color: colors.textMuted,
+    lineHeight: typography.fontSize.sm * 1.5,
+    marginHorizontal: spacing[2],
   },
   qrSection: {
     marginBottom: spacing[8],
@@ -121,7 +86,6 @@ export default function TicketDetailScreen({ route }: TicketDetailScreenProps) {
     borderRadius: borderRadius.xl,
     padding: spacing[8],
     alignItems: 'center',
-    borderWidth: 1,
     borderColor: colors.primary,
     ...shadows.lg,
   },
@@ -156,59 +120,12 @@ export default function TicketDetailScreen({ route }: TicketDetailScreenProps) {
     textAlign: 'center',
   },
   descriptionSection: {
-    marginBottom: spacing[8],
+    marginBottom: spacing[12],
   },
   descriptionText: {
     fontSize: typography.fontSize.base,
     color: colors.textSecondary,
     lineHeight: typography.lineHeight.relaxed * typography.fontSize.base,
-  },
-  actionsSection: {
-    flexDirection: 'row',
-    gap: spacing[4],
-    marginBottom: spacing[8],
-  },
-  actionButton: {
-    flex: 1,
-    borderRadius: borderRadius.full,
-    overflow: 'hidden',
-    backgroundColor: '#3491ff', // Fallback for Android
-    ...shadows.md,
-  },
-  actionButtonGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing[4],
-    gap: spacing[2],
-    minHeight: 44,
-    width: '100%',
-  },
-  actionButtonText: {
-    fontSize: typography.fontSize.base,
-    fontFamily: typography.fontFamily.primary,
-    fontWeight: '400',
-    color: '#000000',
-    lineHeight: typography.fontSize.base * 1.5,
-    includeFontPadding: false,
-    textAlignVertical: 'center',
-  },
-  actionButtonSecondary: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.card,
-    borderRadius: borderRadius.full,
-    paddingVertical: spacing[4],
-    gap: spacing[2],
-    borderWidth: 1,
-    borderColor: colors.primary,
-  },
-  actionButtonTextSecondary: {
-    fontSize: typography.fontSize.base,
-    fontFamily: typography.fontFamily.bold,
-    color: colors.primary,
   },
 });
 
@@ -237,8 +154,7 @@ export default function TicketDetailScreen({ route }: TicketDetailScreenProps) {
   // Format date and time
   const eventDate = ticketData.startDateTime ? new Date(ticketData.startDateTime) : new Date();
   const formattedDate = eventDate.toLocaleDateString('en-US', { 
-    weekday: 'long',
-    month: 'long', 
+    month: 'short',
     day: 'numeric', 
     year: 'numeric' 
   });
@@ -270,50 +186,25 @@ export default function TicketDetailScreen({ route }: TicketDetailScreenProps) {
         {/* Event Title */}
         <View style={styles.titleSection}>
           <GradientText style={styles.eventTitle}>{ticketData.title}</GradientText>
-          <View style={styles.categoryBadge}>
-            <Text style={styles.categoryText}>{category}</Text>
-          </View>
-        </View>
-
-        {/* Event Details */}
-        <View style={styles.detailsSection}>
-          <View style={styles.detailRow}>
-            <View style={styles.detailIconContainer}>
-              <Calendar size={20} color={colors.primary} strokeWidth={2} />
-            </View>
-            <View style={styles.detailContent}>
-              <Text style={styles.detailLabel}>Date</Text>
-              <Text style={styles.detailValue}>{formattedDate}</Text>
-            </View>
-          </View>
-
-          <View style={styles.detailRow}>
-            <View style={styles.detailIconContainer}>
-              <Clock size={20} color={colors.primary} strokeWidth={2} />
-            </View>
-            <View style={styles.detailContent}>
-              <Text style={styles.detailLabel}>Time</Text>
-              <Text style={styles.detailValue}>{formattedTime}</Text>
-            </View>
-          </View>
-
-          <View style={styles.detailRow}>
-            <View style={styles.detailIconContainer}>
-              <MapPin size={20} color={colors.primary} strokeWidth={2} />
-            </View>
-            <View style={styles.detailContent}>
-              <Text style={styles.detailLabel}>Location</Text>
-              <Text style={styles.detailValue}>{venue}</Text>
-            </View>
+          <View style={styles.eventMetaRow}>
+            <Text style={styles.eventMetaText}>{category}</Text>
+            <Text style={styles.eventMetaDivider}>•</Text>
+            <Text style={styles.eventMetaText}>{formattedDate} · {formattedTime}</Text>
+            <Text style={styles.eventMetaDivider}>•</Text>
+            <Text style={styles.eventMetaText}>{venue}</Text>
           </View>
         </View>
 
         {/* QR Code Section */}
         <View style={styles.qrSection}>
-          <Text style={styles.sectionTitle}>Your Ticket</Text>
           <View style={styles.qrCard}>
             <View style={styles.qrPlaceholder}>
-              <QrCode size={180} color={colors.background} strokeWidth={1.5} />
+              <QRCode
+                value={ticketData.qrCode || ticketData.id || 'UNIFESTO'}
+                size={180}
+                color={colors.background === '#000000' || colors.background === '#0a0a0a' ? '#ffffff' : '#000000'}
+                backgroundColor="transparent"
+              />
             </View>
             <View style={styles.ticketIdSection}>
               <Text style={styles.ticketIdLabel}>TICKET ID</Text>
@@ -332,26 +223,6 @@ export default function TicketDetailScreen({ route }: TicketDetailScreenProps) {
             <Text style={styles.descriptionText}>{ticketData.description}</Text>
           </View>
         )}
-
-        {/* Action Buttons */}
-        <View style={styles.actionsSection}>
-          <TouchableOpacity style={styles.actionButton} activeOpacity={0.7}>
-            <LinearGradient
-              colors={brandGradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.actionButtonGradient}
-            >
-              <Download size={20} color="#000000" strokeWidth={2} />
-              <Text style={styles.actionButtonText}>Download</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.actionButtonSecondary} activeOpacity={0.7}>
-            <Share2 size={20} color={colors.primary} strokeWidth={2} />
-            <Text style={styles.actionButtonTextSecondary}>Share</Text>
-          </TouchableOpacity>
-        </View>
 
         {/* Footer */}
         <Footer />
