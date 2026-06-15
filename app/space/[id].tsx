@@ -193,10 +193,20 @@ export default function SpaceDetail() {
                   ...(user && isMember ? [{
                     id: 'leave',
                     title: 'Leave Space',
+                    image: Platform.select({ ios: 'rectangle.portrait.and.arrow.right', android: 'ic_menu_close_clear_cancel' }),
                     attributes: { destructive: true },
                   }] : []),
-                  { id: 'copy', title: 'Copy Link' },
-                  { id: 'report', title: 'Report Space', attributes: { destructive: true } },
+                  {
+                    id: 'copy',
+                    title: 'Copy Link',
+                    image: Platform.select({ ios: 'link', android: 'ic_menu_share' }),
+                  },
+                  {
+                    id: 'report',
+                    title: 'Report Space',
+                    image: Platform.select({ ios: 'exclamationmark.bubble', android: 'ic_menu_report_image' }),
+                    attributes: { destructive: true },
+                  },
                 ]}
                 shouldOpenOnLongPress={false}
               >
