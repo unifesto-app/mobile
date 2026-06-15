@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { ActionSheetIOS } from 'react-native';
+import { ActionSheetIOS, Platform } from 'react-native';
 import {
   View,
   TouchableOpacity,
@@ -14,6 +14,7 @@ import {
   Pressable,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { MenuView } from '@react-native-menu/menu';
 
 
 import { useTheme } from '../../src/context/ThemeContext';
@@ -66,6 +67,27 @@ export default function SpaceDetail() {
 
   const handleMore = () => {
     setMenuVisible(true);
+  };
+
+  const showActionSheet = () => {
+    const options = user && isMember
+      ? ['Leave Space', 'Copy Link', 'Report Space', 'Cancel']
+      : ['Copy Link', 'Report Space', 'Cancel'];
+    const cancelIndex = options.length - 1;
+    const destructiveIndex = user && isMember ? 0 : 1;
+    ActionSheetIOS.showActionSheetWithOptions(
+      { options, destructiveButtonIndex: destructiveIndex, cancelButtonIndex: cancelIndex, title: space?.name },
+      (index) => {
+        if (user && isMember) {
+          if (index === 0) handleJoinLeave();
+          else if (index === 1) handleCopyLink();
+          else if (index === 2) handleReport();
+        } else {
+          if (index === 0) handleCopyLink();
+          else if (index === 1) handleReport();
+        }
+      }
+    );
   };
 
   const closeMenu = () => {
@@ -160,9 +182,28 @@ export default function SpaceDetail() {
               <TouchableOpacity onPress={handleShare} style={styles.iconButton} activeOpacity={0.7}>
                 <Ionicons name="share-outline" size={24} color='#ffffff' />
               </TouchableOpacity>
-              <TouchableOpacity onPress={showActionSheet} style={styles.iconButton} activeOpacity={0.7}>
-                <Ionicons name="ellipsis-horizontal" size={24} color='#ffffff' />
-              </TouchableOpacity>
+              <MenuView
+                title={space?.name || 'Options'}
+                onPressAction={({ nativeEvent }) => {
+                  if (nativeEvent.event === 'leave') handleJoinLeave();
+                  else if (nativeEvent.event === 'copy') handleCopyLink();
+                  else if (nativeEvent.event === 'report') handleReport();
+                }}
+                actions={[
+                  ...(user && isMember ? [{
+                    id: 'leave',
+                    title: '↩ Leave Space',
+                    attributes: { destructive: true },
+                  }] : []),
+                  { id: 'copy', title: '🔗 Copy Link' },
+                  { id: 'report', title: 'Report Space', attributes: { destructive: true } },
+                ]}
+                shouldOpenOnLongPress={false}
+              >
+                <TouchableOpacity style={styles.iconButton} activeOpacity={0.7}>
+                  <Ionicons name="ellipsis-horizontal" size={24} color='#ffffff' />
+                </TouchableOpacity>
+              </MenuView>
             </View>
           ),
         }}
