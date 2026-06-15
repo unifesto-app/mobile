@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Platform, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Image } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ArrowRight, Ticket, Calendar, Clock, MapPin, User } from 'lucide-react-native';
+import { ArrowRight, Ticket, Calendar, MapPin, User } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import CustomHeader from '../../src/components/CustomHeader';
 import GradientText from '../../src/components/GradientText';
@@ -12,7 +12,7 @@ import { useTheme } from '../../src/context/ThemeContext';
 import { useAuth } from '../../src/context/AuthContext';
 import { getProfile, Profile } from '../../src/lib/api/profile';
 import { getMyRegisteredEvents, Event } from '../../src/lib/api/events';
-import { getAllSpaces, getUserSpaces, Space } from '../../src/lib/api/spaces';
+import { getUserSpaces, Space } from '../../src/lib/api/spaces';
 
 // Space needed to clear the transparent gradient header
 const HEADER_TOP_OFFSET = 150;
@@ -149,6 +149,14 @@ export default function HomeTab() {
       gap: spacing[4],
       paddingBottom: spacing[3],
     },
+    spacesGrid: {
+      paddingHorizontal: spacing[6],
+      gap: spacing[3],
+    },
+    spacesRow: {
+      flexDirection: 'row',
+      gap: spacing[3],
+    },
     ticketCard: {
       width: 280,
       backgroundColor: colors.card,
@@ -156,11 +164,15 @@ export default function HomeTab() {
       borderWidth: 0.5,
       borderColor: colors.borderMuted,
       ...shadows.lg,
-      overflow: 'hidden',
+      overflow: 'visible',
+      position: 'relative',
     },
     ticketImageContainer: {
       width: '100%',
       aspectRatio: 4/3,
+      overflow: 'hidden',
+      borderTopLeftRadius: borderRadius.xl,
+      borderTopRightRadius: borderRadius.xl,
     },
     ticketCoverImage: {
       width: '100%',
@@ -188,13 +200,13 @@ export default function HomeTab() {
       fontFamily: getFontFamily('normal'),
     },
     dashedLineContainer: {
-      paddingHorizontal: spacing[3],
+      position: 'relative',
+      flexDirection: 'row',
+      alignItems: 'center',
+      height: 0,
     },
     dashedLine: {
-      height: 1,
-      borderStyle: 'dashed',
-      borderWidth: 1,
-      borderColor: colors.borderMuted,
+      display: 'none',
     },
     ticketBottom: {
       paddingHorizontal: spacing[4],
@@ -226,17 +238,16 @@ export default function HomeTab() {
       color: colors.primary,
       fontFamily: 'Courier',
     },
-    cutoutLeft: {
-      width: 20,
-      height: 20,
-      borderRadius: 10,
+    cutoutCenter: {
+      position: 'absolute',
+      top: -30,
+      left: '50%',
+      marginLeft: -20,
+      width: 50,
+      height: 50,
+      borderRadius: 25,
       backgroundColor: colors.background,
-    },
-    cutoutRight: {
-      width: 20,
-      height: 20,
-      borderRadius: 10,
-      backgroundColor: colors.background,
+      zIndex: 10,
     },
     emptyTicketsState: {
       alignItems: 'center',
@@ -283,6 +294,9 @@ export default function HomeTab() {
       aspectRatio: 4/3,
       backgroundColor: colors.background,
       flexShrink: 0,
+      borderRadius: borderRadius.lg,
+      overflow: 'hidden',
+      margin: spacing[3],
     },
     spaceImage: {
       width: '100%',
@@ -302,15 +316,18 @@ export default function HomeTab() {
     },
     spaceContent: {
       flex: 1,
-      padding: spacing[3],
+      paddingRight: spacing[3],
+      paddingVertical: spacing[3],
       gap: spacing[2],
       justifyContent: 'center',
+      alignItems: 'center',
     },
     spaceName: {
       fontSize: typography.fontSize.sm,
       color: colors.text,
       fontFamily: getFontFamily('semibold'),
       lineHeight: typography.fontSize.sm * 1.3,
+      textAlign: 'center',
     },
     spaceLocationRow: {
       flexDirection: 'row',
@@ -321,7 +338,7 @@ export default function HomeTab() {
       fontSize: typography.fontSize.xs,
       color: colors.textMuted,
       fontFamily: getFontFamily('normal'),
-      flex: 1,
+      textAlign: 'center',
     },
     spaceTypeContainer: {
       alignSelf: 'flex-start',
@@ -506,9 +523,18 @@ export default function HomeTab() {
       <TouchableOpacity
         key={event.id}
         style={styles.ticketCard}
-        onPress={() => router.push(`/event/${event.slug || event.id}`)}
+        onPress={() => router.push({ 
+          pathname: '/ticket/[id]', 
+          params: { 
+            id: event.id, 
+            ticket: JSON.stringify(event)
+          } 
+        })}
         activeOpacity={0.9}
       >
+        {/* Center cutout at top of card */}
+        <View style={styles.cutoutCenter} />
+        
         {/* Cover Image */}
         <View style={styles.ticketImageContainer}>
           {event.coverImageUrl ? (
@@ -518,16 +544,13 @@ export default function HomeTab() {
               <Text style={{ fontSize: 32, color: '#fff', fontFamily: getFontFamily('bold') }}>{event.title?.[0] || 'E'}</Text>
             </LinearGradient>
           )}
-          <View style={{ position: 'absolute', top: 10, right: 10, backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 }}>
-            <Text style={{ color: '#fff', fontSize: 11, fontFamily: getFontFamily('semibold') }}>{typeLabel}</Text>
-          </View>
-        </View>
-
-        {/* Dashed Line with cutouts */}
-        <View style={styles.dashedLineContainer}>
-          <View style={styles.cutoutLeft} />
-          <View style={styles.dashedLine} />
-          <View style={styles.cutoutRight} />
+          {/* Bottom gradient dissolve */}
+          <LinearGradient
+            colors={['transparent', colors.card]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 60 }}
+          />
         </View>
 
         {/* Bottom Section */}
@@ -550,27 +573,15 @@ export default function HomeTab() {
 
   const renderSkeletonTicketCard = () => (
     <View style={styles.ticketCard}>
-      <View style={styles.ticketTop}>
-        <View style={styles.ticketMainContent}>
-          <Skeleton width={70} height={70} borderRadius={borderRadius.md} />
-          <View style={{ flex: 1, gap: spacing[3] }}>
-            <Skeleton width="90%" height={16} borderRadius={borderRadius.sm} />
-            <Skeleton width="70%" height={12} borderRadius={borderRadius.sm} />
-            <Skeleton width="60%" height={12} borderRadius={borderRadius.sm} />
-          </View>
-        </View>
-      </View>
-      <View style={styles.dashedLineContainer}>
-        <View style={styles.dashedLine} />
+      <View style={styles.cutoutCenter} />
+      <View style={styles.ticketImageContainer}>
+        <Skeleton width={280} height={210} borderRadius={0} />
       </View>
       <View style={styles.ticketBottom}>
-        <View style={styles.ticketBottomRow}>
-          <Skeleton width={80} height={12} borderRadius={borderRadius.sm} />
-          <Skeleton width={100} height={12} borderRadius={borderRadius.sm} />
-        </View>
+        <Skeleton width={240} height={16} borderRadius={borderRadius.sm} style={{ marginBottom: spacing[3] }} />
+        <Skeleton width={180} height={12} borderRadius={borderRadius.sm} style={{ marginBottom: spacing[2] }} />
+        <Skeleton width={150} height={12} borderRadius={borderRadius.sm} />
       </View>
-      <View style={styles.cutoutLeft} />
-      <View style={styles.cutoutRight} />
     </View>
   );
 
@@ -601,11 +612,6 @@ export default function HomeTab() {
               <Text style={styles.spaceLocation} numberOfLines={1}>{space.city}{space.state ? `, ${space.state}` : ''}</Text>
             </View>
           )}
-          <View style={{ flexDirection: 'row', gap: 4, flexWrap: 'wrap', marginTop: 4 }}>
-            <View style={styles.spaceTypeContainer}>
-              <Text style={styles.spaceType}>{space._count?.userRoles || space.member_count || 0} members</Text>
-            </View>
-          </View>
         </View>
       </TouchableOpacity>
     );
@@ -756,25 +762,43 @@ export default function HomeTab() {
               <Text style={styles.sectionArrow}> {'>'}</Text>
             </TouchableOpacity>
             {isLoadingSpaces ? (
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.horizontalScroll}
-              >
-                {[1, 2, 3].map((i) => (
-                  <View key={`skeleton-space-${i}`}>
-                    {renderSkeletonSpaceCard()}
-                  </View>
+              <View style={styles.spacesGrid}>
+                {[0, 1].map((rowIndex) => (
+                  <ScrollView
+                    key={`skeleton-row-${rowIndex}`}
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.spacesRow}
+                  >
+                    {[1, 2, 3].map((i) => (
+                      <View key={`skeleton-space-${rowIndex}-${i}`}>
+                        {renderSkeletonSpaceCard()}
+                      </View>
+                    ))}
+                  </ScrollView>
                 ))}
-              </ScrollView>
+              </View>
             ) : spaces.length > 0 ? (
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.horizontalScroll}
-              >
-                {spaces.map(renderSpaceCard)}
-              </ScrollView>
+              <View style={styles.spacesGrid}>
+                {/* First Row */}
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.spacesRow}
+                >
+                  {spaces.slice(0, Math.ceil(spaces.length / 2)).map(renderSpaceCard)}
+                </ScrollView>
+                {/* Second Row - only if there are more than half */}
+                {spaces.length > Math.ceil(spaces.length / 2) && (
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.spacesRow}
+                  >
+                    {spaces.slice(Math.ceil(spaces.length / 2)).map(renderSpaceCard)}
+                  </ScrollView>
+                )}
+              </View>
             ) : (
               <View style={styles.emptySpacesState}>
                 <MapPin size={48} color={colors.textMuted} strokeWidth={1.5} />

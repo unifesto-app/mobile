@@ -21,7 +21,7 @@ import { getMyRegisteredEvents } from '../lib/api/events';
 import { getFontFamily } from '../theme/fontHelpers';
 
 
-const HEADER_TOP_OFFSET = Platform.OS === 'ios' ? spacing[12] : 20;
+const HEADER_TOP_OFFSET = 120;
 
 const TABS = ['Upcoming', 'Past'];
 
@@ -78,47 +78,43 @@ export default function TicketsScreen() {
     gap: spacing[6],
   },
   ticketCard: {
+    width: '100%',
     backgroundColor: colors.card,
-    borderRadius: borderRadius.lg,
+    borderRadius: borderRadius.xl,
     borderWidth: 0.5,
-    borderColor: colors.primary,
+    borderColor: colors.borderMuted,
     ...shadows.lg,
+    overflow: 'visible',
+    position: 'relative',
     marginBottom: spacing[4],
   },
-  ticketTop: {
-    paddingHorizontal: spacing[6],
-    paddingTop: spacing[6],
-    paddingBottom: spacing[5],
+  ticketImageContainer: {
+    width: '100%',
+    aspectRatio: 4/3,
+    overflow: 'hidden',
+    borderTopLeftRadius: borderRadius.xl,
+    borderTopRightRadius: borderRadius.xl,
   },
-  ticketMainContent: {
-    flexDirection: 'row',
-    gap: spacing[4],
-  },
-  ticketImage: {
-    width: 80,
-    height: 80,
-    borderRadius: borderRadius.md,
-    backgroundColor: colors.primary,
+  ticketCoverImage: {
+    width: '100%',
+    height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  ticketImagePlaceholder: {
-    fontSize: typography.fontSize['3xl'],
-    fontFamily: typography.fontFamily.bold,
-    color: '#000000',
-  },
-  ticketTextContent: {
-    flex: 1,
+  ticketTop: {
+    paddingHorizontal: spacing[4],
+    paddingTop: spacing[3],
+    paddingBottom: spacing[4],
   },
   ticketTitle: {
-    fontSize: typography.fontSize.xl,
+    fontSize: typography.fontSize.base,
     color: colors.text,
-    marginBottom: spacing[4],
-    lineHeight: typography.fontSize.xl * 1.3,
-    fontFamily: typography.fontFamily.primary,
+    lineHeight: typography.fontSize.base * 1.3,
+    fontFamily: getFontFamily('semibold'),
+    marginBottom: spacing[2],
   },
   ticketInfo: {
-    gap: spacing[3],
+    gap: spacing[2],
   },
   ticketInfoRow: {
     flexDirection: 'row',
@@ -126,72 +122,20 @@ export default function TicketsScreen() {
     gap: spacing[2],
   },
   ticketInfoText: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
-    fontFamily: typography.fontFamily.bold,
-  },
-  dashedLineContainer: {
-    paddingHorizontal: spacing[4],
-  },
-  dashedLine: {
-    height: 1,
-    borderStyle: 'dashed',
-    borderWidth: 1,
-    borderColor: colors.borderMuted,
-  },
-  ticketBottom: {
-    paddingHorizontal: spacing[6],
-    paddingTop: spacing[5],
-    paddingBottom: spacing[6],
-  },
-  ticketBottomRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-  },
-  ticketLabel: {
     fontSize: typography.fontSize.xs,
-    color: colors.textMuted,
-    fontFamily: typography.fontFamily.bold,
-    letterSpacing: typography.letterSpacing.wider,
-    marginBottom: spacing[1],
+    color: colors.textSecondary,
+    fontFamily: getFontFamily('normal'),
   },
-  ticketValue: {
-    fontSize: typography.fontSize.sm,
-    color: colors.text,
-    fontFamily: typography.fontFamily.bold,
-  },
-  ticketCodeContainer: {
-    alignItems: 'flex-end',
-  },
-  ticketCode: {
-    fontSize: typography.fontSize.sm,
-    color: colors.primary,
-    fontFamily: 'Courier',
-  },
-  cutoutLeft: {
+  cutoutCenter: {
     position: 'absolute',
-    left: -13,
-    top: '50%',
-    marginTop: -12,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    top: -25,
+    left: '50%',
+    marginLeft: -25,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     backgroundColor: colors.background,
-    borderRightWidth: 1,
-    borderRightColor: colors.primary,
-  },
-  cutoutRight: {
-    position: 'absolute',
-    right: -13,
-    top: '50%',
-    marginTop: -12,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: colors.background,
-    borderLeftWidth: 1,
-    borderLeftColor: colors.primary,
+    zIndex: 10,
   },
   emptyState: {
     alignItems: 'center',
@@ -316,7 +260,7 @@ export default function TicketsScreen() {
         return;
       }
 
-      const allEvents = response?.events || [];
+      const allEvents = (response?.data || response?.events || []).map((r: any) => r.event || r);
 
       // Filter based on active tab
       const now = new Date();
@@ -356,64 +300,63 @@ export default function TicketsScreen() {
     }
   };
 
-  const renderTicket = (ticket: any) => (
-    <TouchableOpacity
-      key={ticket.id}
-      style={styles.ticketCard}
-      onPress={() => router.push({ pathname: '/ticket/[id]', params: { id: ticket.id, ticket: JSON.stringify(ticket) } })}
-      activeOpacity={0.9}
-    >
-      {/* Top Section */}
-      <View style={styles.ticketTop}>
-        <View style={styles.ticketMainContent}>
-          <View style={styles.ticketImage}>
-            <Text style={styles.ticketImagePlaceholder}>
-              {(ticket.category || 'E').charAt(0)}
-            </Text>
-          </View>
-          <View style={styles.ticketTextContent}>
-            <Text style={styles.ticketTitle} numberOfLines={1}>
-              {ticket.title}
-            </Text>
-            <View style={styles.ticketInfo}>
-              <View style={styles.ticketInfoRow}>
-                <Calendar size={14} color={colors.primary} strokeWidth={2} />
-                <Text style={styles.ticketInfoText}>{ticket.date}</Text>
-              </View>
-              <View style={styles.ticketInfoRow}>
-                <Clock size={14} color={colors.primary} strokeWidth={2} />
-                <Text style={styles.ticketInfoText}>{ticket.time}</Text>
-              </View>
+  const renderTicket = (event: any) => {
+    const eventDate = new Date(event.startDateTime);
+    const formattedDate = eventDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const formattedTime = eventDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    const venue = event.venueName || event.city || 'TBA';
+
+    return (
+      <TouchableOpacity
+        key={event.id}
+        style={styles.ticketCard}
+        onPress={() => router.push({ 
+          pathname: '/ticket/[id]', 
+          params: { 
+            id: event.id, 
+            ticket: JSON.stringify(event)
+          } 
+        })}
+        activeOpacity={0.9}
+      >
+        {/* Center cutout at top of card */}
+        <View style={styles.cutoutCenter} />
+        
+        {/* Cover Image */}
+        <View style={styles.ticketImageContainer}>
+          {event.coverImageUrl ? (
+            <Image source={{ uri: event.coverImageUrl }} style={styles.ticketCoverImage} resizeMode="cover" />
+          ) : (
+            <LinearGradient colors={brandGradient} start={brandGradientStart} end={brandGradientEnd} style={styles.ticketCoverImage}>
+              <Text style={{ fontSize: 32, color: '#fff', fontFamily: getFontFamily('bold') }}>{event.title?.[0] || 'E'}</Text>
+            </LinearGradient>
+          )}
+          {/* Bottom gradient dissolve */}
+          <LinearGradient
+            colors={['transparent', colors.card]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 60 }}
+          />
+        </View>
+
+        {/* Bottom Section */}
+        <View style={styles.ticketTop}>
+          <Text style={styles.ticketTitle} numberOfLines={2}>{event.title}</Text>
+          <View style={styles.ticketInfo}>
+            <View style={styles.ticketInfoRow}>
+              <Calendar size={12} color={colors.primary} strokeWidth={2} />
+              <Text style={styles.ticketInfoText}>{formattedDate} · {formattedTime}</Text>
+            </View>
+            <View style={styles.ticketInfoRow}>
+              <Clock size={12} color={colors.primary} strokeWidth={2} />
+              <Text style={styles.ticketInfoText} numberOfLines={1}>{venue}</Text>
             </View>
           </View>
         </View>
-      </View>
-
-      {/* Dashed Line */}
-      <View style={styles.dashedLineContainer}>
-        <View style={styles.dashedLine} />
-      </View>
-
-      {/* Bottom Section */}
-      <View style={styles.ticketBottom}>
-        <View style={styles.ticketBottomRow}>
-          <View>
-            <Text style={styles.ticketLabel}>CATEGORY</Text>
-            <Text style={styles.ticketValue}>{ticket.category}</Text>
-          </View>
-          <View style={styles.ticketCodeContainer}>
-            <Text style={styles.ticketLabel}>TICKET ID</Text>
-            <Text style={styles.ticketCode}>#{ticket.id.toUpperCase()}</Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Left Cutout */}
-      <View style={styles.cutoutLeft} />
-      {/* Right Cutout */}
-      <View style={styles.cutoutRight} />
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   // Show sign-in prompt if not authenticated
   if (!user) {
@@ -511,7 +454,11 @@ export default function TicketsScreen() {
 
       {/* Tickets List */}
       <View style={styles.ticketsListContent}>
-        {tickets.length > 0 ? (
+        {loading ? (
+          <View style={styles.emptyState}>
+            <ActivityIndicator size="large" color={colors.primary} />
+          </View>
+        ) : tickets.length > 0 ? (
           <>
             {tickets.map(renderTicket)}
             {loadingMore && (

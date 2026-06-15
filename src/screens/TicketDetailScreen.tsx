@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Calendar, Clock, MapPin, User, Download, Share2, QrCode } from 'lucide-react-native';
+import { Calendar, Clock, MapPin, Download, Share2, QrCode } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import GradientText from '../components/GradientText';
 import GradientButton from '../components/GradientButton';
@@ -210,32 +210,39 @@ export default function TicketDetailScreen({ route }: TicketDetailScreenProps) {
     fontFamily: typography.fontFamily.bold,
     color: colors.primary,
   },
-  attendeeSection: {
-    backgroundColor: colors.card,
-    borderRadius: borderRadius.lg,
-    padding: spacing[4],
-    borderWidth: 1,
-    borderColor: colors.borderMuted,
-  },
-  attendeeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[3],
-  },
-  attendeeText: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
-  },
 });
 
   const router = useRouter();
   const { ticket } = route.params;
+  
+  // Parse ticket if it's a string
+  const ticketData = typeof ticket === 'string' ? JSON.parse(ticket) : ticket;
+  
+  // Format date and time
+  const eventDate = ticketData.startDateTime ? new Date(ticketData.startDateTime) : new Date();
+  const formattedDate = eventDate.toLocaleDateString('en-US', { 
+    weekday: 'long',
+    month: 'long', 
+    day: 'numeric', 
+    year: 'numeric' 
+  });
+  const formattedTime = eventDate.toLocaleTimeString('en-US', { 
+    hour: 'numeric', 
+    minute: '2-digit', 
+    hour12: true 
+  });
+  const venue = ticketData.venueName || ticketData.city || 'TBA';
+  const category = ticketData.category || ticketData.type || 'General';
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Hero Image */}
       <View style={styles.heroContainer}>
-        <Image source={{ uri: ticket.image }} style={styles.heroImage} />
+        {ticketData.coverImageUrl ? (
+          <Image source={{ uri: ticketData.coverImageUrl }} style={styles.heroImage} resizeMode="cover" />
+        ) : (
+          <LinearGradient colors={brandGradient} style={styles.heroImage} />
+        )}
         <LinearGradient
           colors={['transparent', 'rgba(0, 0, 0, 0.9)']}
           style={styles.heroGradient}
@@ -246,9 +253,9 @@ export default function TicketDetailScreen({ route }: TicketDetailScreenProps) {
       <View style={styles.content}>
         {/* Event Title */}
         <View style={styles.titleSection}>
-          <GradientText style={styles.eventTitle}>{ticket.title}</GradientText>
+          <GradientText style={styles.eventTitle}>{ticketData.title}</GradientText>
           <View style={styles.categoryBadge}>
-            <Text style={styles.categoryText}>{ticket.category}</Text>
+            <Text style={styles.categoryText}>{category}</Text>
           </View>
         </View>
 
@@ -260,7 +267,7 @@ export default function TicketDetailScreen({ route }: TicketDetailScreenProps) {
             </View>
             <View style={styles.detailContent}>
               <Text style={styles.detailLabel}>Date</Text>
-              <Text style={styles.detailValue}>{ticket.date}</Text>
+              <Text style={styles.detailValue}>{formattedDate}</Text>
             </View>
           </View>
 
@@ -270,7 +277,7 @@ export default function TicketDetailScreen({ route }: TicketDetailScreenProps) {
             </View>
             <View style={styles.detailContent}>
               <Text style={styles.detailLabel}>Time</Text>
-              <Text style={styles.detailValue}>{ticket.time}</Text>
+              <Text style={styles.detailValue}>{formattedTime}</Text>
             </View>
           </View>
 
@@ -280,7 +287,7 @@ export default function TicketDetailScreen({ route }: TicketDetailScreenProps) {
             </View>
             <View style={styles.detailContent}>
               <Text style={styles.detailLabel}>Location</Text>
-              <Text style={styles.detailValue}>{ticket.location}</Text>
+              <Text style={styles.detailValue}>{venue}</Text>
             </View>
           </View>
         </View>
@@ -290,11 +297,11 @@ export default function TicketDetailScreen({ route }: TicketDetailScreenProps) {
           <Text style={styles.sectionTitle}>Your Ticket</Text>
           <View style={styles.qrCard}>
             <View style={styles.qrPlaceholder}>
-              <QrCode size={180} color={colors.text} strokeWidth={1.5} />
+              <QrCode size={180} color={colors.background} strokeWidth={1.5} />
             </View>
             <View style={styles.ticketIdSection}>
               <Text style={styles.ticketIdLabel}>TICKET ID</Text>
-              <Text style={styles.ticketId}>#{ticket.id}</Text>
+              <Text style={styles.ticketId}>#{ticketData.id.substring(0, 8).toUpperCase()}</Text>
             </View>
             <Text style={styles.qrInstruction}>
               Show this QR code at the venue for entry
@@ -303,10 +310,10 @@ export default function TicketDetailScreen({ route }: TicketDetailScreenProps) {
         </View>
 
         {/* Description */}
-        {ticket.description && (
+        {ticketData.description && (
           <View style={styles.descriptionSection}>
             <Text style={styles.sectionTitle}>About Event</Text>
-            <Text style={styles.descriptionText}>{ticket.description}</Text>
+            <Text style={styles.descriptionText}>{ticketData.description}</Text>
           </View>
         )}
 
@@ -314,13 +321,13 @@ export default function TicketDetailScreen({ route }: TicketDetailScreenProps) {
         <View style={styles.actionsSection}>
           <TouchableOpacity style={styles.actionButton} activeOpacity={0.7}>
             <LinearGradient
-              colors={['#3491ff', '#0062ff']}
+              colors={brandGradient}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.actionButtonGradient}
             >
               <Download size={20} color="#000000" strokeWidth={2} />
-              <Text style={styles.actionButtonText}>Download Ticket</Text>
+              <Text style={styles.actionButtonText}>Download</Text>
             </LinearGradient>
           </TouchableOpacity>
 
@@ -328,14 +335,6 @@ export default function TicketDetailScreen({ route }: TicketDetailScreenProps) {
             <Share2 size={20} color={colors.primary} strokeWidth={2} />
             <Text style={styles.actionButtonTextSecondary}>Share</Text>
           </TouchableOpacity>
-        </View>
-
-        {/* Attendee Info */}
-        <View style={styles.attendeeSection}>
-          <View style={styles.attendeeRow}>
-            <User size={18} color={colors.textMuted} strokeWidth={2} />
-            <Text style={styles.attendeeText}>Registered to: Abhinavtej Reddy</Text>
-          </View>
         </View>
 
         {/* Footer */}
