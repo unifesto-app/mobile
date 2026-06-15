@@ -150,43 +150,27 @@ export default function HomeTab() {
       paddingBottom: spacing[3],
     },
     ticketCard: {
-      width: 300,
+      width: 280,
       backgroundColor: colors.card,
-      borderRadius: borderRadius.lg,
+      borderRadius: borderRadius.xl,
       borderWidth: 0.5,
-      borderColor: colors.primary,
+      borderColor: colors.borderMuted,
       ...shadows.lg,
-      marginRight: spacing[4],
+      overflow: 'hidden',
     },
-    ticketTop: {
-      paddingHorizontal: spacing[5],
-      paddingTop: spacing[5],
-      paddingBottom: spacing[4],
+    ticketImageContainer: {
+      width: '100%',
+      aspectRatio: 4/3,
     },
-    ticketMainContent: {
-      flexDirection: 'row',
-      gap: spacing[3],
-    },
-    ticketImage: {
-      width: 70,
-      height: 70,
-      borderRadius: borderRadius.md,
-      backgroundColor: colors.primary,
+    ticketCoverImage: {
+      width: '100%',
+      height: '100%',
       alignItems: 'center',
       justifyContent: 'center',
-    },
-    ticketImagePlaceholder: {
-      fontSize: typography.fontSize['2xl'],
-      fontFamily: getFontFamily('bold'),
-      color: colors.text,
-    },
-    ticketTextContent: {
-      flex: 1,
     },
     ticketTitle: {
       fontSize: typography.fontSize.base,
       color: colors.text,
-      marginBottom: spacing[3],
       lineHeight: typography.fontSize.base * 1.3,
       fontFamily: getFontFamily('semibold'),
     },
@@ -213,9 +197,9 @@ export default function HomeTab() {
       borderColor: colors.borderMuted,
     },
     ticketBottom: {
-      paddingHorizontal: spacing[5],
-      paddingTop: spacing[4],
-      paddingBottom: spacing[5],
+      paddingHorizontal: spacing[4],
+      paddingTop: spacing[3],
+      paddingBottom: spacing[4],
     },
     ticketBottomRow: {
       flexDirection: 'row',
@@ -243,28 +227,16 @@ export default function HomeTab() {
       fontFamily: 'Courier',
     },
     cutoutLeft: {
-      position: 'absolute',
-      left: -13,
-      top: '50%',
-      marginTop: -12,
-      width: 24,
-      height: 24,
-      borderRadius: 12,
+      width: 20,
+      height: 20,
+      borderRadius: 10,
       backgroundColor: colors.background,
-      borderRightWidth: 1,
-      borderRightColor: colors.primary,
     },
     cutoutRight: {
-      position: 'absolute',
-      right: -13,
-      top: '50%',
-      marginTop: -12,
-      width: 24,
-      height: 24,
-      borderRadius: 12,
+      width: 20,
+      height: 20,
+      borderRadius: 10,
       backgroundColor: colors.background,
-      borderLeftWidth: 1,
-      borderLeftColor: colors.primary,
     },
     emptyTicketsState: {
       alignItems: 'center',
@@ -296,18 +268,21 @@ export default function HomeTab() {
       fontFamily: getFontFamily('bold'),
     },
     spaceCard: {
-      width: 160,
+      width: 280,
       backgroundColor: colors.card,
-      borderRadius: borderRadius.lg,
+      borderRadius: borderRadius.xl,
       borderWidth: 0.5,
       borderColor: colors.borderMuted,
       ...shadows.md,
       overflow: 'hidden',
+      flexDirection: 'row',
+      alignItems: 'center',
     },
     spaceImageContainer: {
-      width: '100%',
-      height: 140,
+      width: 105,
+      aspectRatio: 4/3,
       backgroundColor: colors.background,
+      flexShrink: 0,
     },
     spaceImage: {
       width: '100%',
@@ -326,14 +301,16 @@ export default function HomeTab() {
       color: colors.text,
     },
     spaceContent: {
-      padding: spacing[4],
+      flex: 1,
+      padding: spacing[3],
       gap: spacing[2],
+      justifyContent: 'center',
     },
     spaceName: {
-      fontSize: typography.fontSize.base,
+      fontSize: typography.fontSize.sm,
       color: colors.text,
       fontFamily: getFontFamily('semibold'),
-      lineHeight: typography.fontSize.base * 1.3,
+      lineHeight: typography.fontSize.sm * 1.3,
     },
     spaceLocationRow: {
       flexDirection: 'row',
@@ -518,75 +495,55 @@ export default function HomeTab() {
     return 'User';
   };
 
-  const renderTicketCard = (event: Event) => {
+  const renderTicketCard = (event: any) => {
     const eventDate = new Date(event.startDateTime);
-    const formattedDate = eventDate.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-    const formattedTime = eventDate.toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-    });
+    const formattedDate = eventDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const formattedTime = eventDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    const venue = event.venueName || event.city || 'TBA';
+    const typeLabel = event.type === 'IN_PERSON' ? 'In Person' : event.type === 'ONLINE' ? 'Online' : event.category || 'Event';
 
     return (
       <TouchableOpacity
         key={event.id}
         style={styles.ticketCard}
-        onPress={() => router.push(`/event/${event.id}`)}
+        onPress={() => router.push(`/event/${event.slug || event.id}`)}
         activeOpacity={0.9}
       >
-        {/* Top Section */}
-        <View style={styles.ticketTop}>
-          <View style={styles.ticketMainContent}>
-            <View style={styles.ticketImage}>
-              <Text style={styles.ticketImagePlaceholder}>
-                {(event.category || 'E').charAt(0)}
-              </Text>
-            </View>
-            <View style={styles.ticketTextContent}>
-              <Text style={styles.ticketTitle} numberOfLines={2}>
-                {event.title}
-              </Text>
-              <View style={styles.ticketInfo}>
-                <View style={styles.ticketInfoRow}>
-                  <Calendar size={12} color={colors.primary} strokeWidth={2} />
-                  <Text style={styles.ticketInfoText}>{formattedDate}</Text>
-                </View>
-                <View style={styles.ticketInfoRow}>
-                  <Clock size={12} color={colors.primary} strokeWidth={2} />
-                  <Text style={styles.ticketInfoText}>{formattedTime}</Text>
-                </View>
-              </View>
-            </View>
+        {/* Cover Image */}
+        <View style={styles.ticketImageContainer}>
+          {event.coverImageUrl ? (
+            <Image source={{ uri: event.coverImageUrl }} style={styles.ticketCoverImage} resizeMode="cover" />
+          ) : (
+            <LinearGradient colors={brandGradient} start={brandGradientStart} end={brandGradientEnd} style={styles.ticketCoverImage}>
+              <Text style={{ fontSize: 32, color: '#fff', fontFamily: getFontFamily('bold') }}>{event.title?.[0] || 'E'}</Text>
+            </LinearGradient>
+          )}
+          <View style={{ position: 'absolute', top: 10, right: 10, backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 }}>
+            <Text style={{ color: '#fff', fontSize: 11, fontFamily: getFontFamily('semibold') }}>{typeLabel}</Text>
           </View>
         </View>
 
-        {/* Dashed Line */}
+        {/* Dashed Line with cutouts */}
         <View style={styles.dashedLineContainer}>
+          <View style={styles.cutoutLeft} />
           <View style={styles.dashedLine} />
+          <View style={styles.cutoutRight} />
         </View>
 
         {/* Bottom Section */}
         <View style={styles.ticketBottom}>
-          <View style={styles.ticketBottomRow}>
-            <View>
-              <Text style={styles.ticketLabel}>CATEGORY</Text>
-              <Text style={styles.ticketValue}>{event.category || 'Event'}</Text>
+          <Text style={styles.ticketTitle} numberOfLines={2}>{event.title}</Text>
+          <View style={{ gap: 6, marginTop: 8 }}>
+            <View style={styles.ticketInfoRow}>
+              <Calendar size={12} color={colors.primary} strokeWidth={2} />
+              <Text style={styles.ticketInfoText}>{formattedDate} · {formattedTime}</Text>
             </View>
-            <View style={styles.ticketCodeContainer}>
-              <Text style={styles.ticketLabel}>EVENT ID</Text>
-              <Text style={styles.ticketCode}>#{event.id.substring(0, 8).toUpperCase()}</Text>
+            <View style={styles.ticketInfoRow}>
+              <MapPin size={12} color={colors.primary} strokeWidth={2} />
+              <Text style={styles.ticketInfoText} numberOfLines={1}>{venue}</Text>
             </View>
           </View>
         </View>
-
-        {/* Left Cutout */}
-        <View style={styles.cutoutLeft} />
-        {/* Right Cutout */}
-        <View style={styles.cutoutRight} />
       </TouchableOpacity>
     );
   };
@@ -625,38 +582,30 @@ export default function HomeTab() {
         onPress={() => router.push(`/space/${space.id}`)}
         activeOpacity={0.9}
       >
+        {/* Left - Image 4:3 */}
         <View style={styles.spaceImageContainer}>
-          {space.logo_url ? (
-            <Image
-              source={{ uri: space.logo_url }}
-              style={styles.spaceImage}
-              resizeMode="cover"
-            />
+          {(space.logoUrl || space.logo_url) ? (
+            <Image source={{ uri: (space.logoUrl || space.logo_url) as string }} style={styles.spaceImage} resizeMode="cover" />
           ) : (
-            <View style={styles.spaceImagePlaceholder}>
-              <Text style={styles.spaceImagePlaceholderText}>
-                {space.name.charAt(0).toUpperCase()}
-              </Text>
-            </View>
+            <LinearGradient colors={brandGradient} start={brandGradientStart} end={brandGradientEnd} style={[styles.spaceImage, { alignItems: 'center', justifyContent: 'center' }]}>
+              <Text style={styles.spaceImagePlaceholderText}>{space.name.charAt(0).toUpperCase()}</Text>
+            </LinearGradient>
           )}
         </View>
+        {/* Right - Content */}
         <View style={styles.spaceContent}>
-          <Text style={styles.spaceName} numberOfLines={2}>
-            {space.name}
-          </Text>
+          <Text style={styles.spaceName} numberOfLines={2}>{space.name}</Text>
           {space.city && (
             <View style={styles.spaceLocationRow}>
-              <MapPin size={12} color={colors.textMuted} strokeWidth={2} />
-              <Text style={styles.spaceLocation} numberOfLines={1}>
-                {space.city}{space.state ? `, ${space.state}` : ''}
-              </Text>
+              <MapPin size={11} color={colors.textMuted} strokeWidth={2} />
+              <Text style={styles.spaceLocation} numberOfLines={1}>{space.city}{space.state ? `, ${space.state}` : ''}</Text>
             </View>
           )}
-          {space.type && (
+          <View style={{ flexDirection: 'row', gap: 4, flexWrap: 'wrap', marginTop: 4 }}>
             <View style={styles.spaceTypeContainer}>
-              <Text style={styles.spaceType}>{space.type}</Text>
+              <Text style={styles.spaceType}>{space._count?.userRoles || space.member_count || 0} members</Text>
             </View>
-          )}
+          </View>
         </View>
       </TouchableOpacity>
     );
