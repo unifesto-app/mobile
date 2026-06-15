@@ -192,10 +192,10 @@ export default function SpaceDetail() {
                 actions={[
                   ...(user && isMember ? [{
                     id: 'leave',
-                    title: '↩ Leave Space',
+                    title: 'Leave Space',
                     attributes: { destructive: true },
                   }] : []),
-                  { id: 'copy', title: '🔗 Copy Link' },
+                  { id: 'copy', title: 'Copy Link' },
                   { id: 'report', title: 'Report Space', attributes: { destructive: true } },
                 ]}
                 shouldOpenOnLongPress={false}
