@@ -218,6 +218,22 @@ export default function TicketDetailScreen({ route }: TicketDetailScreenProps) {
   // Parse ticket if it's a string
   const ticketData = typeof ticket === 'string' ? JSON.parse(ticket) : ticket;
   
+  // Handle missing ticket data
+  if (!ticketData) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', padding: spacing[8] }]}>
+        <Text style={{ fontSize: typography.fontSize.lg, color: colors.text, marginBottom: spacing[4], textAlign: 'center' }}>
+          Ticket not found
+        </Text>
+        <TouchableOpacity onPress={() => router.back()}>
+          <Text style={{ fontSize: typography.fontSize.base, color: colors.primary, fontFamily: typography.fontFamily.bold }}>
+            Go Back
+          </Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+  
   // Format date and time
   const eventDate = ticketData.startDateTime ? new Date(ticketData.startDateTime) : new Date();
   const formattedDate = eventDate.toLocaleDateString('en-US', { 

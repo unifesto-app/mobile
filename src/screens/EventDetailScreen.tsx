@@ -340,7 +340,6 @@ export default function EventDetailScreen() {
   parentEventCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     backgroundColor: colors.card,
     borderRadius: borderRadius.xl,
     padding: spacing[4],

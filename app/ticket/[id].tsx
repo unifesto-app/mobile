@@ -2,20 +2,26 @@ import { Stack, useLocalSearchParams } from 'expo-router';
 import TicketDetailScreen from '../../src/screens/TicketDetailScreen';
 
 export default function TicketDetail() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const params = useLocalSearchParams<{ id: string; ticket?: string }>();
 
   return (
     <>
       <Stack.Screen
         options={{
-          title: 'Ticket Details',
+          title: 'Your Ticket',
           headerShown: true,
-          headerStyle: { backgroundColor: '#000000' },
-          headerTintColor: '#3491ff',
-          headerShadowVisible: true,
+          headerTransparent: true,
+          headerTintColor: '#ffffff',
+          headerBackButtonDisplayMode: 'minimal',
+          headerShadowVisible: false,
+          headerTitleStyle: {
+            fontWeight: '600',
+            fontSize: 18,
+            color: '#ffffff',
+          },
         }}
       />
-      <TicketDetailScreen route={{ params: { ticketId: id } }} />
+      <TicketDetailScreen route={{ params: { ticketId: params.id, ticket: params.ticket } }} />
     </>
   );
 }
