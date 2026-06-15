@@ -421,10 +421,10 @@ export default function HomeTab() {
       if (response && (response.data || response.events)) {
         // Filter for upcoming events only
         const now = new Date();
-        const upcomingTickets = (response.data || response.events).filter((event: Event) => {
-          const eventDate = new Date(event.startDateTime);
-          return eventDate >= now;
-        });
+        const registrations = response.data || response.events || [];
+        const upcomingTickets = registrations
+          .map((reg: any) => reg.event || reg)
+          .filter((event: any) => event && event.startDateTime && new Date(event.startDateTime) >= now);
         setUserTickets(upcomingTickets.slice(0, 5));
       } else {
         setUserTickets([]);
