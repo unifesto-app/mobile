@@ -15,6 +15,8 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { MenuView } from '@react-native-menu/menu';
+import { Ionicons } from '@expo/vector-icons';
 import { Calendar, Clock, MapPin, Users, Tag, ChevronRight, ExternalLink, Share2, LogIn } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import GradientText from '../components/GradientText';
@@ -776,15 +778,31 @@ export default function EventDetailScreen() {
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
-        <View style={{ flexDirection: 'row', alignItems: 'center', paddingRight: 4 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingRight: 4 }}>
           <TouchableOpacity
             onPress={handleShare}
             style={{ width: 36, height: 36, alignItems: 'center', justifyContent: 'center' }}
             disabled={!event}
             activeOpacity={0.7}
           >
-            <Share2 size={24} color="#ffffff" strokeWidth={2} />
+            <Ionicons name="share-outline" size={24} color="#ffffff" />
           </TouchableOpacity>
+          <MenuView
+            title={event?.title || 'Event Options'}
+            onPressAction={({ nativeEvent }) => {
+              if (nativeEvent.event === 'copy') Alert.alert('Link Copied', 'Event link copied to clipboard');
+              else if (nativeEvent.event === 'report') Alert.alert('Report Event', 'Report functionality coming soon');
+            }}
+            actions={[
+              { id: 'copy', title: 'Copy Link' },
+              { id: 'report', title: 'Report Event', attributes: { destructive: true } },
+            ]}
+            shouldOpenOnLongPress={false}
+          >
+            <TouchableOpacity style={{ width: 36, height: 36, alignItems: 'center', justifyContent: 'center' }} activeOpacity={0.7}>
+              <Ionicons name="ellipsis-horizontal" size={24} color="#ffffff" />
+            </TouchableOpacity>
+          </MenuView>
         </View>
       ),
     });
