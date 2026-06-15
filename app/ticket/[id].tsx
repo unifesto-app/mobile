@@ -1,8 +1,10 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
+import { useTheme } from '../../src/context/ThemeContext';
 import TicketDetailScreen from '../../src/screens/TicketDetailScreen';
 
 export default function TicketDetail() {
   const params = useLocalSearchParams<{ id: string; ticket?: string }>();
+  const { colors } = useTheme();
 
   return (
     <>
@@ -10,14 +12,15 @@ export default function TicketDetail() {
         options={{
           title: 'Your Ticket',
           headerShown: true,
-          headerTransparent: true,
-          headerTintColor: '#ffffff',
+          headerTransparent: false,
+          headerStyle: { backgroundColor: colors.background },
+          headerTintColor: colors.text,
           headerBackButtonDisplayMode: 'minimal',
           headerShadowVisible: false,
           headerTitleStyle: {
             fontWeight: '600',
             fontSize: 18,
-            color: '#ffffff',
+            color: colors.text,
           },
         }}
       />
