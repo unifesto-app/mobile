@@ -418,10 +418,10 @@ export default function HomeTab() {
       setIsLoadingTickets(true);
       const response = await getMyRegisteredEvents(1, 5);
       
-      if (response && response.events) {
+      if (response && (response.data || response.events)) {
         // Filter for upcoming events only
         const now = new Date();
-        const upcomingTickets = response.events.filter((event: Event) => {
+        const upcomingTickets = (response.data || response.events).filter((event: Event) => {
           const eventDate = new Date(event.startDateTime);
           return eventDate >= now;
         });
