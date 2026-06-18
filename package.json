@@ -10,7 +10,9 @@
     "web": "expo start --web",
     "prebuild": "expo prebuild --clean",
     "lint": "eslint .",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "reset": "expo start --dev-client --clear",
+    "reset:hard": "watchman watch-del-all && rm -rf node_modules/.cache && rm -rf .expo && expo start --dev-client --clear"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "^2.2.0",

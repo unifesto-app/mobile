@@ -5,6 +5,14 @@ import { AuthProvider } from '../src/context/AuthContext';
 import { ThemeProvider, useTheme } from '../src/context/ThemeContext';
 import ConsentManager from '../src/services/ConsentManager';
 
+// Preload UnIcon assets
+import { Asset } from 'expo-asset';
+const preloadIcons = async () => {
+  const icons = Object.values(require('@unifesto/unicon/dist/react-native/index.js').iconMap || {});
+  await Asset.loadAsync(icons as any[]);
+};
+
+
 ExpoSplashScreen.preventAutoHideAsync();
 
 function RootStack() {
@@ -27,6 +35,8 @@ function RootStack() {
     </AuthProvider>
   );
 }
+
+preloadIcons().catch(() => {});
 
 export default function RootLayout() {
   const [appIsReady, setAppIsReady] = useState(false);
