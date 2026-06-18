@@ -30,7 +30,7 @@ const HEADER_TOP_OFFSET = Platform.OS === 'ios' ? 150 : 130;
 export default function DiscoverScreen() {
   const router = useRouter();
   const { user } = useAuth();
-  const { colors } = useTheme();
+  const { colors, activeTheme } = useTheme();
   const [refreshing, setRefreshing] = useState(false);
   const [isLoadingEvents, setIsLoadingEvents] = useState(true);
   const [isLoadingOrgs, setIsLoadingOrgs] = useState(true);
@@ -316,7 +316,7 @@ export default function DiscoverScreen() {
   featuredEventImagePlaceholder: {
     width: '100%',
     aspectRatio: 4 / 3,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.backgroundSecondary,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -396,7 +396,7 @@ export default function DiscoverScreen() {
   },
   featuredEventTitle: {
     fontSize: typography.fontSize.lg,
-    color: colors.text,
+    color: '#ffffff',
     marginBottom: spacing[1],
     fontFamily: typography.fontFamily.primary,
   },
@@ -414,7 +414,7 @@ export default function DiscoverScreen() {
   },
   featuredEventMetaText: {
     fontSize: typography.fontSize.xs,
-    color: colors.textMuted,
+    color: 'rgba(255,255,255,0.8)',
   },
   featuredEventFooter: {
     flexDirection: 'row',
@@ -1208,7 +1208,7 @@ export default function DiscoverScreen() {
         </View>
       )}
       <LinearGradient
-        colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.9)']}
+        colors={['rgba(0,0,0,0)', activeTheme === 'dark' ? 'rgba(0,0,0,0.9)' : 'rgba(0,0,0,0.7)']}
         style={styles.featuredEventGradient}
       />
       <View style={styles.featuredEventContent}>
@@ -1276,7 +1276,7 @@ export default function DiscoverScreen() {
         </View>
       )}
       <LinearGradient
-        colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.9)']}
+        colors={['rgba(0,0,0,0)', activeTheme === 'dark' ? 'rgba(0,0,0,0.9)' : 'rgba(0,0,0,0.7)']}
         style={styles.featuredEventGradient}
       />
       <View style={styles.featuredEventContent}>
