@@ -203,319 +203,6 @@ export default function DiscoverScreen() {
     clearSearch();
   };
 
-  const renderSkeletonEventCard = () => (
-    <View style={styles.featuredEventCard}>
-      <Skeleton width="100%" height={200} borderRadius={borderRadius['2xl']} />
-      <View style={{ position: 'absolute', bottom: spacing[4], left: spacing[4], right: spacing[4] }}>
-        <Skeleton width={80} height={16} borderRadius={borderRadius.sm} style={{ marginBottom: spacing[2] }} />
-        <Skeleton width="90%" height={20} borderRadius={borderRadius.md} style={{ marginBottom: spacing[2] }} />
-        <View style={{ flexDirection: 'row', gap: spacing[3], marginBottom: spacing[2] }}>
-          <Skeleton width={80} height={14} borderRadius={borderRadius.sm} />
-          <Skeleton width={60} height={14} borderRadius={borderRadius.sm} />
-        </View>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-          <Skeleton width={100} height={14} borderRadius={borderRadius.sm} />
-          <Skeleton width={50} height={14} borderRadius={borderRadius.sm} />
-        </View>
-      </View>
-    </View>
-  );
-
-  const renderSkeletonOrgCard = () => (
-    <View style={styles.orgCard}>
-      <Skeleton width="100%" height={200} borderRadius={borderRadius['2xl']} />
-      <View style={{ position: 'absolute', bottom: spacing[5], left: spacing[5], right: spacing[5] }}>
-        <Skeleton width="80%" height={20} borderRadius={borderRadius.md} style={{ marginBottom: spacing[2] }} />
-        <Skeleton width="50%" height={12} borderRadius={borderRadius.sm} />
-      </View>
-    </View>
-  );
-
-  const renderFeaturedEvent = (event: any) => (
-    <TouchableOpacity
-      key={event.id}
-      style={styles.featuredEventCard}
-      onPress={() => router.push(`/event/${event.slug || event.id}`)}
-      activeOpacity={0.9}
-    >
-      {event.coverImageUrl ? (
-        <Image
-          source={{ uri: event.coverImageUrl }}
-          style={styles.featuredEventImage}
-          resizeMode="cover"
-        />
-      ) : (
-        <View style={styles.featuredEventImagePlaceholder}>
-          <Text style={styles.featuredEventImageText}>
-            {event.category || event.type || 'Event'}
-          </Text>
-        </View>
-      )}
-      <LinearGradient
-        colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.9)']}
-        style={styles.featuredEventGradient}
-      />
-      <View style={styles.featuredEventContent}>
-        {/* Price badge at top right */}
-        <View style={styles.featuredEventBadgesTop}>
-          <View style={styles.featuredEventPriceBadge}>
-            <Text style={styles.featuredEventPriceBadgeText}>
-              {getEventCardPrice(event)}
-            </Text>
-          </View>
-        </View>
-
-        {/* Title and info at bottom */}
-        <View style={styles.featuredEventBottom}>
-          <Text style={styles.featuredEventTitle} numberOfLines={2}>
-            {event.title}
-          </Text>
-          <View style={styles.featuredEventMeta}>
-            <Text style={styles.featuredEventMetaText}>
-              {new Date(event.startDateTime).toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
-              })}
-            </Text>
-            {event.category && (
-              <>
-                <Text style={styles.featuredEventMetaText}>•</Text>
-                <Text style={styles.featuredEventMetaText}>
-                  {event.category}
-                </Text>
-              </>
-            )}
-            {event.space?.name && (
-              <>
-                <Text style={styles.featuredEventMetaText}>•</Text>
-                <Text style={styles.featuredEventMetaText} numberOfLines={1}>
-                  {event.space.name}
-                </Text>
-              </>
-            )}
-          </View>
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
-
-  const renderTrendingEvent = (event: any) => (
-    <TouchableOpacity
-      key={event.id}
-      style={styles.featuredEventCard}
-      onPress={() => router.push(`/event/${event.slug || event.id}`)}
-      activeOpacity={0.9}
-    >
-      {event.coverImageUrl ? (
-        <Image
-          source={{ uri: event.coverImageUrl }}
-          style={styles.featuredEventImage}
-          resizeMode="cover"
-        />
-      ) : (
-        <View style={styles.featuredEventImagePlaceholder}>
-          <Text style={styles.featuredEventImageText}>
-            {event.category || event.type || 'Event'}
-          </Text>
-        </View>
-      )}
-      <LinearGradient
-        colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.9)']}
-        style={styles.featuredEventGradient}
-      />
-      <View style={styles.featuredEventContent}>
-        {/* Badges at top */}
-        <View style={styles.featuredEventBadgesTop}>
-          <View style={styles.trendingBadgeOnImage}>
-            <TrendingUp size={8} color={colors.text} strokeWidth={2.5} />
-            <Text style={styles.trendingBadgeText}>Trending</Text>
-          </View>
-          <View style={styles.featuredEventPriceBadge}>
-            <Text style={styles.featuredEventPriceBadgeText}>
-              {getEventCardPrice(event)}
-            </Text>
-          </View>
-        </View>
-
-        {/* Title and info at bottom */}
-        <View style={styles.featuredEventBottom}>
-          <Text style={styles.featuredEventTitle} numberOfLines={2}>
-            {event.title}
-          </Text>
-          <View style={styles.featuredEventMeta}>
-            <Text style={styles.featuredEventMetaText}>
-              {new Date(event.startDateTime).toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
-              })}
-            </Text>
-            {event.category && (
-              <>
-                <Text style={styles.featuredEventMetaText}>•</Text>
-                <Text style={styles.featuredEventMetaText}>
-                  {event.category}
-                </Text>
-              </>
-            )}
-            {event.space?.name && (
-              <>
-                <Text style={styles.featuredEventMetaText}>•</Text>
-                <Text style={styles.featuredEventMetaText} numberOfLines={1}>
-                  {event.space.name}
-                </Text>
-              </>
-            )}
-          </View>
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
-
-  const renderSpace = (space: Space, index: number) => (
-    <View key={space.id}>
-      <TouchableOpacity
-        style={styles.spaceStackItem}
-        onPress={() => router.push(`/space/${space.id}`)}
-        activeOpacity={0.7}
-      >
-        {/* Left side - Logo */}
-        <View style={styles.spaceStackLogoContainer}>
-          {(space.logoUrl || space.logo_url) ? (
-            <Image 
-              source={{ uri: (space.logoUrl || space.logo_url) as string }} 
-              style={styles.spaceStackLogo} 
-              resizeMode="cover" 
-            />
-          ) : (
-            <LinearGradient
-              colors={brandGradient}
-              start={brandGradientStart}
-              end={brandGradientEnd}
-              style={styles.spaceStackLogoPlaceholder}
-            >
-              <Text style={styles.spaceStackLogoText}>
-                {space.name.charAt(0).toUpperCase()}
-              </Text>
-            </LinearGradient>
-          )}
-        </View>
-        
-        {/* Right side - Info */}
-        <View style={styles.spaceStackContent}>
-          <Text style={styles.spaceStackName} numberOfLines={2}>
-            {space.name}
-          </Text>
-          
-          {space.description && (
-            <Text style={styles.spaceStackMetaText} numberOfLines={1}>
-              {space.description}
-            </Text>
-          )}
-          
-          <View style={styles.spaceStackStats}>
-            {space.city && (
-              <>
-                <Text style={styles.spaceStackStatText}>
-                  {space.city}{space.state ? `, ${space.state}` : ''}
-                </Text>
-                <Text style={styles.spaceStackStatDot}>•</Text>
-              </>
-            )}
-            <Text style={styles.spaceStackStatText}>
-              {space.member_count || space._count?.userRoles || 0} members
-            </Text>
-            <Text style={styles.spaceStackStatDot}>•</Text>
-            <Text style={styles.spaceStackStatText}>
-              {space.event_count || space._count?.events || 0} events
-            </Text>
-          </View>
-        </View>
-      </TouchableOpacity>
-      {/* Divider - don't show after last item */}
-      {index < spaces.length - 1 && <View style={styles.spaceDivider} />}
-    </View>
-  );
-
-  const renderCategory = (category: any) => (
-    <TouchableOpacity
-      key={category.id}
-      style={styles.categoryCard}
-      onPress={() => router.push({ pathname: '/events', params: { category: category.name } })}
-      activeOpacity={0.9}
-    >
-      {/* Category Image/Photo Area - Left Side */}
-      <View style={styles.categoryImageContainer}>
-        <LinearGradient
-          colors={brandGradient}
-          start={brandGradientStart}
-          end={brandGradientEnd}
-          style={styles.categoryImage}
-        />
-      </View>
-      
-      {/* Category Info Section - Right Side */}
-      <View style={styles.categoryInfo}>
-        <Text style={styles.categoryName} numberOfLines={2}>{category.name}</Text>
-        <Text style={styles.categoryMetaText}>
-          {category.event_count || 0} events
-        </Text>
-      </View>
-    </TouchableOpacity>
-  );
-
-  const renderSearchResult = (event: Event) => (
-    <TouchableOpacity
-      key={event.id}
-      style={styles.searchResultCard}
-      onPress={() => {
-        // Close modal before navigating
-        closeSearchModal();
-        router.push(`/event/${event.slug || event.id}`);
-      }}
-      activeOpacity={0.9}
-    >
-      <View style={styles.searchResultImageContainer}>
-        {event.coverImageUrl ? (
-          <Image
-            source={{ uri: event.coverImageUrl }}
-            style={styles.searchResultImage}
-            resizeMode="cover"
-          />
-        ) : (
-          <View style={styles.searchResultImagePlaceholder}>
-            <Text style={styles.searchResultImageText}>
-              {event.category?.charAt(0) || 'E'}
-            </Text>
-          </View>
-        )}
-      </View>
-      <View style={styles.searchResultContent}>
-        <Text style={styles.searchResultTitle} numberOfLines={2}>
-          {event.title}
-        </Text>
-        {event.space?.name && (
-          <Text style={styles.searchResultOrganizer} numberOfLines={1}>
-            {event.space.name}
-          </Text>
-        )}
-        <View style={styles.searchResultMeta}>
-          <View style={styles.searchResultMetaItem}>
-            <Calendar size={12} color={colors.textMuted} strokeWidth={2} />
-            <Text style={styles.searchResultMetaText}>
-              {new Date(event.startDateTime).toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
-              })}
-            </Text>
-          </View>
-          <Text style={styles.searchResultPrice}>
-            {getEventCardPrice(event)}
-          </Text>
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
-
   const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -1471,6 +1158,319 @@ export default function DiscoverScreen() {
     textAlign: 'center',
   },
 });
+
+  const renderSkeletonEventCard = () => (
+    <View style={styles.featuredEventCard}>
+      <Skeleton width="100%" height={200} borderRadius={borderRadius['2xl']} />
+      <View style={{ position: 'absolute', bottom: spacing[4], left: spacing[4], right: spacing[4] }}>
+        <Skeleton width={80} height={16} borderRadius={borderRadius.sm} style={{ marginBottom: spacing[2] }} />
+        <Skeleton width="90%" height={20} borderRadius={borderRadius.md} style={{ marginBottom: spacing[2] }} />
+        <View style={{ flexDirection: 'row', gap: spacing[3], marginBottom: spacing[2] }}>
+          <Skeleton width={80} height={14} borderRadius={borderRadius.sm} />
+          <Skeleton width={60} height={14} borderRadius={borderRadius.sm} />
+        </View>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+          <Skeleton width={100} height={14} borderRadius={borderRadius.sm} />
+          <Skeleton width={50} height={14} borderRadius={borderRadius.sm} />
+        </View>
+      </View>
+    </View>
+  );
+
+  const renderSkeletonOrgCard = () => (
+    <View style={styles.orgCard}>
+      <Skeleton width="100%" height={200} borderRadius={borderRadius['2xl']} />
+      <View style={{ position: 'absolute', bottom: spacing[5], left: spacing[5], right: spacing[5] }}>
+        <Skeleton width="80%" height={20} borderRadius={borderRadius.md} style={{ marginBottom: spacing[2] }} />
+        <Skeleton width="50%" height={12} borderRadius={borderRadius.sm} />
+      </View>
+    </View>
+  );
+
+  const renderFeaturedEvent = (event: any) => (
+    <TouchableOpacity
+      key={event.id}
+      style={styles.featuredEventCard}
+      onPress={() => router.push(`/event/${event.slug || event.id}`)}
+      activeOpacity={0.9}
+    >
+      {event.coverImageUrl ? (
+        <Image
+          source={{ uri: event.coverImageUrl }}
+          style={styles.featuredEventImage}
+          resizeMode="cover"
+        />
+      ) : (
+        <View style={styles.featuredEventImagePlaceholder}>
+          <Text style={styles.featuredEventImageText}>
+            {event.category || event.type || 'Event'}
+          </Text>
+        </View>
+      )}
+      <LinearGradient
+        colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.9)']}
+        style={styles.featuredEventGradient}
+      />
+      <View style={styles.featuredEventContent}>
+        {/* Price badge at top right */}
+        <View style={styles.featuredEventBadgesTop}>
+          <View style={styles.featuredEventPriceBadge}>
+            <Text style={styles.featuredEventPriceBadgeText}>
+              {getEventCardPrice(event)}
+            </Text>
+          </View>
+        </View>
+
+        {/* Title and info at bottom */}
+        <View style={styles.featuredEventBottom}>
+          <Text style={styles.featuredEventTitle} numberOfLines={2}>
+            {event.title}
+          </Text>
+          <View style={styles.featuredEventMeta}>
+            <Text style={styles.featuredEventMetaText}>
+              {new Date(event.startDateTime).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+              })}
+            </Text>
+            {event.category && (
+              <>
+                <Text style={styles.featuredEventMetaText}>•</Text>
+                <Text style={styles.featuredEventMetaText}>
+                  {event.category}
+                </Text>
+              </>
+            )}
+            {event.space?.name && (
+              <>
+                <Text style={styles.featuredEventMetaText}>•</Text>
+                <Text style={styles.featuredEventMetaText} numberOfLines={1}>
+                  {event.space.name}
+                </Text>
+              </>
+            )}
+          </View>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+
+  const renderTrendingEvent = (event: any) => (
+    <TouchableOpacity
+      key={event.id}
+      style={styles.featuredEventCard}
+      onPress={() => router.push(`/event/${event.slug || event.id}`)}
+      activeOpacity={0.9}
+    >
+      {event.coverImageUrl ? (
+        <Image
+          source={{ uri: event.coverImageUrl }}
+          style={styles.featuredEventImage}
+          resizeMode="cover"
+        />
+      ) : (
+        <View style={styles.featuredEventImagePlaceholder}>
+          <Text style={styles.featuredEventImageText}>
+            {event.category || event.type || 'Event'}
+          </Text>
+        </View>
+      )}
+      <LinearGradient
+        colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.9)']}
+        style={styles.featuredEventGradient}
+      />
+      <View style={styles.featuredEventContent}>
+        {/* Badges at top */}
+        <View style={styles.featuredEventBadgesTop}>
+          <View style={styles.trendingBadgeOnImage}>
+            <TrendingUp size={8} color={colors.text} strokeWidth={2.5} />
+            <Text style={styles.trendingBadgeText}>Trending</Text>
+          </View>
+          <View style={styles.featuredEventPriceBadge}>
+            <Text style={styles.featuredEventPriceBadgeText}>
+              {getEventCardPrice(event)}
+            </Text>
+          </View>
+        </View>
+
+        {/* Title and info at bottom */}
+        <View style={styles.featuredEventBottom}>
+          <Text style={styles.featuredEventTitle} numberOfLines={2}>
+            {event.title}
+          </Text>
+          <View style={styles.featuredEventMeta}>
+            <Text style={styles.featuredEventMetaText}>
+              {new Date(event.startDateTime).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+              })}
+            </Text>
+            {event.category && (
+              <>
+                <Text style={styles.featuredEventMetaText}>•</Text>
+                <Text style={styles.featuredEventMetaText}>
+                  {event.category}
+                </Text>
+              </>
+            )}
+            {event.space?.name && (
+              <>
+                <Text style={styles.featuredEventMetaText}>•</Text>
+                <Text style={styles.featuredEventMetaText} numberOfLines={1}>
+                  {event.space.name}
+                </Text>
+              </>
+            )}
+          </View>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+
+  const renderSpace = (space: Space, index: number) => (
+    <View key={space.id}>
+      <TouchableOpacity
+        style={styles.spaceStackItem}
+        onPress={() => router.push(`/space/${space.id}`)}
+        activeOpacity={0.7}
+      >
+        {/* Left side - Logo */}
+        <View style={styles.spaceStackLogoContainer}>
+          {(space.logoUrl || space.logo_url) ? (
+            <Image 
+              source={{ uri: (space.logoUrl || space.logo_url) as string }} 
+              style={styles.spaceStackLogo} 
+              resizeMode="cover" 
+            />
+          ) : (
+            <LinearGradient
+              colors={brandGradient}
+              start={brandGradientStart}
+              end={brandGradientEnd}
+              style={styles.spaceStackLogoPlaceholder}
+            >
+              <Text style={styles.spaceStackLogoText}>
+                {space.name.charAt(0).toUpperCase()}
+              </Text>
+            </LinearGradient>
+          )}
+        </View>
+        
+        {/* Right side - Info */}
+        <View style={styles.spaceStackContent}>
+          <Text style={styles.spaceStackName} numberOfLines={2}>
+            {space.name}
+          </Text>
+          
+          {space.description && (
+            <Text style={styles.spaceStackMetaText} numberOfLines={1}>
+              {space.description}
+            </Text>
+          )}
+          
+          <View style={styles.spaceStackStats}>
+            {space.city && (
+              <>
+                <Text style={styles.spaceStackStatText}>
+                  {space.city}{space.state ? `, ${space.state}` : ''}
+                </Text>
+                <Text style={styles.spaceStackStatDot}>•</Text>
+              </>
+            )}
+            <Text style={styles.spaceStackStatText}>
+              {space.member_count || space._count?.userRoles || 0} members
+            </Text>
+            <Text style={styles.spaceStackStatDot}>•</Text>
+            <Text style={styles.spaceStackStatText}>
+              {space.event_count || space._count?.events || 0} events
+            </Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+      {/* Divider - don't show after last item */}
+      {index < spaces.length - 1 && <View style={styles.spaceDivider} />}
+    </View>
+  );
+
+  const renderCategory = (category: any) => (
+    <TouchableOpacity
+      key={category.id}
+      style={styles.categoryCard}
+      onPress={() => router.push({ pathname: '/events', params: { category: category.name } })}
+      activeOpacity={0.9}
+    >
+      {/* Category Image/Photo Area - Left Side */}
+      <View style={styles.categoryImageContainer}>
+        <LinearGradient
+          colors={brandGradient}
+          start={brandGradientStart}
+          end={brandGradientEnd}
+          style={styles.categoryImage}
+        />
+      </View>
+      
+      {/* Category Info Section - Right Side */}
+      <View style={styles.categoryInfo}>
+        <Text style={styles.categoryName} numberOfLines={2}>{category.name}</Text>
+        <Text style={styles.categoryMetaText}>
+          {category.event_count || 0} events
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
+
+  const renderSearchResult = (event: Event) => (
+    <TouchableOpacity
+      key={event.id}
+      style={styles.searchResultCard}
+      onPress={() => {
+        // Close modal before navigating
+        closeSearchModal();
+        router.push(`/event/${event.slug || event.id}`);
+      }}
+      activeOpacity={0.9}
+    >
+      <View style={styles.searchResultImageContainer}>
+        {event.coverImageUrl ? (
+          <Image
+            source={{ uri: event.coverImageUrl }}
+            style={styles.searchResultImage}
+            resizeMode="cover"
+          />
+        ) : (
+          <View style={styles.searchResultImagePlaceholder}>
+            <Text style={styles.searchResultImageText}>
+              {event.category?.charAt(0) || 'E'}
+            </Text>
+          </View>
+        )}
+      </View>
+      <View style={styles.searchResultContent}>
+        <Text style={styles.searchResultTitle} numberOfLines={2}>
+          {event.title}
+        </Text>
+        {event.space?.name && (
+          <Text style={styles.searchResultOrganizer} numberOfLines={1}>
+            {event.space.name}
+          </Text>
+        )}
+        <View style={styles.searchResultMeta}>
+          <View style={styles.searchResultMetaItem}>
+            <Calendar size={12} color={colors.textMuted} strokeWidth={2} />
+            <Text style={styles.searchResultMetaText}>
+              {new Date(event.startDateTime).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+              })}
+            </Text>
+          </View>
+          <Text style={styles.searchResultPrice}>
+            {getEventCardPrice(event)}
+          </Text>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
 
   return (
     <View style={styles.container}>

@@ -760,7 +760,7 @@ export default function WalletScreen() {
       ]);
 
       setWalletBalance(balanceData);
-      setTransactions(transactionsData?.transactions || []);
+      setTransactions(transactionsData?.data || transactionsData?.transactions || []);
       setReferralInfo(referralData ? {
         referralCode: referralData.referralCode || referralData.code || '',
         totalReferred: referralData.totalReferred || referralData.totalReferrals || 0,
