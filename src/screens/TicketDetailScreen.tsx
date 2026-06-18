@@ -21,6 +21,11 @@ interface TicketDetailScreenProps {
 
 export default function TicketDetailScreen({ route }: TicketDetailScreenProps) {
   const { colors } = useTheme();
+  const router = useRouter();
+  const { ticket } = route.params;
+  
+  // Parse ticket if it's a string
+  const ticketData = typeof ticket === 'string' ? JSON.parse(ticket) : ticket;
   
   const styles = StyleSheet.create({
   container: {
@@ -92,11 +97,12 @@ export default function TicketDetailScreen({ route }: TicketDetailScreenProps) {
   qrPlaceholder: {
     width: 200,
     height: 200,
-    backgroundColor: colors.text,
+    backgroundColor: '#ffffff',
     borderRadius: borderRadius.lg,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing[6],
+    padding: spacing[2],
   },
   ticketIdSection: {
     alignItems: 'center',
@@ -128,12 +134,6 @@ export default function TicketDetailScreen({ route }: TicketDetailScreenProps) {
     lineHeight: typography.lineHeight.relaxed * typography.fontSize.base,
   },
 });
-
-  const router = useRouter();
-  const { ticket } = route.params;
-  
-  // Parse ticket if it's a string
-  const ticketData = typeof ticket === 'string' ? JSON.parse(ticket) : ticket;
   
   // Handle missing ticket data
   if (!ticketData) {
@@ -202,8 +202,8 @@ export default function TicketDetailScreen({ route }: TicketDetailScreenProps) {
               <QRCode
                 value={ticketData.qrCode || ticketData.id || 'UNIFESTO'}
                 size={180}
-                color={colors.background === '#000000' || colors.background === '#0a0a0a' ? '#ffffff' : '#000000'}
-                backgroundColor="transparent"
+                color="#000000"
+                backgroundColor="#ffffff"
               />
             </View>
             <View style={styles.ticketIdSection}>

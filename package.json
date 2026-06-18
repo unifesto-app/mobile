@@ -13,7 +13,6 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@expo/ui": "^56.0.17",
     "@react-native-async-storage/async-storage": "^2.2.0",
     "@react-native-firebase/analytics": "^24.0.0",
     "@react-native-firebase/app": "^24.0.0",
@@ -72,7 +71,8 @@
     "doctor": {
       "reactNativeDirectoryCheck": {
         "exclude": [
-          "react-native-razorpay"
+          "react-native-razorpay",
+          "react-native-sfsymbols"
         ]
       }
     }

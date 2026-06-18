@@ -762,9 +762,9 @@ export default function WalletScreen() {
       setWalletBalance(balanceData);
       setTransactions(transactionsData?.transactions || []);
       setReferralInfo(referralData ? {
-        referralCode: referralData.code || '',
-        totalReferred: referralData.totalReferrals || 0,
-        totalCoinsEarned: referralData.totalRewards || 0,
+        referralCode: referralData.referralCode || referralData.code || '',
+        totalReferred: referralData.totalReferred || referralData.totalReferrals || 0,
+        totalCoinsEarned: referralData.totalCoinsEarned || referralData.totalRewards || 0,
       } : null);
       setReferralReward(100); // Hardcoded as per requirements
     } catch (error) {

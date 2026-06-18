@@ -27,6 +27,14 @@ const TABS = ['Upcoming', 'Past'];
 
 export default function TicketsScreen() {
   const { colors } = useTheme();
+  const [activeTab, setActiveTab] = useState('Upcoming');
+  const [tickets, setTickets] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const router = useRouter();
+  const { user } = useAuth();
   
   const styles = StyleSheet.create({
   container: {
@@ -225,15 +233,6 @@ export default function TicketsScreen() {
     fontFamily: getFontFamily('medium'),
   },
 });
-
-  const [activeTab, setActiveTab] = useState('Upcoming');
-  const [tickets, setTickets] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const router = useRouter();
-  const { user } = useAuth();
 
   useEffect(() => {
     setPage(1);

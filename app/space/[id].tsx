@@ -167,18 +167,18 @@ export default function SpaceDetail() {
           title: 'Space',
           headerShown: true,
           headerTransparent: true,
-          headerTintColor: activeTheme === 'dark' ? '#ffffff' : '#000000',
+          headerTintColor: colors.text,
           headerBackButtonDisplayMode: 'minimal',
           headerShadowVisible: true,
           headerTitleStyle: {
             fontWeight: '600',
             fontSize: 18,
-            color: activeTheme === 'dark' ? '#ffffff' : '#000000',
+            color: colors.text,
           },
           headerRight: () => (
             <View style={styles.headerRight}>
               <TouchableOpacity onPress={handleShare} style={styles.iconButton} activeOpacity={0.7}>
-                <Ionicons name="share-outline" size={24} color='#ffffff' />
+                <Ionicons name="share-outline" size={24} color={colors.text} />
               </TouchableOpacity>
               <MenuView
                 title={space?.name || 'Options'}
@@ -206,7 +206,7 @@ export default function SpaceDetail() {
                 shouldOpenOnLongPress={false}
               >
                 <TouchableOpacity style={styles.iconButton} activeOpacity={0.7}>
-                  <Ionicons name="ellipsis-horizontal" size={24} color='#ffffff' />
+                  <Ionicons name="ellipsis-horizontal" size={24} color={colors.text} />
                 </TouchableOpacity>
               </MenuView>
             </View>

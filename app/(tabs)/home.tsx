@@ -320,14 +320,14 @@ export default function HomeTab() {
       paddingVertical: spacing[3],
       gap: spacing[2],
       justifyContent: 'center',
-      alignItems: 'center',
+      alignItems: 'flex-start',
     },
     spaceName: {
       fontSize: typography.fontSize.sm,
       color: colors.text,
       fontFamily: getFontFamily('semibold'),
       lineHeight: typography.fontSize.sm * 1.3,
-      textAlign: 'center',
+      textAlign: 'left',
     },
     spaceLocationRow: {
       flexDirection: 'row',
@@ -338,7 +338,7 @@ export default function HomeTab() {
       fontSize: typography.fontSize.xs,
       color: colors.textMuted,
       fontFamily: getFontFamily('normal'),
-      textAlign: 'center',
+      textAlign: 'left',
     },
     spaceTypeContainer: {
       alignSelf: 'flex-start',

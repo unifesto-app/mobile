@@ -29,13 +29,13 @@ export default function TicketDetail() {
           title: 'Your Ticket',
           headerShown: true,
           headerTransparent: true,
-          headerTintColor: activeTheme === 'dark' ? '#ffffff' : '#000000',
+          headerTintColor: colors.text,
           headerBackButtonDisplayMode: 'minimal',
           headerShadowVisible: false,
           headerTitleStyle: {
             fontWeight: '600',
             fontSize: 18,
-            color: '#ffffff',
+            color: colors.text,
           },
           headerRight: () => (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingRight: 4 }}>
@@ -44,7 +44,7 @@ export default function TicketDetail() {
                 style={{ width: 36, height: 36, alignItems: 'center', justifyContent: 'center' }}
                 activeOpacity={0.7}
               >
-                <Ionicons name="share-outline" size={24} color="#ffffff" />
+                <Ionicons name="share-outline" size={24} color={colors.text} />
               </TouchableOpacity>
               <MenuView
                 title="Ticket Options"
@@ -59,7 +59,7 @@ export default function TicketDetail() {
                 shouldOpenOnLongPress={false}
               >
                 <TouchableOpacity style={{ width: 36, height: 36, alignItems: 'center', justifyContent: 'center' }} activeOpacity={0.7}>
-                  <Ionicons name="ellipsis-horizontal" size={24} color="#ffffff" />
+                  <Ionicons name="ellipsis-horizontal" size={24} color={colors.text} />
                 </TouchableOpacity>
               </MenuView>
             </View>

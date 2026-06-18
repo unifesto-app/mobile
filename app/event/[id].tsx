@@ -44,18 +44,18 @@ export default function EventDetail() {
           title: 'Event Details',
           headerShown: true,
           headerTransparent: true,
-          headerTintColor: '#ffffff',
+          headerTintColor: colors.text,
           headerBackButtonDisplayMode: 'minimal',
           headerShadowVisible: true,
           headerTitleStyle: {
             fontWeight: '600',
             fontSize: 18,
-            color: '#ffffff',
+            color: colors.text,
           },
           headerRight: () => (
             <View style={styles.headerRight}>
               <TouchableOpacity onPress={handleShare} style={styles.iconButton} activeOpacity={0.7}>
-                <Ionicons name="share-outline" size={24} color='#ffffff' />
+                <Ionicons name="share-outline" size={24} color={colors.text} />
               </TouchableOpacity>
               <MenuView
                 title={event?.title || 'Event Options'}
@@ -70,7 +70,7 @@ export default function EventDetail() {
                 shouldOpenOnLongPress={false}
               >
                 <TouchableOpacity style={styles.iconButton} activeOpacity={0.7}>
-                  <Ionicons name="ellipsis-horizontal" size={24} color='#ffffff' />
+                  <Ionicons name="ellipsis-horizontal" size={24} color={colors.text} />
                 </TouchableOpacity>
               </MenuView>
             </View>
