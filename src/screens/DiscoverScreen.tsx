@@ -37,7 +37,6 @@ export default function DiscoverScreen() {
   const [featuredEvents, setFeaturedEvents] = useState<Event[]>([]);
   const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([]);
   const [trendingEvents, setTrendingEvents] = useState<Event[]>([]);
-  const [savedEvents, setSavedEvents] = useState<Event[]>([]);
   const [spaces, setSpaces] = useState<Space[]>([]);
   const searchInputRef = useRef<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -74,12 +73,10 @@ export default function DiscoverScreen() {
       setUpcomingEvents(upcoming?.data || upcoming?.events || []);
       
       // TODO: Load saved events from user's saved list
-      setSavedEvents([]);
     } catch (error) {
       setFeaturedEvents([]);
       setTrendingEvents([]);
       setUpcomingEvents([]);
-      setSavedEvents([]);
     } finally {
       setIsLoadingEvents(false);
     }
