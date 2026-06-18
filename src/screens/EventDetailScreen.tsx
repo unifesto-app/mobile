@@ -1005,8 +1005,8 @@ export default function EventDetailScreen() {
       } catch (error: any) {
         Alert.alert('Error', error?.message || 'Failed to RSVP');
       }
-    } else {
-      // Ticketed event - go to registration screen
+    } else if (event.registrationType === 'MIXED' || event.registrationType === 'TICKETED') {
+      // Ticketed or Mixed event - go to registration screen
       router.push({ pathname: '/event-registration', params: { eventId: event.id } });
     }
   };
@@ -1341,7 +1341,7 @@ export default function EventDetailScreen() {
                   <LogIn size={16} color={colors.text} strokeWidth={2} style={{ marginRight: spacing[2] }} />
                 )}
                 <Text style={styles.ctaButtonText}>
-                  {!user ? 'Sign In to Register' : isRegistered ? 'Already Registered' : isFree ? 'Register Free' : 'Register Now'}
+                  {!user ? 'Sign In to Register' : isRegistered ? 'Already Registered' : event.registrationType === 'MIXED' ? 'Choose Ticket' : isFree ? 'Register Free' : 'Register Now'}
                 </Text>
               </LinearGradient>
             </TouchableOpacity>
