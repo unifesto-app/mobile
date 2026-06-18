@@ -195,6 +195,26 @@ export default function TicketDetailScreen({ route }: TicketDetailScreenProps) {
           </View>
         </View>
 
+        {/* Ticket Type Info */}
+        {ticketData.ticketType && (
+          <View style={{ backgroundColor: colors.card, borderRadius: borderRadius.xl, padding: spacing[4], marginBottom: spacing[6], borderWidth: 1, borderColor: colors.borderMuted }}>
+            <Text style={{ color: colors.textMuted, fontSize: 11, fontFamily: 'bold', letterSpacing: 1, textTransform: 'uppercase', marginBottom: spacing[2] }}>Ticket Type</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600', marginBottom: 4 }}>{ticketData.ticketType.name}</Text>
+                {ticketData.ticketType.description && (
+                  <Text style={{ color: colors.textMuted, fontSize: 13 }} numberOfLines={2}>{ticketData.ticketType.description}</Text>
+                )}
+              </View>
+              <View style={{ backgroundColor: 'rgba(52,145,255,0.1)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, marginLeft: 12 }}>
+                <Text style={{ color: colors.primary, fontSize: 15, fontWeight: '700' }}>
+                  {parseFloat(ticketData.ticketType.price) === 0 ? 'Free' : `₹${ticketData.ticketType.price}`}
+                </Text>
+              </View>
+            </View>
+          </View>
+        )}
+
         {/* QR Code Section */}
         <View style={styles.qrSection}>
           <View style={styles.qrCard}>

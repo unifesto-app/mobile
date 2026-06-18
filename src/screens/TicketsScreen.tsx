@@ -313,7 +313,7 @@ export default function TicketsScreen() {
           pathname: '/ticket/[id]', 
           params: { 
             id: event.id, 
-            ticket: JSON.stringify({ ...event, qrCode: event.qrCode })
+            ticket: JSON.stringify({ ...event, qrCode: event.qrCode, ticketType: event.ticketType, registrationId: event.registrationId, registrationStatus: event.registrationStatus })
           } 
         })}
         activeOpacity={0.9}
