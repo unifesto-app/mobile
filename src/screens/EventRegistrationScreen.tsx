@@ -1086,9 +1086,17 @@ export default function EventRegistrationScreen() {
   };
 
   // Handle step navigation
+  const isFreeTicket = (ticket: Ticket | null) => !ticket || ticket.price === 0;
+
   const goToNextStep = () => {
     if (step === 'ticket' && selectedTicket) {
-      setStep('details');
+      // Skip details and review for free tickets — go straight to payment
+      if (isFreeTicket(selectedTicket)) {
+        setStep('payment');
+        getWallet().then(w => { if (w) setWalletBalance(w.balance); }).catch(() => {});
+      } else {
+        setStep('details');
+      }
     } else if (step === 'details' && validateAttendees()) {
       setStep('review');
     } else if (step === 'review') {
@@ -1111,6 +1119,12 @@ export default function EventRegistrationScreen() {
         ticketTypeId: selectedTicket.id,
         quantity,
         coinsToUse: coinsToUse > 0 ? coinsToUse : undefined,
+        formResponses: attendees[0] ? {
+          name: attendees[0].name,
+          email: attendees[0].email,
+          mobile: attendees[0].mobile,
+          gender: attendees[0].gender,
+        } : undefined,
       });
       if (orderResponse.razorpayOrderId) {
         setPendingRegistrationId(orderResponse.registrationId || '');
@@ -1219,7 +1233,7 @@ export default function EventRegistrationScreen() {
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
-        keyboardVerticalOffset={100}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         {/* Event Info */}
