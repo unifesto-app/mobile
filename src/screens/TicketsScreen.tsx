@@ -259,7 +259,7 @@ export default function TicketsScreen() {
         return;
       }
 
-      const allEvents = (response?.data || response?.events || []).map((r: any) => r.event ? { ...r.event, qrCode: r.qrCode, registrationId: r.id, registrationStatus: r.status, paymentStatus: r.paymentStatus } : r);
+      const allEvents = (response?.data || response?.events || []).map((r: any) => r.event ? { ...r.event, qrCode: r.qrCode, registrationId: r.id, registrationStatus: r.status, paymentStatus: r.paymentStatus, ticketType: r.ticketType } : r);
 
       // Filter based on active tab
       const now = new Date();
