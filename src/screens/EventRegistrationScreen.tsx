@@ -1117,6 +1117,7 @@ export default function EventRegistrationScreen() {
     if (!selectedTicket || !event) return;
     try {
       setLoading(true);
+      const finalAmount = Math.max(0, calculateTotal() - coinsToUse);
       const orderResponse = await createRegistration(event.id, {
         ticketTypeId: selectedTicket.id,
         quantity,
@@ -1128,26 +1129,28 @@ export default function EventRegistrationScreen() {
           gender: attendees[0].gender,
         } : undefined,
       });
-      if (orderResponse.razorpayOrderId) {
-        setPendingRegistrationId(orderResponse.registrationId || '');
-        setRazorpayOptions({
-          orderId: orderResponse.razorpayOrderId,
-          amount: orderResponse.amount,
-          currency: orderResponse.currency || 'INR',
-          name: 'Unifesto',
-          description: event.title,
-          image: event.coverImageUrl || undefined,
-          prefill: {
-            name: attendees[0]?.name || '',
-            email: attendees[0]?.email || '',
-            contact: attendees[0]?.mobile || '',
-          },
-          keyId: orderResponse.razorpayKeyId,
-        });
-        setRazorpayVisible(true);
-      } else {
+      // Free ticket or fully covered by coins — go to success
+      if (!orderResponse.razorpayOrderId || finalAmount === 0) {
         navigateToSuccess();
+        return;
       }
+      // Paid ticket — show Razorpay
+      setPendingRegistrationId(orderResponse.registrationId || '');
+      setRazorpayOptions({
+        orderId: orderResponse.razorpayOrderId,
+        amount: orderResponse.amount,
+        currency: orderResponse.currency || 'INR',
+        name: 'Unifesto',
+        description: event.title,
+        image: event.coverImageUrl || undefined,
+        prefill: {
+          name: attendees[0]?.name || user?.fullName || '',
+          email: attendees[0]?.email || '',
+          contact: attendees[0]?.mobile || user?.mobileNumber || '',
+        },
+        keyId: orderResponse.razorpayKeyId,
+      });
+      setRazorpayVisible(true);
     } catch (error: any) {
       console.error('Registration error:', error);
       Alert.alert('Error', error?.message || 'Registration failed');
