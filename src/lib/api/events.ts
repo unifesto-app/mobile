@@ -7,7 +7,7 @@ export interface Event {
   description: string | null;
   coverImageUrl: string | null;
   type: 'IN_PERSON' | 'ONLINE' | 'HYBRID';
-  registrationType: 'RSVP' | 'TICKETED';
+  registrationType: 'RSVP' | 'TICKETED' | 'MIXED';
   startDateTime: string;
   endDateTime: string;
   timezone: string;
