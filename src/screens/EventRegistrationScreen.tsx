@@ -1076,7 +1076,9 @@ export default function EventRegistrationScreen() {
   // Calculate total price
   const calculateTotal = () => {
     if (!selectedTicket) return 0;
-    return calculateTicketPrice(selectedTicket, quantity);
+    const base = calculateTicketPrice(selectedTicket, quantity);
+    if (base === 0) return 0;
+    return Math.round(base * 1.04 * 100) / 100;
   };
 
   // Get currency symbol
@@ -1574,44 +1576,62 @@ export default function EventRegistrationScreen() {
                 </View>
               ) : (
                 <View>
+                  {/* Price Breakdown */}
                   <View style={styles.paymentAmount}>
                     <View style={styles.paymentAmountRow}>
                       <Text style={styles.paymentAmountLabel}>Ticket Price</Text>
                       <Text style={styles.paymentAmountValue}>{getCurrencySymbol()}{(parseFloat(selectedTicket?.price as any || '0') * quantity).toFixed(2)}</Text>
                     </View>
                     <View style={styles.paymentAmountRow}>
-                      <Text style={styles.paymentAmountLabel}>Processing Fee (~4%)</Text>
+                      <Text style={styles.paymentAmountLabel}>Processing Fee</Text>
                       <Text style={styles.paymentAmountValue}>{getCurrencySymbol()}{(parseFloat(selectedTicket?.price as any || '0') * quantity * 0.04).toFixed(2)}</Text>
                     </View>
+                    {coinsToUse > 0 && (
+                      <View style={styles.paymentAmountRow}>
+                        <Text style={[styles.paymentAmountLabel, { color: colors.primary }]}>Coins Discount</Text>
+                        <Text style={[styles.paymentAmountValue, { color: colors.primary }]}>-{getCurrencySymbol()}{coinsToUse.toFixed(2)}</Text>
+                      </View>
+                    )}
                     <View style={[styles.paymentAmountRow, { borderTopWidth: 1, borderTopColor: colors.borderMuted, paddingTop: 8, marginTop: 4 }]}>
                       <Text style={[styles.paymentAmountLabel, { fontWeight: '700' }]}>Total</Text>
-                      <Text style={[styles.paymentAmountValue, { color: colors.primary, fontWeight: '700', fontSize: typography.fontSize.xl }]}>{getCurrencySymbol()}{calculateTotal().toFixed(2)}</Text>
+                      <Text style={[styles.paymentAmountValue, { color: colors.primary, fontWeight: '700', fontSize: typography.fontSize.xl }]}>
+                        {getCurrencySymbol()}{Math.max(0, calculateTotal() - coinsToUse).toFixed(2)}
+                      </Text>
                     </View>
                   </View>
+
+                  {/* Wallet Coins */}
                   {walletBalance > 0 && (
                     <View style={{ backgroundColor: colors.card, borderRadius: 12, padding: 16, marginTop: 12, borderWidth: 1, borderColor: colors.borderMuted }}>
-                      <Text style={{ color: colors.text, fontWeight: '600', marginBottom: 8 }}>🪙 Pocket Balance: {walletBalance} coins</Text>
-                      <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 8 }}>1 coin = ₹1. Use coins to reduce payment.</Text>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                        <TouchableOpacity onPress={() => setCoinsToUse(Math.max(0, coinsToUse - 10))} style={{ backgroundColor: colors.backgroundSecondary, borderRadius: 8, padding: 8 }}>
-                          <Text style={{ color: colors.text, fontWeight: '700' }}>−</Text>
-                        </TouchableOpacity>
-                        <Text style={{ color: colors.text, fontWeight: '700', flex: 1, textAlign: 'center' }}>{coinsToUse} coins</Text>
-                        <TouchableOpacity onPress={() => setCoinsToUse(Math.min(walletBalance, coinsToUse + 10))} style={{ backgroundColor: colors.backgroundSecondary, borderRadius: 8, padding: 8 }}>
-                          <Text style={{ color: colors.text, fontWeight: '700' }}>+</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={() => setCoinsToUse(Math.min(walletBalance, Math.floor(calculateTotal())))} style={{ backgroundColor: colors.primary, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8 }}>
-                          <Text style={{ color: '#fff', fontSize: 12, fontWeight: '600' }}>Use All</Text>
-                        </TouchableOpacity>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                        <View>
+                          <Text style={{ color: colors.text, fontFamily: 'bold', fontSize: 14, fontWeight: '600' }}>Pocket Balance</Text>
+                          <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 2 }}>{walletBalance} coins available (1 coin = {getCurrencySymbol()}1)</Text>
+                        </View>
+                        <View style={{ flexDirection: 'row', gap: 8 }}>
+                          {coinsToUse > 0 && (
+                            <TouchableOpacity
+                              onPress={() => setCoinsToUse(0)}
+                              style={{ backgroundColor: colors.backgroundSecondary, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 }}
+                            >
+                              <Text style={{ color: colors.error, fontSize: 12, fontWeight: '600' }}>Remove</Text>
+                            </TouchableOpacity>
+                          )}
+                          <TouchableOpacity
+                            onPress={() => setCoinsToUse(Math.min(walletBalance, Math.floor(calculateTotal())))}
+                            style={{ backgroundColor: colors.primary, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 }}
+                          >
+                            <Text style={{ color: '#fff', fontSize: 12, fontWeight: '600' }}>
+                              {coinsToUse > 0 ? 'Max' : 'Apply'}
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
                       </View>
                       {coinsToUse > 0 && (
-                        <Text style={{ color: colors.primary, fontSize: 12, marginTop: 8 }}>Saving ₹{coinsToUse} with coins</Text>
+                        <Text style={{ color: colors.primary, fontSize: 12 }}>Saving {getCurrencySymbol()}{coinsToUse} with coins</Text>
                       )}
                     </View>
                   )}
-                  <Text style={{ color: colors.textMuted, fontSize: 12, textAlign: 'center', marginTop: 8 }}>
-                    You will be redirected to secure payment gateway
-                  </Text>
                 </View>
               )}
             </View>
