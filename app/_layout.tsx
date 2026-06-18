@@ -7,8 +7,10 @@ import ConsentManager from '../src/services/ConsentManager';
 
 // Preload UnIcon assets
 import { Asset } from 'expo-asset';
+
+
 const preloadIcons = async () => {
-  const icons = Object.values(require('@unifesto/unicon/dist/react-native/index.js').iconMap || {});
+  const icons: any[] = [];
   await Asset.loadAsync(icons as any[]);
 };
 

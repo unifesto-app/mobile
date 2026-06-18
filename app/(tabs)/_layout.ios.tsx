@@ -8,7 +8,7 @@ export default function TabsLayout() {
 
   useEffect(() => {
     // Set status bar style based on theme
-    StatusBar.setBarStyle(activeTheme === 'light' ? 'dark-content' : 'light-content');
+    StatusBar.setBarStyle('light-content');
     
     // Force iOS appearance to match theme for tab bar background
     // This will make the native tab bar respect the system dark/light mode

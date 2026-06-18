@@ -68,11 +68,7 @@ export default function ProfileScreen() {
     switch (theme) {
       case 'dark':
         return 'Dark';
-      case 'light':
-        return 'Light';
-      case 'system':
-        return 'System';
-      default:
+                  default:
         return 'Dark';
     }
   };
@@ -565,7 +561,7 @@ export default function ProfileScreen() {
   };
 
   // Icon colors based on theme (black in light, white in dark)
-  const iconColor = activeTheme === 'light' ? '#000000' : '#ffffff';
+  const iconColor = '#ffffff';
 
   return (
     <View style={styles.container}>

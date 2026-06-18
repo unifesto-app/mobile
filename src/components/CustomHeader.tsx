@@ -30,7 +30,7 @@ export default function CustomHeader() {
     name.split(' ').map((n) => n[0]).join('').toUpperCase();
 
   // Dynamic gradient colors based on theme
-  const gradientColors: readonly [string, string, string] = activeTheme === 'light' 
+  const gradientColors: readonly [string, string, string] = false 
     ? ['#ffffff', 'rgba(255,255,255,0.85)', 'rgba(255,255,255,0)']
     : ['#000000', 'rgba(0,0,0,0.85)', 'rgba(0,0,0,0)'];
 

@@ -12,7 +12,7 @@ export default function TabsLayout() {
     SystemUI.setBackgroundColorAsync(colors.background).catch(() => {});
     StatusBar.setTranslucent(false);
     StatusBar.setBackgroundColor(colors.background);
-    StatusBar.setBarStyle(activeTheme === 'light' ? 'dark-content' : 'light-content');
+    StatusBar.setBarStyle('light-content');
   }, [colors.background, activeTheme]);
 
   return (
