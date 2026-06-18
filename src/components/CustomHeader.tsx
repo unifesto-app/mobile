@@ -3,7 +3,6 @@ import { View, StyleSheet, Platform, TouchableOpacity, Image, Text } from 'react
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Bell } from 'lucide-react-native';
 import LiquidMetalLogo from './LiquidMetalLogo';
 import { spacing } from '../theme';
 import { useAuth } from '../context/AuthContext';
@@ -17,10 +16,6 @@ export default function CustomHeader() {
   const router = useRouter();
   const { user } = useAuth();
   const { colors, activeTheme } = useTheme();
-
-  const handleNotificationPress = () => {
-    router.push('/notifications');
-  };
 
   const handleProfilePress = () => {
     router.push('/profile');
@@ -95,15 +90,8 @@ export default function CustomHeader() {
           <LiquidMetalLogo height={Platform.OS === 'android' ? 30 : 35} width={Platform.OS === 'android' ? 71 : 80} />
         </View>
         
-        {/* Right side: Notification + Profile icons */}
+        {/* Right side: Profile icon */}
         <View style={styles.rightActions}>
-          <TouchableOpacity
-            onPress={handleNotificationPress}
-            style={styles.notificationButton}
-            activeOpacity={0.7}
-          >
-            <Bell size={22} color={colors.primary} strokeWidth={2} />
-          </TouchableOpacity>
           {renderProfileIcon()}
         </View>
       </View>
@@ -133,14 +121,6 @@ const styles = StyleSheet.create({
   rightActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing[3],
-  },
-  notificationButton: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 20,
   },
   profileButton: {
     width: 36,

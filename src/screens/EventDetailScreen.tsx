@@ -299,14 +299,14 @@ export default function EventDetailScreen() {
     bottom: 0,
     left: 0,
     right: 0,
+    overflow: 'hidden',
+  },
+  bottomCTAGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.95)',
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(52, 145, 255, 0.3)',
     paddingHorizontal: spacing[8],
     paddingBottom: spacing[6],
-    paddingTop: spacing[4],
+    paddingTop: spacing[8],
     gap: spacing[4],
   },
   ctaInfo: {
@@ -822,12 +822,9 @@ export default function EventDetailScreen() {
       setIsRegistered(false);
       setActiveTab('overview');
       
-      console.log('[EventDetail] Loading event:', eventId);
       const eventData = await getEventBySlug(eventId).catch((e) => {
-        console.log('[EventDetail] getEventBySlug failed:', e);
         return getEventById(eventId);
       });
-      console.log('[EventDetail] eventData:', eventData ? 'found' : 'null');
       if (eventData) {
         setEvent(eventData);
         
@@ -852,7 +849,7 @@ export default function EventDetailScreen() {
         
         // Check if user is registered
         if (user) {
-          const registered = await isRegisteredForEvent(eventId);
+          const registered = await isRegisteredForEvent(eventData.id);
           setIsRegistered(registered);
         }
       } else {
@@ -871,7 +868,23 @@ export default function EventDetailScreen() {
     loadEvent();
   }, [loadEvent]);
 
-  // useFocusEffect removed - was causing infinite reload loop
+  // Check registration status when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      const checkRegistrationStatus = async () => {
+        if (user && event) {
+          try {
+            const registered = await isRegisteredForEvent(event.id);
+            setIsRegistered(registered);
+          } catch (error) {
+            console.error('[EventDetail] Error checking registration:', error);
+          }
+        }
+      };
+      
+      checkRegistrationStatus();
+    }, [user, event])
+  );
 
   // Don't auto-redirect - let users view event details without login
   // Login prompt shown only when they try to register
@@ -1302,31 +1315,37 @@ export default function EventDetailScreen() {
       {/* Bottom CTA */}
       {!isCompleted && (
         <View style={styles.bottomCTA}>
-          <View style={styles.ctaInfo}>
-            <Text style={styles.ctaLabel}>price</Text>
-            <Text style={styles.ctaPrice}>
-              {priceDisplay}
-            </Text>
-          </View>
-          <TouchableOpacity 
-            style={styles.ctaButton} 
-            activeOpacity={0.8}
-            onPress={handleRegister}
+          <LinearGradient
+            colors={['transparent', 'rgba(0, 0, 0, 0.8)', 'rgba(0, 0, 0, 0.95)']}
+            locations={[0, 0.3, 1]}
+            style={styles.bottomCTAGradient}
           >
-            <LinearGradient
-              colors={['#3491ff', '#0062ff']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.ctaButtonGradient}
-            >
-              {!user && (
-                <LogIn size={16} color={colors.text} strokeWidth={2} style={{ marginRight: spacing[2] }} />
-              )}
-              <Text style={styles.ctaButtonText}>
-                {!user ? 'Sign In to Register' : isRegistered ? 'Already Registered' : isFree ? 'Register Free' : 'Register Now'}
+            <View style={styles.ctaInfo}>
+              <Text style={styles.ctaLabel}>price</Text>
+              <Text style={styles.ctaPrice}>
+                {priceDisplay}
               </Text>
-            </LinearGradient>
-          </TouchableOpacity>
+            </View>
+            <TouchableOpacity 
+              style={styles.ctaButton} 
+              activeOpacity={0.8}
+              onPress={handleRegister}
+            >
+              <LinearGradient
+                colors={['#3491ff', '#0062ff']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.ctaButtonGradient}
+              >
+                {!user && (
+                  <LogIn size={16} color={colors.text} strokeWidth={2} style={{ marginRight: spacing[2] }} />
+                )}
+                <Text style={styles.ctaButtonText}>
+                  {!user ? 'Sign In to Register' : isRegistered ? 'Already Registered' : isFree ? 'Register Free' : 'Register Now'}
+                </Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </LinearGradient>
         </View>
       )}
       

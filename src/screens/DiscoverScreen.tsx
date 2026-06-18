@@ -1208,7 +1208,9 @@ export default function DiscoverScreen() {
         </View>
       )}
       <LinearGradient
-        colors={['rgba(0,0,0,0)', activeTheme === 'dark' ? 'rgba(0,0,0,0.9)' : 'rgba(0,0,0,0.7)']}
+        colors={['transparent', colors.card]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
         style={styles.featuredEventGradient}
       />
       <View style={styles.featuredEventContent}>
@@ -1276,7 +1278,9 @@ export default function DiscoverScreen() {
         </View>
       )}
       <LinearGradient
-        colors={['rgba(0,0,0,0)', activeTheme === 'dark' ? 'rgba(0,0,0,0.9)' : 'rgba(0,0,0,0.7)']}
+        colors={['transparent', colors.card]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
         style={styles.featuredEventGradient}
       />
       <View style={styles.featuredEventContent}>

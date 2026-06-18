@@ -675,24 +675,6 @@ export default function ProfileScreen() {
               </View>
               <ChevronRight size={16} color={colors.textMuted} strokeWidth={2} />
             </TouchableOpacity>
-
-            <View style={styles.menuDivider} />
-
-            {/* Appearance (Click to cycle theme) */}
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={cycleTheme}
-              activeOpacity={0.7}
-            >
-              <View style={styles.menuItemLeft}>
-                <UnIcon name="appearance" size={32} />
-                <Text style={styles.menuItemText}>Appearance</Text>
-              </View>
-              <View style={styles.menuItemRight}>
-                <Text style={styles.menuItemValue}>{getThemeLabel()}</Text>
-                <ChevronRight size={16} color={colors.textMuted} strokeWidth={2} />
-              </View>
-            </TouchableOpacity>
           </View>
         </View>
 
