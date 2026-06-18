@@ -417,7 +417,7 @@ export default function HomeTab() {
         const now = new Date();
         const registrations = response.data || response.events || [];
         const upcomingTickets = registrations
-          .map((reg: any) => reg.event || reg)
+          .map((reg: any) => reg.event ? { ...reg.event, qrCode: reg.qrCode, registrationId: reg.id, ticketType: reg.ticketType } : reg)
           .filter((event: any) => event && event.startDateTime && new Date(event.startDateTime) >= now);
         setUserTickets(upcomingTickets.slice(0, 5));
       } else {
