@@ -953,28 +953,16 @@ export default function EventRegistrationScreen() {
 
   // Handle ticket selection
   const handleTicketSelect = (ticket: Ticket) => {
+    // Every ticket is individual and self-only: quantity is always 1, single attendee.
     setSelectedTicket(ticket);
-
-    if (ticket.type === 'group') {
-      const initialGroupSize = ticket.group_size || 5;
-      setQuantity(initialGroupSize);
-      setAttendees(Array(initialGroupSize).fill(null).map(() => ({
-        name: '',
-        email: '',
-        mobile: '',
-        gender: '',
-        customFields: {},
-      })));
-    } else {
-      setQuantity(1);
-      setAttendees([{
-        name: '',
-        email: '',
-        mobile: '',
-        gender: '',
-        customFields: {},
-      }]);
-    }
+    setQuantity(1);
+    setAttendees([{
+      name: '',
+      email: '',
+      mobile: '',
+      gender: '',
+      customFields: {},
+    }]);
   };
 
   // Handle quantity change
@@ -1301,14 +1289,7 @@ export default function EventRegistrationScreen() {
                         <View style={styles.ticketOptionContent}>
                           <View style={styles.ticketOptionHeader}>
                             <View style={styles.ticketOptionInfo}>
-                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing[2] }}>
-                                <Text style={styles.ticketOptionName}>{ticket.name}</Text>
-                                {ticket.type === 'group' && (
-                                  <View style={styles.groupBadge}>
-                                    <Text style={styles.groupBadgeText}>Group</Text>
-                                  </View>
-                                )}
-                              </View>
+                              <Text style={styles.ticketOptionName}>{ticket.name}</Text>
                               {ticket.description && (
                                 <Text style={styles.ticketOptionDescription}>{ticket.description}</Text>
                               )}
@@ -1353,18 +1334,7 @@ export default function EventRegistrationScreen() {
                 </View>
               )}
 
-              {/* Group size info - fixed, not adjustable. Individual tickets are always quantity 1 (self-only registration). */}
-              {selectedTicket && selectedTicket.type === 'group' && (
-                <View style={styles.quantityContainer}>
-                  <Text style={styles.quantityLabel}>Group Size</Text>
-                  <Text style={[styles.quantityValue, { textAlign: 'left' }]}>
-                    {selectedTicket.group_size || 5} people
-                  </Text>
-                  <Text style={styles.quantityHint}>
-                    This ticket covers a fixed group of {selectedTicket.group_size || 5}. You'll enter details for each member next.
-                  </Text>
-                </View>
-              )}
+
             </View>
           )}
 
