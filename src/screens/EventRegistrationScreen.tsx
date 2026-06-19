@@ -1593,6 +1593,19 @@ export default function EventRegistrationScreen() {
                       )}
                     </View>
                   )}
+
+                  {/* Inline Payment WebView */}
+                  {razorpayVisible && razorpayOptions && (
+                    <View style={{ marginTop: spacing[6] }}>
+                      <RazorpayWebView
+                        visible={razorpayVisible}
+                        options={razorpayOptions}
+                        onSuccess={handlePaymentSuccess}
+                        onError={(e) => { setRazorpayVisible(false); Alert.alert('Payment Failed', e?.message || 'Payment failed'); }}
+                        onDismiss={() => setRazorpayVisible(false)}
+                      />
+                    </View>
+                  )}
                 </View>
               )}
             </View>
@@ -1631,7 +1644,7 @@ export default function EventRegistrationScreen() {
               <Text style={styles.nextButtonText}>Continue →</Text>
             </LinearGradient>
           </TouchableOpacity>
-        ) : (
+        ) : !razorpayVisible ? (
           <TouchableOpacity 
             style={[styles.submitButton, paymentLoading && styles.submitButtonDisabled]} 
             onPress={handleSubmit}
@@ -1650,18 +1663,9 @@ export default function EventRegistrationScreen() {
               )}
             </LinearGradient>
           </TouchableOpacity>
-        )}
+        ) : null}
       </View>
       </KeyboardAvoidingView>
-      {razorpayOptions && (
-        <RazorpayWebView
-          visible={razorpayVisible}
-          options={razorpayOptions}
-          onSuccess={handlePaymentSuccess}
-          onError={(e) => { setRazorpayVisible(false); Alert.alert('Payment Failed', e?.message || 'Payment failed'); }}
-          onDismiss={() => setRazorpayVisible(false)}
-        />
-      )}
     </View>
   );
 }
