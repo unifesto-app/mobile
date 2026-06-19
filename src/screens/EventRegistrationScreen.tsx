@@ -1353,46 +1353,15 @@ export default function EventRegistrationScreen() {
                 </View>
               )}
 
-              {/* Quantity Selector */}
-              {selectedTicket && (
+              {/* Group size info - fixed, not adjustable. Individual tickets are always quantity 1 (self-only registration). */}
+              {selectedTicket && selectedTicket.type === 'group' && (
                 <View style={styles.quantityContainer}>
-                  <Text style={styles.quantityLabel}>
-                    {selectedTicket.type === 'group' ? 'Number of Attendees' : 'Number of Tickets'}
+                  <Text style={styles.quantityLabel}>Group Size</Text>
+                  <Text style={[styles.quantityValue, { textAlign: 'left' }]}>
+                    {selectedTicket.group_size || 5} people
                   </Text>
-                  <View style={styles.quantitySelector}>
-                    <TouchableOpacity
-                      style={[
-                        styles.quantityButton,
-                        quantity <= (selectedTicket.type === 'group' ? (selectedTicket.group_size || 5) : selectedTicket.min_purchase) && styles.quantityButtonDisabled,
-                      ]}
-                      onPress={() => {
-                        const minQty = selectedTicket.type === 'group' ? (selectedTicket.group_size || 5) : selectedTicket.min_purchase;
-                        handleQuantityChange(Math.max(minQty, quantity - 1));
-                      }}
-                      disabled={quantity <= (selectedTicket.type === 'group' ? (selectedTicket.group_size || 5) : selectedTicket.min_purchase)}
-                    >
-                      <Minus size={20} color={colors.text} strokeWidth={2} />
-                    </TouchableOpacity>
-                    <Text style={styles.quantityValue}>{quantity}</Text>
-                    <TouchableOpacity
-                      style={[
-                        styles.quantityButton,
-                        quantity >= Math.min(selectedTicket.max_purchase, selectedTicket.quantity_available - selectedTicket.quantity_sold) && styles.quantityButtonDisabled,
-                      ]}
-                      onPress={() => {
-                        const maxQty = Math.min(selectedTicket.max_purchase, selectedTicket.quantity_available - selectedTicket.quantity_sold);
-                        handleQuantityChange(Math.min(maxQty, quantity + 1));
-                      }}
-                      disabled={quantity >= Math.min(selectedTicket.max_purchase, selectedTicket.quantity_available - selectedTicket.quantity_sold)}
-                    >
-                      <Plus size={20} color={colors.text} strokeWidth={2} />
-                    </TouchableOpacity>
-                  </View>
                   <Text style={styles.quantityHint}>
-                    {selectedTicket.type === 'group' 
-                      ? `Min: ${selectedTicket.group_size || 5}, Max: ${Math.min(selectedTicket.max_purchase, selectedTicket.quantity_available - selectedTicket.quantity_sold)}`
-                      : `Min: ${selectedTicket.min_purchase}, Max: ${Math.min(selectedTicket.max_purchase, selectedTicket.quantity_available - selectedTicket.quantity_sold)}`
-                    }
+                    This ticket covers a fixed group of {selectedTicket.group_size || 5}. You'll enter details for each member next.
                   </Text>
                 </View>
               )}
@@ -1402,12 +1371,31 @@ export default function EventRegistrationScreen() {
           {/* Step 2: Attendee Details */}
           {step === 'details' && (
             <View>
-              <Text style={styles.sectionTitle}>
-                Attendee Information
-                {attendees.length > 1 && (
-                  <Text style={styles.attendeeCount}> ({attendees.length} people)</Text>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing[6] }}>
+                <Text style={styles.sectionTitle}>
+                  Attendee Information
+                  {attendees.length > 1 && (
+                    <Text style={styles.attendeeCount}> ({attendees.length} people)</Text>
+                  )}
+                </Text>
+                {attendees.length === 1 && (
+                  <TouchableOpacity
+                    onPress={() => fillFromProfile(0)}
+                    style={{
+                      backgroundColor: colors.card,
+                      borderWidth: 1,
+                      borderColor: colors.borderMuted,
+                      borderRadius: borderRadius.md,
+                      paddingHorizontal: spacing[3],
+                      paddingVertical: spacing[2],
+                    }}
+                  >
+                    <Text style={{ color: colors.primary, fontSize: typography.fontSize.xs, fontFamily: typography.fontFamily.bold }}>
+                      Fill from Profile
+                    </Text>
+                  </TouchableOpacity>
                 )}
-              </Text>
+              </View>
 
               {attendees.map((attendee, index) => {
                 // Get custom fields applicable to the selected ticket
@@ -1421,7 +1409,7 @@ export default function EventRegistrationScreen() {
                       attendee={attendee}
                       index={index}
                       onChange={handleAttendeeChange}
-                onFillFromProfile={() => fillFromProfile(index)}
+                      onFillFromProfile={attendees.length > 1 ? () => fillFromProfile(index) : undefined}
                       showTitle={attendees.length > 1}
                     />
 

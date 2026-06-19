@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
-import { Calendar, TrendingUp, Users, Search, X, Grid, Heart, Sparkles } from 'lucide-react-native';
+import { Calendar, TrendingUp, Users, Search, X, Grid, Sparkles } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Skeleton from '../components/Skeleton';
 import { spacing, typography, borderRadius, shadows, brandGradient, brandGradientStart, brandGradientEnd } from '../theme';
@@ -46,7 +46,7 @@ export default function DiscoverScreen() {
   const [isSearching, setIsSearching] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
   const [showSearchModal, setShowSearchModal] = useState(false);
-  const [activeFilter, setActiveFilter] = useState<'all' | 'trending' | 'featured' | 'upcoming' | 'saved'>('all');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'trending' | 'featured' | 'upcoming'>('all');
   
   // Ref for search debounce timeout
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1749,34 +1749,6 @@ export default function DiscoverScreen() {
                     <Calendar size={14} color={colors.text} strokeWidth={2} />
                     <Text style={styles.filterButtonText}>Upcoming</Text>
                   </TouchableOpacity>
-                )}
-
-                {user && (
-                  activeFilter === 'saved' ? (
-                    <TouchableOpacity
-                      onPress={() => setActiveFilter('all')}
-                      activeOpacity={0.7}
-                    >
-                      <LinearGradient
-                        colors={brandGradient}
-                        start={brandGradientStart}
-                        end={brandGradientEnd}
-                        style={styles.filterButtonGradient}
-                      >
-                        <Heart size={14} color={colors.text} strokeWidth={2} fill={colors.text} />
-                        <Text style={styles.filterButtonTextActive}>Saved</Text>
-                      </LinearGradient>
-                    </TouchableOpacity>
-                  ) : (
-                    <TouchableOpacity
-                      style={styles.filterButton}
-                      onPress={() => router.push('/saved')}
-                      activeOpacity={0.7}
-                    >
-                      <Heart size={14} color={colors.text} strokeWidth={2} fill="none" />
-                      <Text style={styles.filterButtonText}>Saved</Text>
-                    </TouchableOpacity>
-                  )
                 )}
               </ScrollView>
             </View>
