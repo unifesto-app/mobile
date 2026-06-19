@@ -1,7 +1,8 @@
 import React, { useRef } from 'react';
-import { StyleSheet, View, ActivityIndicator, Text } from 'react-native';
+import { Modal, StyleSheet, View, ActivityIndicator, Text, TouchableOpacity } from 'react-native';
 import { WebView } from 'react-native-webview';
-import { spacing, typography, borderRadius } from '../theme';
+import { X } from 'lucide-react-native';
+import { spacing, typography } from '../theme';
 import { getFontFamily } from '../theme/fontHelpers';
 import { useTheme } from '../context/ThemeContext';
 import {
@@ -30,12 +31,21 @@ export default function RazorpayWebView({
 
   const styles = StyleSheet.create({
     container: {
-      height: 480,
-      borderRadius: borderRadius.xl,
-      overflow: 'hidden',
-      borderWidth: 1,
-      borderColor: colors.borderMuted,
+      flex: 1,
       backgroundColor: colors.background,
+    },
+    closeBar: {
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      paddingHorizontal: spacing[4],
+      paddingTop: spacing[12],
+      paddingBottom: spacing[2],
+    },
+    closeButton: {
+      width: 36,
+      height: 36,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     webview: {
       flex: 1,
@@ -77,35 +87,45 @@ export default function RazorpayWebView({
     }
   };
 
-  if (!visible) return null;
-
   const html = generateRazorpayHTML(options);
 
   return (
-    <View style={styles.container}>
-      <WebView
-        ref={webViewRef}
-        source={{ html }}
-        style={styles.webview}
-        onMessage={handleMessage}
-        javaScriptEnabled={true}
-        domStorageEnabled={true}
-        startInLoadingState={true}
-        renderLoading={() => (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={colors.primary} />
-            <Text style={styles.loadingText}>Loading payment gateway...</Text>
-          </View>
-        )}
-        onError={(syntheticEvent) => {
-          const { nativeEvent } = syntheticEvent;
-          console.error('WebView error:', nativeEvent);
-          onError({
-            message: 'Failed to load payment gateway',
-            description: nativeEvent.description,
-          });
-        }}
-      />
-    </View>
+    <Modal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={onDismiss}
+    >
+      <View style={styles.container}>
+        <View style={styles.closeBar}>
+          <TouchableOpacity style={styles.closeButton} onPress={onDismiss} activeOpacity={0.7}>
+            <X size={22} color={colors.text} strokeWidth={2} />
+          </TouchableOpacity>
+        </View>
+        <WebView
+          ref={webViewRef}
+          source={{ html }}
+          style={styles.webview}
+          onMessage={handleMessage}
+          javaScriptEnabled={true}
+          domStorageEnabled={true}
+          startInLoadingState={true}
+          renderLoading={() => (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={colors.primary} />
+              <Text style={styles.loadingText}>Loading payment gateway...</Text>
+            </View>
+          )}
+          onError={(syntheticEvent) => {
+            const { nativeEvent } = syntheticEvent;
+            console.error('WebView error:', nativeEvent);
+            onError({
+              message: 'Failed to load payment gateway',
+              description: nativeEvent.description,
+            });
+          }}
+        />
+      </View>
+    </Modal>
   );
 }

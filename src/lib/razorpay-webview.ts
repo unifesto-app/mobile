@@ -25,7 +25,8 @@ export interface RazorpayResponse {
 }
 
 /**
- * Generate HTML for Razorpay checkout
+ * Generate HTML for Razorpay checkout — opens Razorpay's own checkout
+ * immediately on load, no custom intermediate page.
  */
 export function generateRazorpayHTML(options: RazorpayOptions): string {
   return `
@@ -37,73 +38,19 @@ export function generateRazorpayHTML(options: RazorpayOptions): string {
   <style>
     body {
       margin: 0;
-      padding: 20px;
+      padding: 0;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: #0a0a0a;
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
     }
-    .container {
-      background: white;
-      border-radius: 16px;
-      padding: 32px;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-      text-align: center;
-      max-width: 400px;
-      width: 100%;
-    }
-    .logo {
-      width: 80px;
-      height: 80px;
-      margin: 0 auto 20px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 32px;
-    }
-    h1 {
-      font-size: 24px;
-      margin: 0 0 8px;
-      color: #1a1a1a;
-    }
-    .amount {
-      font-size: 36px;
-      font-weight: bold;
-      color: #667eea;
-      margin: 16px 0;
-    }
-    .description {
-      color: #666;
-      margin-bottom: 24px;
-      font-size: 14px;
-    }
-    .button {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      border: none;
-      padding: 16px 32px;
-      border-radius: 12px;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      width: 100%;
-      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-      transition: transform 0.2s;
-    }
-    .button:active {
-      transform: scale(0.98);
-    }
     .spinner {
-      display: none;
-      width: 40px;
-      height: 40px;
-      margin: 20px auto;
-      border: 4px solid #f3f3f3;
-      border-top: 4px solid #667eea;
+      width: 36px;
+      height: 36px;
+      border: 3px solid rgba(255,255,255,0.15);
+      border-top: 3px solid #3491ff;
       border-radius: 50%;
       animation: spin 1s linear infinite;
     }
@@ -111,32 +58,35 @@ export function generateRazorpayHTML(options: RazorpayOptions): string {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
-    .loading .spinner {
-      display: block;
-    }
-    .loading .button {
-      display: none;
-    }
     .error {
-      color: #e53e3e;
+      color: #ff6b6b;
       margin-top: 16px;
       font-size: 14px;
+      text-align: center;
+      display: none;
+      padding: 0 24px;
+    }
+    .error.show { display: block; }
+    .retry {
+      margin-top: 16px;
+      background: #3491ff;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
       display: none;
     }
-    .error.show {
-      display: block;
-    }
+    .retry.show { display: block; }
+    .wrap { text-align: center; }
   </style>
 </head>
 <body>
-  <div class="container" id="container">
-    <div class="logo">💳</div>
-    <h1>${options.name}</h1>
-    <div class="amount">₹${(options.amount / 100).toFixed(2)}</div>
-    <div class="description">${options.description}</div>
-    <button class="button" onclick="openRazorpay()">Pay Now</button>
-    <div class="spinner"></div>
+  <div class="wrap">
+    <div class="spinner" id="spinner"></div>
     <div class="error" id="error"></div>
+    <button class="retry" id="retry" onclick="openRazorpay()">Retry Payment</button>
   </div>
 
   <script>
@@ -147,15 +97,17 @@ export function generateRazorpayHTML(options: RazorpayOptions): string {
     }
 
     function showError(message) {
+      document.getElementById('spinner').style.display = 'none';
       const errorEl = document.getElementById('error');
       errorEl.textContent = message;
       errorEl.classList.add('show');
-      document.getElementById('container').classList.remove('loading');
+      document.getElementById('retry').classList.add('show');
     }
 
     function openRazorpay() {
-      document.getElementById('container').classList.add('loading');
+      document.getElementById('spinner').style.display = 'block';
       document.getElementById('error').classList.remove('show');
+      document.getElementById('retry').classList.remove('show');
 
       const options = {
         key: '${options.keyId}',
@@ -171,7 +123,7 @@ export function generateRazorpayHTML(options: RazorpayOptions): string {
           contact: '${options.prefill.contact}'
         },
         theme: {
-          color: '#667eea'
+          color: '#3491ff'
         },
         handler: function(response) {
           sendMessage('success', {
@@ -189,7 +141,7 @@ export function generateRazorpayHTML(options: RazorpayOptions): string {
 
       try {
         const rzp = new Razorpay(options);
-        
+
         rzp.on('payment.failed', function(response) {
           sendMessage('error', {
             code: response.error.code,
@@ -208,8 +160,10 @@ export function generateRazorpayHTML(options: RazorpayOptions): string {
       }
     }
 
-    // Auto-open on load (optional)
-    // setTimeout(() => openRazorpay(), 500);
+    // Open Razorpay checkout immediately — no intermediate landing page
+    window.addEventListener('load', function() {
+      setTimeout(openRazorpay, 200);
+    });
   </script>
 </body>
 </html>
