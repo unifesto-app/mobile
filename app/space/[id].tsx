@@ -35,6 +35,7 @@ export default function SpaceDetail() {
 
   const [space, setSpace] = useState<Space | null>(null);
   const [isMember, setIsMember] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [loading, setLoading] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
 
@@ -79,7 +80,7 @@ export default function SpaceDetail() {
       { options, destructiveButtonIndex: destructiveIndex, cancelButtonIndex: cancelIndex, title: space?.name },
       (index) => {
         if (user && isMember) {
-          if (index === 0) handleJoinLeave();
+          if (index === 0) confirmLeave();
           else if (index === 1) handleCopyLink();
           else if (index === 2) handleReport();
         } else {
@@ -109,6 +110,18 @@ export default function SpaceDetail() {
     Alert.alert('Link Copied', 'Space link copied to clipboard');
   };
 
+  const confirmLeave = () => {
+    if (!space) return;
+    Alert.alert(
+      'Leave Space?',
+      `Are you sure you want to leave ${space.name}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Leave', style: 'destructive', onPress: handleJoinLeave },
+      ]
+    );
+  };
+
   const handleJoinLeave = async () => {
     if (!user || !token) {
       Alert.alert('Sign In Required', 'Please sign in to join this space');
@@ -123,15 +136,18 @@ export default function SpaceDetail() {
       if (isMember) {
         await leaveSpace(token, id);
         setIsMember(false);
+        setRefreshKey((k) => k + 1);
         Alert.alert('Success', `You have left ${space.name}`);
       } else {
         try {
           await joinSpace(token, id);
           setIsMember(true);
+          setRefreshKey((k) => k + 1);
           Alert.alert('Success', `You have joined ${space.name}`);
         } catch (joinError: any) {
           if (joinError?.message?.includes('already a member')) {
             setIsMember(true);
+            setRefreshKey((k) => k + 1);
           } else {
             throw joinError;
           }
@@ -183,7 +199,7 @@ export default function SpaceDetail() {
               <MenuView
                 title={space?.name || 'Options'}
                 onPressAction={({ nativeEvent }) => {
-                  if (nativeEvent.event === 'leave') handleJoinLeave();
+                  if (nativeEvent.event === 'leave') confirmLeave();
                   else if (nativeEvent.event === 'copy') handleCopyLink();
                   else if (nativeEvent.event === 'report') handleReport();
                 }}
@@ -215,6 +231,7 @@ export default function SpaceDetail() {
       />
 
       <SpaceDetailScreen
+        key={refreshKey}
         route={{ params: { spaceId: id } }}
         onMembershipChange={(member) => setIsMember(member)}
       />

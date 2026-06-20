@@ -208,10 +208,34 @@ export const getTrendingEvents = async (limit = 10) => {
 
 
 export const isRegisteredForEvent = async (eventId: string): Promise<boolean> => {
-  const response = await makeAuthenticatedRequest(`/events/${eventId}/my-registration`);
-  if (!response?.ok) return false;
-  const data = await response.json();
+  const data = await getMyRegistrationForEvent(eventId);
   return !!data;
+};
+
+export const getMyRegistrationForEvent = async (eventId: string): Promise<any | null> => {
+  const response = await makeAuthenticatedRequest(`/events/${eventId}/my-registration`);
+  if (!response?.ok) return null;
+  const text = await response.text();
+  if (!text) return null;
+  try {
+    const data = JSON.parse(text);
+    return data || null;
+  } catch {
+    return null;
+  }
+};
+
+export const getMyRegistrationsForEvent = async (eventId: string): Promise<any[]> => {
+  const response = await makeAuthenticatedRequest(`/events/${eventId}/my-registrations`);
+  if (!response?.ok) return [];
+  const text = await response.text();
+  if (!text) return [];
+  try {
+    const data = JSON.parse(text);
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
 };
 
 export const getCategories = async () => {

@@ -23,7 +23,7 @@ import GradientText from '../components/GradientText';
 import Footer from '../components/Footer';
 import Skeleton from '../components/Skeleton';
 import { spacing, typography, borderRadius, shadows } from '../theme';
-import { getEventById, getEventBySlug, isRegisteredForEvent, Event, getEventDisplayPrice } from '../lib/api/events';
+import { getEventById, getEventBySlug, isRegisteredForEvent, Event, getEventDisplayPrice, getMyRegistrationForEvent, getMyRegistrationsForEvent } from '../lib/api/events';
 import { registerRSVP } from '../lib/api/registrations';
 import { getEventAdditionalInfo, AgendaItem, Speaker, Prize, Faq } from '../lib/api/additional-info';
 import { getEventTickets, Ticket, formatEventPrice } from '../lib/api/tickets';
@@ -982,13 +982,29 @@ export default function EventDetailScreen() {
           },
         ]
       );
-    } else if (isRegistered) {
-      // User is already registered
-      Alert.alert(
-        'Already Registered',
-        'You are already registered for this event. Check your registrations for more details.',
-        [{ text: 'OK' }]
-      );
+    } else if (isRegistered && event.registrationType !== 'MIXED') {
+      // Single-ticket-type event, already registered — open their ticket directly
+      try {
+        const registration = await getMyRegistrationForEvent(event.id);
+        if (registration) {
+          router.push({
+            pathname: '/ticket/[id]',
+            params: {
+              id: registration.id,
+              ticket: JSON.stringify({
+                ...(registration.event || event),
+                qrCode: registration.qrCode,
+                registrationId: registration.id,
+                ticketType: registration.ticketType,
+              }),
+            },
+          });
+        } else {
+          router.push('/tickets');
+        }
+      } catch {
+        router.push('/tickets');
+      }
     } else if (!hasSpots) {
       // Event is sold out
       Alert.alert(
@@ -1341,7 +1357,7 @@ export default function EventDetailScreen() {
                   <LogIn size={16} color={colors.text} strokeWidth={2} style={{ marginRight: spacing[2] }} />
                 )}
                 <Text style={styles.ctaButtonText}>
-                  {!user ? 'Sign In to Register' : isRegistered ? 'Already Registered' : event.registrationType === 'MIXED' ? 'Choose Ticket' : isFree ? 'Register Free' : 'Register Now'}
+                  {!user ? 'Sign In to Register' : event.registrationType === 'MIXED' ? (isRegistered ? 'View / Add Ticket' : 'Choose Ticket') : isRegistered ? 'Already Registered' : isFree ? 'Register Free' : 'Register Now'}
                 </Text>
               </LinearGradient>
             </TouchableOpacity>

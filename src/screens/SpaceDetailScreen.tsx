@@ -110,6 +110,7 @@ export default function SpaceDetailScreen({ route, onMembershipChange }: SpaceDe
       if (isMember) {
         // Leave space
         await leaveSpace(token, spaceId);
+        console.log('[Space] Left space, setting isMember to false');
         setIsMember(false);
         if (onMembershipChange) onMembershipChange(false);
         Alert.alert('Success', `You have left ${space.name}`);
@@ -447,29 +448,40 @@ export default function SpaceDetailScreen({ route, onMembershipChange }: SpaceDe
       {/* Bottom Join Button - shown only for non-members */}
       {!isMember && (
         <View style={{
-          position: 'absolute', bottom: 0, left: 0, right: 0,
-          paddingHorizontal: spacing[6], paddingBottom: spacing[8], paddingTop: spacing[4],
-          backgroundColor: colors.background,
-          borderTopWidth: 1, borderTopColor: colors.borderMuted,
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          overflow: 'hidden',
         }}>
-          <TouchableOpacity onPress={handleJoinLeave} disabled={joiningLoading} activeOpacity={0.85}>
-            <LinearGradient
-              colors={brandGradient}
-              start={brandGradientStart}
-              end={brandGradientEnd}
-              style={{
-                borderRadius: borderRadius.full,
-                paddingVertical: spacing[4],
-                alignItems: 'center',
-                justifyContent: 'center',
-                opacity: joiningLoading ? 0.7 : 1,
-              }}
-            >
-              <Text style={{ color: colors.text, fontSize: typography.fontSize.base, fontFamily: getFontFamily('bold') }}>
-                {joiningLoading ? 'Joining...' : `Join ${space.name}`}
-              </Text>
-            </LinearGradient>
-          </TouchableOpacity>
+          <LinearGradient
+            colors={['transparent', 'rgba(0, 0, 0, 0.8)', 'rgba(0, 0, 0, 0.95)']}
+            locations={[0, 0.3, 1]}
+            style={{
+              paddingHorizontal: spacing[6],
+              paddingBottom: spacing[8],
+              paddingTop: spacing[8],
+            }}
+          >
+            <TouchableOpacity onPress={handleJoinLeave} disabled={joiningLoading} activeOpacity={0.85}>
+              <LinearGradient
+                colors={brandGradient}
+                start={brandGradientStart}
+                end={brandGradientEnd}
+                style={{
+                  borderRadius: borderRadius.full,
+                  paddingVertical: spacing[4],
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  opacity: joiningLoading ? 0.7 : 1,
+                }}
+              >
+                <Text style={{ color: colors.text, fontSize: typography.fontSize.base, fontFamily: getFontFamily('bold') }}>
+                  {joiningLoading ? 'Joining...' : `Join ${space.name}`}
+                </Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </LinearGradient>
         </View>
       )}
     </View>

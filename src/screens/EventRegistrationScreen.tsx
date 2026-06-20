@@ -30,7 +30,7 @@ import RazorpayCheckout from 'react-native-razorpay';
 import { verifyPayment, createRegistration } from '../lib/api/registrations';
 import { getWallet } from '../lib/api/wallet';
 import { spacing, typography, borderRadius } from '../theme';
-import { getEventById, getEventBySlug, Event } from '../lib/api/events';
+import { getEventById, getEventBySlug, Event, getMyRegistrationsForEvent } from '../lib/api/events';
 import { getEventTickets, getEventCustomFields, getFieldsForTicket, Ticket, CustomField, calculateTicketPrice, isTicketAvailable } from '../lib/api/tickets';
 import CustomFieldInput from '../components/CustomFieldInput';
 import { useTheme } from '../context/ThemeContext';
@@ -766,6 +766,7 @@ export default function EventRegistrationScreen() {
   // Event state
   const [event, setEvent] = useState<Event | null>(null);
   const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [ownedTicketTypeIds, setOwnedTicketTypeIds] = useState<Set<string>>(new Set());
   const [customFields, setCustomFields] = useState<CustomField[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -774,11 +775,16 @@ export default function EventRegistrationScreen() {
     const loadEventData = async () => {
       try {
         setLoading(true);
-        const [eventData, fieldsData] = await Promise.all([
+        const [eventData, fieldsData, myRegistrations] = await Promise.all([
           getEventBySlug(eventId).catch(() => getEventById(eventId)),
           getEventCustomFields(eventId).catch(() => ({ fields: [] })),
+          getMyRegistrationsForEvent(eventId).catch(() => []),
         ]);
-        
+
+        setOwnedTicketTypeIds(
+          new Set(myRegistrations.map((r: any) => r.ticketTypeId).filter(Boolean))
+        );
+
         setEvent(eventData);
         // Use ticketTypes from event data directly
         if (eventData?.ticketTypes && eventData.ticketTypes.length > 0) {
@@ -1282,7 +1288,8 @@ export default function EventRegistrationScreen() {
               ) : (
                 <View style={styles.ticketOptions}>
                   {tickets.map((ticket) => {
-                    const available = isTicketAvailable(ticket);
+                    const owned = ownedTicketTypeIds.has(ticket.id);
+                    const available = isTicketAvailable(ticket) && !owned;
                     const spotsLeft = ticket.quantity_available - ticket.quantity_sold;
                     const currencySymbol = CURRENCY_SYMBOLS[ticket.currency] || ticket.currency;
                     
@@ -1300,11 +1307,18 @@ export default function EventRegistrationScreen() {
                         <View style={styles.ticketOptionContent}>
                           <View style={styles.ticketOptionHeader}>
                             <View style={styles.ticketOptionInfo}>
-                              <Text style={styles.ticketOptionName}>{ticket.name}</Text>
+                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                <Text style={styles.ticketOptionName}>{ticket.name}</Text>
+                                {owned && (
+                                  <View style={{ backgroundColor: 'rgba(52,145,255,0.15)', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 }}>
+                                    <Text style={{ color: colors.primary, fontSize: 11, fontWeight: '600' }}>✓ Owned</Text>
+                                  </View>
+                                )}
+                              </View>
                               {ticket.description && (
                                 <Text style={styles.ticketOptionDescription}>{ticket.description}</Text>
                               )}
-                              {!available && (
+                              {!owned && !available && (
                                 <Text style={styles.unavailableText}>
                                   {spotsLeft === 0 ? 'Sold Out' : 'Not Available'}
                                 </Text>
