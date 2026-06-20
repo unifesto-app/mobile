@@ -46,7 +46,7 @@ export default function SpaceDetail() {
     try {
       const spaceData = await getSpaceById(id, token || undefined);
       setSpace(spaceData);
-      setIsMember(!!(spaceData.userRole || (spaceData.userRoles && spaceData.userRoles.length > 0)));
+      setIsMember(!!spaceData.userRole);
     } catch (error) {
       console.error('Error loading space:', error);
     }
