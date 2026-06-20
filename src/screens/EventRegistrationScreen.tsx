@@ -26,7 +26,7 @@ import GradientText from '../components/GradientText';
 import RegistrationTimer from '../components/RegistrationTimer';
 import StepIndicator from '../components/StepIndicator';
 import AttendeeForm from '../components/AttendeeForm';
-import RazorpayWebView from '../components/RazorpayWebView';
+import RazorpayCheckout from 'react-native-razorpay';
 import { verifyPayment, createRegistration } from '../lib/api/registrations';
 import { getWallet } from '../lib/api/wallet';
 import { spacing, typography, borderRadius } from '../theme';
@@ -825,8 +825,6 @@ export default function EventRegistrationScreen() {
   // Attendee details
   const [walletBalance, setWalletBalance] = useState(0);
   const [coinsToUse, setCoinsToUse] = useState(0);
-  const [razorpayVisible, setRazorpayVisible] = useState(false);
-  const [razorpayOptions, setRazorpayOptions] = useState<any>(null);
   const [pendingRegistrationId, setPendingRegistrationId] = useState<string>('');
   const [attendees, setAttendees] = useState<AttendeeInfo[]>([{
     name: '',
@@ -1122,23 +1120,36 @@ export default function EventRegistrationScreen() {
         navigateToSuccess();
         return;
       }
-      // Paid ticket — show Razorpay
+      // Paid ticket — open native Razorpay checkout
       setPendingRegistrationId(orderResponse.registrationId || '');
-      setRazorpayOptions({
-        orderId: orderResponse.razorpayOrderId,
+      setLoading(false);
+
+      const options = {
+        key: orderResponse.razorpayKeyId,
+        order_id: orderResponse.razorpayOrderId,
         amount: orderResponse.amount,
         currency: orderResponse.currency || 'INR',
         name: 'Unifesto',
         description: event.title,
-        image: event.coverImageUrl || undefined,
+        image: event.coverImageUrl || 'https://unifesto.app/logo.png',
         prefill: {
           name: attendees[0]?.name || user?.fullName || '',
           email: attendees[0]?.email || '',
           contact: attendees[0]?.mobile || user?.mobileNumber || '',
         },
-        keyId: orderResponse.razorpayKeyId,
-      });
-      setRazorpayVisible(true);
+        theme: { color: '#3491ff' },
+      };
+
+      try {
+        const paymentData = await RazorpayCheckout.open(options);
+        await handlePaymentSuccess(paymentData);
+      } catch (paymentError: any) {
+        // User cancelled or payment failed — registration stays PENDING and will be
+        // cleaned up / reused on next attempt by the backend.
+        if (paymentError?.code !== 0 && paymentError?.description !== 'Payment Cancelled') {
+          Alert.alert('Payment Failed', paymentError?.description || 'Payment was not completed');
+        }
+      }
     } catch (error: any) {
       console.error('Registration error:', error);
       Alert.alert('Error', error?.message || 'Registration failed');
@@ -1163,7 +1174,6 @@ export default function EventRegistrationScreen() {
   };
 
   const handlePaymentSuccess = async (paymentResponse: any) => {
-    setRazorpayVisible(false);
     try {
       await verifyPayment(event?.id || '', {
         registrationId: pendingRegistrationId,
@@ -1654,15 +1664,6 @@ export default function EventRegistrationScreen() {
         )}
       </View>
       </KeyboardAvoidingView>
-      {razorpayOptions && (
-        <RazorpayWebView
-          visible={razorpayVisible}
-          options={razorpayOptions}
-          onSuccess={handlePaymentSuccess}
-          onError={(e) => { setRazorpayVisible(false); Alert.alert('Payment Failed', e?.message || 'Payment failed'); }}
-          onDismiss={() => setRazorpayVisible(false)}
-        />
-      )}
     </View>
   );
 }
