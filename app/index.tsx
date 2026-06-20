@@ -25,10 +25,7 @@ export default function Index() {
     );
   }
 
-  // Redirect logic after animation completes
-  if (isAuthenticated && !isOnboarded) {
-    return <Redirect href="/onboarding" />;
-  }
+  // Always go straight to tabs — profile completion is a banner there instead of a forced screen
 
   return <Redirect href="/(tabs)" />;
 }

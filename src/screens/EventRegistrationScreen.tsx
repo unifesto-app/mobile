@@ -1121,7 +1121,8 @@ export default function EventRegistrationScreen() {
         return;
       }
       // Paid ticket — open native Razorpay checkout
-      setPendingRegistrationId(orderResponse.registrationId || '');
+      const registrationId = orderResponse.registrationId || '';
+      setPendingRegistrationId(registrationId);
       setLoading(false);
 
       const options = {
@@ -1142,7 +1143,7 @@ export default function EventRegistrationScreen() {
 
       try {
         const paymentData = await RazorpayCheckout.open(options);
-        await handlePaymentSuccess(paymentData);
+        await handlePaymentSuccess(paymentData, registrationId);
       } catch (paymentError: any) {
         // User cancelled or payment failed — registration stays PENDING and will be
         // cleaned up / reused on next attempt by the backend.
@@ -1173,10 +1174,10 @@ export default function EventRegistrationScreen() {
     });
   };
 
-  const handlePaymentSuccess = async (paymentResponse: any) => {
+  const handlePaymentSuccess = async (paymentResponse: any, registrationId?: string) => {
     try {
       await verifyPayment(event?.id || '', {
-        registrationId: pendingRegistrationId,
+        registrationId: registrationId || pendingRegistrationId,
         razorpayOrderId: paymentResponse.razorpay_order_id,
         razorpayPaymentId: paymentResponse.razorpay_payment_id,
         razorpaySignature: paymentResponse.razorpay_signature,

@@ -701,6 +701,62 @@ export default function HomeTab() {
               </View>
             </View>
           )}
+
+          {/* Profile Completion Banner */}
+          {user && !profile?.username && (
+            <TouchableOpacity
+              style={styles.guestCard}
+              onPress={() => router.push('/account')}
+              activeOpacity={0.8}
+            >
+              <View style={styles.guestCardRow}>
+                <LinearGradient
+                  colors={brandGradient}
+                  start={brandGradientStart}
+                  end={brandGradientEnd}
+                  style={styles.guestIconGradient}
+                >
+                  <User size={24} color={colors.text} strokeWidth={2} />
+                </LinearGradient>
+                <View style={styles.guestCardContent}>
+                  <Text style={styles.guestCardTitle}>Set Your Username</Text>
+                  <Text style={styles.guestCardDescription}>
+                    Choose a username in Account Settings
+                  </Text>
+                </View>
+                <View style={styles.guestArrowButton}>
+                  <ArrowRight size={20} color={colors.primary} strokeWidth={2.5} />
+                </View>
+              </View>
+            </TouchableOpacity>
+          )}
+          {user && !!profile?.username && !profile?.fullName && (
+            <TouchableOpacity
+              style={styles.guestCard}
+              onPress={() => router.push('/edit-profile')}
+              activeOpacity={0.8}
+            >
+              <View style={styles.guestCardRow}>
+                <LinearGradient
+                  colors={brandGradient}
+                  start={brandGradientStart}
+                  end={brandGradientEnd}
+                  style={styles.guestIconGradient}
+                >
+                  <User size={24} color={colors.text} strokeWidth={2} />
+                </LinearGradient>
+                <View style={styles.guestCardContent}>
+                  <Text style={styles.guestCardTitle}>Complete Your Profile</Text>
+                  <Text style={styles.guestCardDescription}>
+                    Add your name and details
+                  </Text>
+                </View>
+                <View style={styles.guestArrowButton}>
+                  <ArrowRight size={20} color={colors.primary} strokeWidth={2.5} />
+                </View>
+              </View>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Your Tickets Section - Only if user is logged in */}
