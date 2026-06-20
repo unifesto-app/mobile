@@ -147,7 +147,7 @@ export default function UserProfileScreen() {
 
   const renderEvent = (event: any) => (
     <TouchableOpacity
-      key={event.id}
+      key={event.registrationId || event.id}
       style={styles.eventCard}
       onPress={() => router.push(`/event/${event.slug || event.id}`)}
       activeOpacity={0.8}
@@ -180,7 +180,7 @@ export default function UserProfileScreen() {
 
   const renderTicket = (event: any) => (
     <TouchableOpacity
-      key={event.id}
+      key={event.registrationId || event.id}
       style={styles.ticketCard}
       onPress={() => router.push(`/event/${event.slug || event.id}`)}
       activeOpacity={0.8}

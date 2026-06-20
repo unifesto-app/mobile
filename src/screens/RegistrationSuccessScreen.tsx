@@ -62,7 +62,7 @@ export default function RegistrationSuccessScreen() {
   );
 
   const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.background },
+    container: { flex: 1, backgroundColor: colors.background, paddingTop: spacing[24] },
     errorText: { fontSize: typography.fontSize.base, color: colors.error, textAlign: 'center' },
     heroSection: { paddingHorizontal: spacing[6], paddingTop: spacing[16], paddingBottom: spacing[8] },
     heroContent: { alignItems: 'center' },
@@ -136,7 +136,7 @@ export default function RegistrationSuccessScreen() {
   return (
     <View style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
-        <LinearGradient colors={['rgba(52, 145, 255, 0.1)', 'transparent']} style={styles.heroSection}>
+        <View style={styles.heroSection}>
           <View style={styles.heroContent}>
             <View style={styles.successIconContainer}>
               <View style={styles.successIcon}>
@@ -146,7 +146,7 @@ export default function RegistrationSuccessScreen() {
             <GradientText style={styles.successTitle}>Registration Successful!</GradientText>
             <Text style={styles.successSubtitle}>You're all set for {displayTitle}</Text>
           </View>
-        </LinearGradient>
+        </View>
 
         <View style={styles.contentContainer}>
           <View style={styles.summaryCard}>

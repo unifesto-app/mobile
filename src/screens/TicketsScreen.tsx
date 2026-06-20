@@ -307,7 +307,7 @@ export default function TicketsScreen() {
 
     return (
       <TouchableOpacity
-        key={event.id}
+        key={event.registrationId || event.id}
         style={styles.ticketCard}
         onPress={() => router.push({ 
           pathname: '/ticket/[id]', 

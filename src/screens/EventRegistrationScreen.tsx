@@ -1604,7 +1604,7 @@ export default function EventRegistrationScreen() {
                             </TouchableOpacity>
                           )}
                           <TouchableOpacity
-                            onPress={() => setCoinsToUse(Math.min(walletBalance, Math.floor(calculateTotal())))}
+                            onPress={() => setCoinsToUse(Math.min(walletBalance, Math.floor(selectedTicket ? calculateTicketPrice(selectedTicket, quantity) : 0)))}
                             style={{ backgroundColor: colors.primary, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 }}
                           >
                             <Text style={{ color: '#fff', fontSize: 12, fontWeight: '600' }}>
