@@ -72,7 +72,7 @@ export default function UserProfileScreen() {
       ]);
 
       const registrations = registrationsResp?.data || registrationsResp?.events || [];
-      const allEvents = registrations.map((r: any) => r.event || r).filter((e: any) => e?.id);
+      const allEvents = registrations.map((r: any) => r.event ? { ...r.event, registrationId: r.id } : r).filter((e: any) => e?.id);
       
       const now = new Date();
       const upcomingEvents = allEvents.filter((e: any) => new Date(e.startDateTime) >= now);

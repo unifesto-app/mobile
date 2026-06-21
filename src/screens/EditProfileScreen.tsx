@@ -8,12 +8,13 @@ import {
   Image,
   TextInput,
   Alert,
+  Modal,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
-import { Camera } from 'lucide-react-native';
+import { Camera, ChevronDown } from 'lucide-react-native';
 import { UnIcon } from '@unifesto/unicon/react-native';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -51,6 +52,7 @@ export default function EditProfileScreen() {
   // Auto-save
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [showGenderDropdown, setShowGenderDropdown] = useState(false);
 
   useEffect(() => {
     loadProfile();
@@ -167,6 +169,18 @@ export default function EditProfileScreen() {
       .map((n) => n[0])
       .join('')
       .toUpperCase();
+  };
+
+  const genderOptions = [
+    { label: 'Male', value: 'MALE' },
+    { label: 'Female', value: 'FEMALE' },
+    { label: 'Other', value: 'NON_BINARY' },
+    { label: 'Prefer not to say', value: 'PREFER_NOT_TO_SAY' },
+  ];
+
+  const getGenderLabel = () => {
+    const option = genderOptions.find(opt => opt.value === gender);
+    return option ? option.label : 'Select gender';
   };
 
   const styles = StyleSheet.create({
@@ -298,6 +312,61 @@ export default function EditProfileScreen() {
       textAlign: 'center',
       paddingHorizontal: spacing[6],
       marginTop: spacing[4],
+    },
+    // Dropdown
+    dropdownButton: {
+      flex: 1,
+      fontSize: typography.fontSize.base,
+      fontFamily: getFontFamily('semibold'),
+      color: colors.text,
+      backgroundColor: colors.background,
+      borderRadius: borderRadius.md,
+      paddingHorizontal: spacing[4],
+      paddingVertical: spacing[3],
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    dropdownButtonText: {
+      fontSize: typography.fontSize.base,
+      fontFamily: getFontFamily('semibold'),
+      color: colors.text,
+    },
+    dropdownPlaceholder: {
+      color: colors.textMuted,
+    },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    dropdownModal: {
+      width: '80%',
+      backgroundColor: colors.card,
+      borderRadius: borderRadius['2xl'],
+      overflow: 'hidden',
+      ...shadows.xl,
+    },
+    dropdownOption: {
+      paddingHorizontal: spacing[5],
+      paddingVertical: spacing[4],
+      borderBottomWidth: 1,
+      borderBottomColor: colors.borderMuted,
+    },
+    dropdownOptionLast: {
+      borderBottomWidth: 0,
+    },
+    dropdownOptionSelected: {
+      backgroundColor: 'rgba(52, 145, 255, 0.1)',
+    },
+    dropdownOptionText: {
+      fontSize: typography.fontSize.base,
+      fontFamily: getFontFamily('semibold'),
+      color: colors.text,
+    },
+    dropdownOptionTextSelected: {
+      color: colors.primary,
     },
   });
 
@@ -437,37 +506,24 @@ export default function EditProfileScreen() {
               </View>
             </View>
 
+            <View style={styles.inputDivider} />
+
             {/* Gender */}
             <View style={styles.inputGroup}>
-              <Text style={{ fontSize: 13, color: colors.textMuted, marginBottom: 8, marginLeft: 4 }}>Gender</Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginLeft: 4 }}>
-                {[
-                  { label: 'Male', value: 'MALE' },
-                  { label: 'Female', value: 'FEMALE' },
-                  { label: 'Other', value: 'NON_BINARY' },
-                  { label: 'Prefer not to say', value: 'PREFER_NOT_TO_SAY' },
-                ].map((option) => (
-                  <TouchableOpacity
-                    key={option.value}
-                    onPress={() => setGender(gender === option.value ? '' : option.value)}
-                    style={{
-                      paddingHorizontal: 16,
-                      paddingVertical: 8,
-                      borderRadius: 8,
-                      backgroundColor: gender === option.value ? 'rgba(52, 145, 255, 0.1)' : colors.backgroundSecondary,
-                      borderWidth: 1,
-                      borderColor: gender === option.value ? colors.primary : colors.borderMuted,
-                    }}
-                  >
-                    <Text style={{
-                      fontSize: 13,
-                      fontWeight: '600',
-                      color: gender === option.value ? colors.primary : colors.textSecondary,
-                    }}>
-                      {option.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+              <View style={styles.inputRow}>
+                <View style={styles.iconWrapper}>
+                  <UnIcon name="person" size={32} />
+                </View>
+                <TouchableOpacity
+                  style={styles.dropdownButton}
+                  onPress={() => setShowGenderDropdown(true)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.dropdownButtonText, !gender && styles.dropdownPlaceholder]}>
+                    {getGenderLabel()}
+                  </Text>
+                  <ChevronDown size={20} color={colors.textMuted} />
+                </TouchableOpacity>
               </View>
             </View>
           </View>
@@ -566,6 +622,47 @@ export default function EditProfileScreen() {
           You can edit your username in Account Settings. Changes are saved automatically.
         </Text>
       </ScrollView>
+
+      {/* Gender Dropdown Modal */}
+      <Modal
+        visible={showGenderDropdown}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowGenderDropdown(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowGenderDropdown(false)}
+        >
+          <View style={styles.dropdownModal}>
+            {genderOptions.map((option, index) => (
+              <TouchableOpacity
+                key={option.value}
+                style={[
+                  styles.dropdownOption,
+                  index === genderOptions.length - 1 && styles.dropdownOptionLast,
+                  gender === option.value && styles.dropdownOptionSelected,
+                ]}
+                onPress={() => {
+                  setGender(option.value);
+                  setShowGenderDropdown(false);
+                }}
+                activeOpacity={0.7}
+              >
+                <Text
+                  style={[
+                    styles.dropdownOptionText,
+                    gender === option.value && styles.dropdownOptionTextSelected,
+                  ]}
+                >
+                  {option.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
