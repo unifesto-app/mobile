@@ -227,8 +227,10 @@ export default function TicketDetailScreen({ route }: TicketDetailScreenProps) {
               />
             </View>
             <View style={styles.ticketIdSection}>
-              <Text style={styles.ticketIdLabel}>TICKET ID</Text>
-              <Text style={styles.ticketId}>#{ticketData.id.substring(0, 8).toUpperCase()}</Text>
+              <Text style={styles.ticketIdLabel}>TICKET CODE</Text>
+              <Text style={styles.ticketId}>
+                {ticketData.ticketCode ? `#${ticketData.ticketCode}` : `#${ticketData.id.substring(0, 8).toUpperCase()}`}
+              </Text>
             </View>
             <Text style={styles.qrInstruction}>
               Show this QR code at the venue for entry

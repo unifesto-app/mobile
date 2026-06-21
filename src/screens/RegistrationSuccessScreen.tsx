@@ -125,6 +125,7 @@ export default function RegistrationSuccessScreen() {
             qrCode: registration.qrCode,
             registrationId: registration.id,
             ticketType: registration.ticketType,
+            ticketCode: registration.tickets?.[0]?.ticketCode,
           }),
         },
       });
