@@ -13,6 +13,7 @@ export interface User {
   fullName: string | null;
   avatarUrl: string | null;
   bio: string | null;
+  gender: string | null;
   linkedinUrl: string | null;
   instagramUrl: string | null;
   githubUrl: string | null;
@@ -236,6 +237,7 @@ export async function updateUserProfile(
     username?: string;
     fullName?: string;
     bio?: string;
+    gender?: string;
     linkedinUrl?: string;
     instagramUrl?: string;
     githubUrl?: string;

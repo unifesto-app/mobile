@@ -41,6 +41,7 @@ export default function EditProfileScreen() {
   // Form state
   const [fullName, setFullName] = useState('');
   const [bio, setBio] = useState('');
+  const [gender, setGender] = useState('');
   const [linkedinUrl, setLinkedinUrl] = useState('');
   const [instagramUrl, setInstagramUrl] = useState('');
   const [githubUrl, setGithubUrl] = useState('');
@@ -69,6 +70,7 @@ export default function EditProfileScreen() {
       // Populate form
       setFullName(userProfile.fullName || '');
       setBio(userProfile.bio || '');
+      setGender(userProfile.gender || '');
       setLinkedinUrl(userProfile.linkedinUrl || '');
       setInstagramUrl(userProfile.instagramUrl || '');
       setGithubUrl(userProfile.githubUrl || '');
@@ -97,6 +99,7 @@ export default function EditProfileScreen() {
       await AuthAPI.updateUserProfile(token, {
         fullName: fullName.trim() || undefined,
         bio: bio.trim() || undefined,
+        gender: gender || undefined,
         linkedinUrl: linkedinUrl.trim() || undefined,
         instagramUrl: instagramUrl.trim() || undefined,
         githubUrl: githubUrl.trim() || undefined,
@@ -127,7 +130,7 @@ export default function EditProfileScreen() {
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [fullName, bio, linkedinUrl, instagramUrl, githubUrl, websiteUrl]);
+  }, [fullName, bio, gender, linkedinUrl, instagramUrl, githubUrl, websiteUrl]);
 
   useEffect(() => {
     if (avatarUri) {
@@ -431,6 +434,40 @@ export default function EditProfileScreen() {
                   placeholderTextColor={colors.textMuted}
                   multiline
                 />
+              </View>
+            </View>
+
+            {/* Gender */}
+            <View style={styles.inputGroup}>
+              <Text style={{ fontSize: 13, color: colors.textMuted, marginBottom: 8, marginLeft: 4 }}>Gender</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginLeft: 4 }}>
+                {[
+                  { label: 'Male', value: 'MALE' },
+                  { label: 'Female', value: 'FEMALE' },
+                  { label: 'Other', value: 'NON_BINARY' },
+                  { label: 'Prefer not to say', value: 'PREFER_NOT_TO_SAY' },
+                ].map((option) => (
+                  <TouchableOpacity
+                    key={option.value}
+                    onPress={() => setGender(gender === option.value ? '' : option.value)}
+                    style={{
+                      paddingHorizontal: 16,
+                      paddingVertical: 8,
+                      borderRadius: 8,
+                      backgroundColor: gender === option.value ? 'rgba(52, 145, 255, 0.1)' : colors.backgroundSecondary,
+                      borderWidth: 1,
+                      borderColor: gender === option.value ? colors.primary : colors.borderMuted,
+                    }}
+                  >
+                    <Text style={{
+                      fontSize: 13,
+                      fontWeight: '600',
+                      color: gender === option.value ? colors.primary : colors.textSecondary,
+                    }}>
+                      {option.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
               </View>
             </View>
           </View>

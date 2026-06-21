@@ -8,7 +8,7 @@ module.exports = () => {
   const config = {
     name: "Unifesto",
     slug: "unifesto",
-    version: "1.0.1",
+    version: "1.5",
     orientation: "default",
     userInterfaceStyle: "automatic",
     scheme: "unifesto",
@@ -26,6 +26,7 @@ module.exports = () => {
       bundleIdentifier: "com.unifesto.app",
       icon: "./assets/app-icon-dark.png",
       googleServicesFile: "./GoogleService-Info.plist",
+      appStoreUrl: "https://apps.apple.com/in/app/unifesto-discover-events/id6767165496",
       splash: {
         image: "./assets/app-icon-transparent.png",
         resizeMode: "contain",
@@ -58,6 +59,7 @@ module.exports = () => {
       package: "com.unifesto.app",
       icon: "./assets/app-icon-transparent.png",
       googleServicesFile: "./google-services.json",
+      playStoreUrl: "https://play.google.com/store/apps/details?id=com.unifesto.app",
       adaptiveIcon: {
         foregroundImage: "./assets/app-icon-transparent.png",
         backgroundColor: "#000000"

@@ -48,7 +48,7 @@ export default function Footer() {
 
       <View style={styles.footer}>
         <UnifestoAppWordmark width={150} height={50} />
-        <Text style={styles.footerVersion}>Version 1.0.1</Text>
+        <Text style={styles.footerVersion}>Version 1.5</Text>
       </View>
     </View>
   );

@@ -9,6 +9,7 @@ export interface Profile {
   fullName: string | null;
   avatarUrl: string | null;
   bio: string | null;
+  gender: string | null;
   isOnboarded: boolean;
   referralCode: string | null;
   createdAt: string;
@@ -24,6 +25,7 @@ export const updateProfile = async (data: {
   fullName?: string;
   username?: string;
   bio?: string;
+  gender?: string;
   linkedinUrl?: string;
   instagramUrl?: string;
   githubUrl?: string;

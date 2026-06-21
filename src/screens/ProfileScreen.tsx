@@ -27,6 +27,7 @@ import * as AuthAPI from '../lib/api/auth';
 import GradientText from '../components/GradientText';
 import Skeleton from '../components/Skeleton';
 import Footer from '../components/Footer';
+import { requestReview } from '../utils/storeReview';
 import {
   spacing,
   typography,
@@ -142,21 +143,23 @@ export default function ProfileScreen() {
     router.push(route);
   };
 
-  const handleRateApp = () => {
-    const storeUrl = Platform.select({
-      ios: 'https://apps.apple.com/in/app/unifesto-discover-events/id6767165496',
-      android: 'https://play.google.com/store/apps/details?id=com.unifesto.app',
-    });
-    if (storeUrl) {
-      Linking.openURL(storeUrl).catch(() =>
-        Alert.alert('Error', 'Unable to open app store')
-      );
+  const handleRateApp = async () => {
+    try {
+      await requestReview();
+    } catch (error) {
+      console.error('Error requesting review:', error);
     }
   };
 
   const handleInstagram = () => {
     Linking.openURL('https://www.instagram.com/unifesto.app/').catch(() =>
       Alert.alert('Error', 'Unable to open Instagram')
+    );
+  };
+
+  const handleX = () => {
+    Linking.openURL('https://x.com/HeyUnifesto').catch(() =>
+      Alert.alert('Error', 'Unable to open X')
     );
   };
 
@@ -721,6 +724,21 @@ export default function ProfileScreen() {
               <View style={styles.menuItemLeft}>
                 <UnIcon name="instagram" size={32} />
                 <Text style={styles.menuItemText}>Unifesto on Instagram</Text>
+              </View>
+              <ArrowUpRight size={16} color={colors.textMuted} strokeWidth={2} />
+            </TouchableOpacity>
+
+            <View style={styles.menuDivider} />
+
+            {/* Unifesto on X */}
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={handleX}
+              activeOpacity={0.7}
+            >
+              <View style={styles.menuItemLeft}>
+                <UnIcon name="x" size={32} />
+                <Text style={styles.menuItemText}>Unifesto on X</Text>
               </View>
               <ArrowUpRight size={16} color={colors.textMuted} strokeWidth={2} />
             </TouchableOpacity>

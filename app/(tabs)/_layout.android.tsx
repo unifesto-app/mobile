@@ -30,7 +30,7 @@ export default function TabsLayout() {
           paddingTop: 8,
         },
         tabBarLabelStyle: {
-          fontSize: 0, // Hide labels, only show icons
+          display: 'none', // Hide labels, only show icons
         },
         tabBarIconStyle: {
           marginTop: 0,
