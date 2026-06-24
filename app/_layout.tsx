@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
 import * as Font from 'expo-font';
 import { AuthProvider } from '../src/context/AuthContext';
@@ -86,8 +87,10 @@ export default function RootLayout() {
   }
 
   return (
-    <ThemeProvider>
-      <RootStack />
-    </ThemeProvider>
+    <SafeAreaProvider>
+      <ThemeProvider>
+        <RootStack />
+      </ThemeProvider>
+    </SafeAreaProvider>
   );
 }
