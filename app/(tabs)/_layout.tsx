@@ -84,6 +84,10 @@ export default function TabsLayout() {
         name="wallet"
         options={{ title: '', icon: { sf: 'wallet.bifold' }, selectedIcon: { sf: 'wallet.bifold.fill' } }}
       />
+      <NativeTabs.Trigger
+        name="profile"
+        options={{ title: '', icon: { sf: 'person.crop.circle' }, selectedIcon: { sf: 'person.crop.circle.fill' } }}
+      />
     </NativeTabs>
   );
 }
