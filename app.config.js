@@ -3,6 +3,7 @@ const withModularHeaders = require('./plugins/withModularHeaders');
 // const withAndroidEdgeToEdgeStyles = require('./plugins/withAndroidStyles');
 const withFirebaseDisableAutoInit = require('./plugins/withFirebaseDisableAutoInit');
 const withRemoveOrientationRestrictions = require('./plugins/withRemoveOrientationRestrictions');
+const withRemoveSplashScreen = require('./plugins/withRemoveSplashScreen');
 
 module.exports = () => {
   const config = {
@@ -13,11 +14,6 @@ module.exports = () => {
     userInterfaceStyle: "automatic",
     scheme: "unifesto",
     icon: "./assets/app-icon-transparent.png",
-    splash: {
-      image: "./assets/app-icon-transparent.png",
-      resizeMode: "contain",
-      backgroundColor: "#000000"
-    },
     assetBundlePatterns: [
       "**/*"
     ],
@@ -27,11 +23,6 @@ module.exports = () => {
       icon: "./assets/app-icon-dark.png",
       googleServicesFile: "./GoogleService-Info.plist",
       appStoreUrl: "https://apps.apple.com/in/app/unifesto-discover-events/id6767165496",
-      splash: {
-        image: "./assets/app-icon-transparent.png",
-        resizeMode: "contain",
-        backgroundColor: "#000000"
-      },
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
         NSCameraUsageDescription: "We need camera access to let you take photos for your profile picture. For example, you can capture a new photo directly when updating your profile avatar.",
@@ -62,11 +53,6 @@ module.exports = () => {
       playStoreUrl: "https://play.google.com/store/apps/details?id=com.unifesto.app",
       adaptiveIcon: {
         foregroundImage: "./assets/app-icon-transparent.png",
-        backgroundColor: "#000000"
-      },
-      splash: {
-        image: "./assets/app-icon-transparent.png",
-        resizeMode: "contain",
         backgroundColor: "#000000"
       },
       permissions: [
@@ -156,14 +142,6 @@ module.exports = () => {
     plugins: [
       "expo-router",
       "expo-font",
-      [
-        "expo-splash-screen",
-        {
-          backgroundColor: "#000000",
-          image: "./assets/app-icon-transparent.png",
-          imageWidth: 200
-        }
-      ],
       "expo-web-browser",
       [
         "onesignal-expo-plugin",
@@ -189,5 +167,6 @@ module.exports = () => {
   // modifiedConfig = withAndroidEdgeToEdgeStyles(modifiedConfig);
   modifiedConfig = withFirebaseDisableAutoInit(modifiedConfig);
   modifiedConfig = withRemoveOrientationRestrictions(modifiedConfig);
+  modifiedConfig = withRemoveSplashScreen(modifiedConfig);
   return modifiedConfig;
 };

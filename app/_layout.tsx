@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Stack, SplashScreen as ExpoSplashScreen } from 'expo-router';
+import { Stack } from 'expo-router';
 import * as Font from 'expo-font';
 import { AuthProvider } from '../src/context/AuthContext';
+import { AppModeProvider } from '../src/context/AppModeContext';
 import { ThemeProvider, useTheme } from '../src/context/ThemeContext';
 import ConsentManager from '../src/services/ConsentManager';
 
@@ -14,26 +15,25 @@ const preloadIcons = async () => {
   await Asset.loadAsync(icons as any[]);
 };
 
-
-ExpoSplashScreen.preventAutoHideAsync();
-
 function RootStack() {
-  const { colors, activeTheme } = useTheme();
+  const { colors } = useTheme();
 
   return (
     <AuthProvider>
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          contentStyle: { backgroundColor: colors.background },
-        }}
-      >
-        <Stack.Screen name="index" options={{ headerShown: false }} />
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="login" options={{ headerShown: false }} />
-        <Stack.Screen name="signup" options={{ headerShown: false }} />
-        <Stack.Screen name="onboarding" options={{ headerShown: false }} />
-      </Stack>
+      <AppModeProvider>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: colors.background },
+          }}
+        >
+          <Stack.Screen name="index" options={{ headerShown: false }} />
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="login" options={{ headerShown: false }} />
+          <Stack.Screen name="signup" options={{ headerShown: false }} />
+          <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+        </Stack>
+      </AppModeProvider>
     </AuthProvider>
   );
 }
@@ -79,15 +79,6 @@ export default function RootLayout() {
 
     prepare();
   }, [consentReady]);
-
-  useEffect(() => {
-    if (appIsReady) {
-      // Hide native splash screen immediately when ready
-      ExpoSplashScreen.hideAsync().catch((err) => {
-        console.error('[RootLayout] Error hiding splash:', err);
-      });
-    }
-  }, [appIsReady]);
 
   // Don't render anything until app is ready
   if (!appIsReady) {

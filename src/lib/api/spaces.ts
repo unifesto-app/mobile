@@ -445,6 +445,20 @@ export async function getUserSpaces(accessToken: string): Promise<Space[]> {
 }
 
 /**
+ * Get spaces where the current user is an ORGANISER or CO_ORGANISER.
+ * GET /users/me/spaces?role=organiser
+ */
+export async function getMyOrganiserSpaces(): Promise<Space[]> {
+  const response = await makeAuthenticatedRequest('/users/me/spaces?role=organiser');
+  if (!response?.ok) {
+    throw new Error('Failed to fetch organiser spaces');
+  }
+  const data = await response.json();
+  // Backend may return an array or { spaces: [] }
+  return Array.isArray(data) ? data : (data.spaces || []);
+}
+
+/**
  * Get space's events
  */
 export async function getSpaceEvents(

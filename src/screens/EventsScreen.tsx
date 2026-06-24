@@ -18,24 +18,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import GradientText from '../components/GradientText';
 import Skeleton from '../components/Skeleton';
 import { spacing, typography, borderRadius, shadows } from '../theme';
-import { getEvents, Event, getEventCardPrice } from '../lib/api/events';
+import { getEvents, Event, getEventCardPrice, getCategories } from '../lib/api/events';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { getFontFamily } from '../theme/fontHelpers';
-
-// Common event categories
-const CATEGORIES = [
-  'All',
-  'Technology',
-  'Music',
-  'Sports',
-  'Arts',
-  'Business',
-  'Food',
-  'Education',
-  'Health',
-  'Entertainment',
-];
 
 export default function EventsScreen() {
   const { colors } = useTheme();
@@ -358,6 +344,40 @@ export default function EventsScreen() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
+  const categoryScrollRef = React.useRef<ScrollView>(null);
+  const categoryRefs = React.useRef<{ [key: string]: { x: number; width: number } }>({});
+  const [layoutReady, setLayoutReady] = useState(false);
+
+  // Load categories
+  const loadCategories = useCallback(async () => {
+    try {
+      setLoadingCategories(true);
+      const cats = await getCategories();
+      // Add "All" at the beginning
+      setCategories([{ id: 'all', name: 'All', event_count: 0 }, ...cats]);
+    } catch (error) {
+      console.error('Error loading categories:', error);
+      setCategories([{ id: 'all', name: 'All', event_count: 0 }]);
+    } finally {
+      setLoadingCategories(false);
+    }
+  }, []);
+
+  // Handle category selection with auto-scroll
+  const handleCategorySelect = (categoryName: string) => {
+    setSelectedCategory(categoryName);
+    
+    // Scroll to selected category with a slight delay
+    setTimeout(() => {
+      const categoryInfo = categoryRefs.current[categoryName];
+      if (categoryInfo) {
+        const scrollX = Math.max(0, categoryInfo.x - 24); // 24px padding from left
+        categoryScrollRef.current?.scrollTo({ x: scrollX, animated: true });
+      }
+    }, 100);
+  };
 
   // Load events from API
   const loadEvents = useCallback(async (pageNum: number = 1, refresh: boolean = false) => {
@@ -405,9 +425,32 @@ export default function EventsScreen() {
 
   // Initial load
   useEffect(() => {
+    loadCategories();
+  }, [loadCategories]);
+
+  useEffect(() => {
     setPage(1);
     loadEvents(1);
   }, [selectedCategory]);
+
+  // Handle category parameter from navigation and auto-scroll
+  useEffect(() => {
+    if (paramCategory && categories.length > 0 && layoutReady) {
+      // Only set if different to avoid loops
+      if (paramCategory !== selectedCategory) {
+        setSelectedCategory(paramCategory);
+      }
+      
+      // Auto-scroll to the selected category
+      setTimeout(() => {
+        const categoryInfo = categoryRefs.current[paramCategory];
+        if (categoryInfo) {
+          const scrollX = Math.max(0, categoryInfo.x - 24); // 24px padding from left
+          categoryScrollRef.current?.scrollTo({ x: scrollX, animated: true });
+        }
+      }, 100);
+    }
+  }, [paramCategory, categories, layoutReady]);
 
   // Search with debounce
   useEffect(() => {
@@ -552,32 +595,59 @@ export default function EventsScreen() {
       {/* Category Tabs */}
       <View style={styles.categoriesContainer}>
         <ScrollView
+          ref={categoryScrollRef}
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.categoriesScroll}
         >
-          {CATEGORIES.map((category) => (
-            <TouchableOpacity
-              key={category}
-              onPress={() => setSelectedCategory(category)}
-              activeOpacity={0.8}
-            >
-              {selectedCategory === category ? (
-                <LinearGradient
-                  colors={[colors.gradientStart, colors.gradientEnd]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.categoryChipActive}
+          {loadingCategories ? (
+            // Show skeleton loaders while categories are loading
+            <>
+              {[1, 2, 3, 4, 5].map((i) => (
+                <Skeleton 
+                  key={`cat-skeleton-${i}`} 
+                  width={80} 
+                  height={32} 
+                  borderRadius={borderRadius.full} 
+                />
+              ))}
+            </>
+          ) : (
+            categories.map((category, index) => (
+              <View
+                key={category.id}
+                onLayout={(event) => {
+                  const { x, width } = event.nativeEvent.layout;
+                  categoryRefs.current[category.name] = { x, width };
+                  
+                  // Mark layout as ready when all categories are measured
+                  if (index === categories.length - 1) {
+                    setLayoutReady(true);
+                  }
+                }}
+              >
+                <TouchableOpacity
+                  onPress={() => handleCategorySelect(category.name)}
+                  activeOpacity={0.8}
                 >
-                  <Text style={styles.categoryChipTextActive}>{category}</Text>
-                </LinearGradient>
-              ) : (
-                <View style={styles.categoryChipInactive}>
-                  <Text style={styles.categoryChipTextInactive}>{category}</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          ))}
+                  {selectedCategory === category.name ? (
+                    <LinearGradient
+                      colors={[colors.gradientStart, colors.gradientEnd]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={styles.categoryChipActive}
+                    >
+                      <Text style={styles.categoryChipTextActive}>{category.name}</Text>
+                    </LinearGradient>
+                  ) : (
+                    <View style={styles.categoryChipInactive}>
+                      <Text style={styles.categoryChipTextInactive}>{category.name}</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              </View>
+            ))
+          )}
         </ScrollView>
       </View>
 

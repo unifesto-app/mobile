@@ -23,6 +23,9 @@ import { UnIcon } from '@unifesto/unicon/react-native';
 import Svg, { Rect, Circle } from 'react-native-svg';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { useAppMode } from '../context/AppModeContext';
+import { makeAuthenticatedRequest } from '../lib/api/helpers';
+import { Hammer, ScanLine, Compass } from 'lucide-react-native';
 import * as AuthAPI from '../lib/api/auth';
 import GradientText from '../components/GradientText';
 import Skeleton from '../components/Skeleton';
@@ -48,11 +51,41 @@ export default function ProfileScreen() {
   const headerHeight = useHeaderHeight();
   const { user, token, logout, isLoading: authLoading, isAuthenticated } = useAuth();
   const { theme, setTheme, colors, activeTheme } = useTheme();
+  const { mode, setMode, isDiscoverMode } = useAppMode();
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [profile, setProfile] = useState<AuthAPI.User | null>(null);
+  const [canForge, setCanForge] = useState(false);
+  const [canGate, setCanGate] = useState(false);
 
   useAnalyticsScreenTracking('Profile');
+
+  // Determine available modes from the user's roles
+  useEffect(() => {
+    let cancelled = false;
+    const loadRoles = async () => {
+      try {
+        const response = await makeAuthenticatedRequest('/users/me');
+        if (!response?.ok) return;
+        const data = await response.json();
+        const roles: any[] = data?.roles || [];
+        const codes = roles.map((r) => r?.role?.code || r?.code || r?.roleCode).filter(Boolean);
+        if (!cancelled) {
+          setCanForge(codes.includes('ORGANISER') || codes.includes('CO_ORGANISER'));
+          setCanGate(codes.includes('GATE'));
+        }
+      } catch {
+        // ignore
+      }
+    };
+    if (isAuthenticated) loadRoles();
+    return () => { cancelled = true; };
+  }, [isAuthenticated]);
+
+  const switchMode = async (target: 'discover' | 'forge' | 'gate') => {
+    await setMode(target);
+    router.replace('/(tabs)');
+  };
 
   const cycleTheme = () => {
     // Cycle through: dark → light → system → dark
@@ -646,6 +679,64 @@ export default function ProfileScreen() {
             </TouchableOpacity>
           </View>
         </View>
+
+        {/* ── Mode Card ── */}
+        {(canForge || canGate || !isDiscoverMode) && (
+          <View style={styles.sectionSpacing}>
+            <Text style={styles.sectionTitle}>Mode</Text>
+            <View style={styles.card}>
+              {isDiscoverMode ? (
+                <>
+                  {canForge && (
+                    <TouchableOpacity
+                      style={styles.menuItem}
+                      onPress={() => switchMode('forge')}
+                      activeOpacity={0.7}
+                    >
+                      <View style={styles.menuItemLeft}>
+                        <View style={[styles.coloredIconContainer, { backgroundColor: '#3491ff' }]}>
+                          <Hammer size={20} color="#ffffff" strokeWidth={2} />
+                        </View>
+                        <Text style={styles.menuItemText}>Switch to Forge Mode</Text>
+                      </View>
+                      <ChevronRight size={16} color={colors.textMuted} strokeWidth={2} />
+                    </TouchableOpacity>
+                  )}
+                  {canForge && canGate && <View style={styles.menuDivider} />}
+                  {canGate && (
+                    <TouchableOpacity
+                      style={styles.menuItem}
+                      onPress={() => switchMode('gate')}
+                      activeOpacity={0.7}
+                    >
+                      <View style={styles.menuItemLeft}>
+                        <View style={[styles.coloredIconContainer, { backgroundColor: '#22c55e' }]}>
+                          <ScanLine size={20} color="#ffffff" strokeWidth={2} />
+                        </View>
+                        <Text style={styles.menuItemText}>Switch to Gate Mode</Text>
+                      </View>
+                      <ChevronRight size={16} color={colors.textMuted} strokeWidth={2} />
+                    </TouchableOpacity>
+                  )}
+                </>
+              ) : (
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={() => switchMode('discover')}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.menuItemLeft}>
+                    <View style={[styles.coloredIconContainer, { backgroundColor: colors.primary }]}>
+                      <Compass size={20} color="#ffffff" strokeWidth={2} />
+                    </View>
+                    <Text style={styles.menuItemText}>Switch to Discover Mode</Text>
+                  </View>
+                  <ChevronRight size={16} color={colors.textMuted} strokeWidth={2} />
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        )}
 
         {/* ── Preferences Card ── */}
         <View style={styles.sectionSpacing}>

@@ -95,3 +95,69 @@ export const getMyRegistrations = async (page = 1, limit = 20) => {
   if (!response?.ok) return null;
   return response.json();
 };
+
+// ============================================================================
+// Organiser / Gate APIs
+// ============================================================================
+
+export interface EventRegistration {
+  id: string;
+  eventId: string;
+  userId: string;
+  status: string;
+  qrCode?: string | null;
+  ticketType?: { id: string; name: string } | null;
+  checkedInAt?: string | null;
+  checkedInBy?: string | null;
+  user?: {
+    id: string;
+    fullName: string | null;
+    username: string | null;
+    avatarUrl: string | null;
+    email?: string | null;
+  } | null;
+  attendees?: Array<{ name: string; email?: string }>;
+  createdAt: string;
+}
+
+/**
+ * Get registrations for an event (organiser / gate access).
+ * GET /events/:id/registrations
+ */
+export const getEventRegistrations = async (
+  eventId: string,
+  page = 1,
+  limit = 50,
+  options?: { checkedIn?: boolean; search?: string }
+) => {
+  const query = new URLSearchParams();
+  query.append('page', String(page));
+  query.append('limit', String(limit));
+  if (options?.checkedIn !== undefined) query.append('checkedIn', String(options.checkedIn));
+  if (options?.search) query.append('search', options.search);
+
+  const response = await makeAuthenticatedRequest(
+    `/events/${eventId}/registrations?${query.toString()}`
+  );
+  if (!response?.ok) {
+    const error = await response?.json();
+    throw new Error(error?.message || 'Failed to fetch registrations');
+  }
+  return response.json();
+};
+
+/**
+ * Check in an attendee by scanned QR code.
+ * POST /events/:id/checkin  { qrCode }
+ */
+export const checkIn = async (eventId: string, qrCode: string) => {
+  const response = await makeAuthenticatedRequest(`/events/${eventId}/checkin`, {
+    method: 'POST',
+    body: JSON.stringify({ qrCode }),
+  });
+  if (!response?.ok) {
+    const error = await response?.json();
+    throw new Error(error?.message || 'Check-in failed');
+  }
+  return response.json();
+};
