@@ -47,7 +47,6 @@ export default function TabsLayout() {
         <Tabs.Screen name="forge-dashboard" options={{ tabBarIcon: icon('view-dashboard-outline') }} />
         <Tabs.Screen name="forge-events" options={{ tabBarIcon: icon('calendar-outline') }} />
         <Tabs.Screen name="forge-registrations" options={{ tabBarIcon: icon('account-group-outline') }} />
-        <Tabs.Screen name="profile" options={{ tabBarIcon: icon('account-circle-outline') }} />
         <Tabs.Screen name="index" options={{ href: null }} />
         <Tabs.Screen name="chat" options={{ href: null }} />
         <Tabs.Screen name="wallet" options={{ href: null }} />
@@ -62,7 +61,6 @@ export default function TabsLayout() {
       <Tabs screenOptions={screenOptions}>
         <Tabs.Screen name="gate-scan" options={{ tabBarIcon: icon('qrcode-scan') }} />
         <Tabs.Screen name="gate-recent" options={{ tabBarIcon: icon('clock-outline') }} />
-        <Tabs.Screen name="profile" options={{ tabBarIcon: icon('account-circle-outline') }} />
         <Tabs.Screen name="index" options={{ href: null }} />
         <Tabs.Screen name="chat" options={{ href: null }} />
         <Tabs.Screen name="wallet" options={{ href: null }} />
@@ -100,7 +98,6 @@ export default function TabsLayout() {
           ),
         }}
       />
-      <Tabs.Screen name="profile" options={{ href: null }} />
       <Tabs.Screen name="forge-dashboard" options={{ href: null }} />
       <Tabs.Screen name="forge-events" options={{ href: null }} />
       <Tabs.Screen name="forge-registrations" options={{ href: null }} />

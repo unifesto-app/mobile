@@ -680,64 +680,6 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* ── Mode Card ── */}
-        {(canForge || canGate || !isDiscoverMode) && (
-          <View style={styles.sectionSpacing}>
-            <Text style={styles.sectionTitle}>Mode</Text>
-            <View style={styles.card}>
-              {isDiscoverMode ? (
-                <>
-                  {canForge && (
-                    <TouchableOpacity
-                      style={styles.menuItem}
-                      onPress={() => switchMode('forge')}
-                      activeOpacity={0.7}
-                    >
-                      <View style={styles.menuItemLeft}>
-                        <View style={[styles.coloredIconContainer, { backgroundColor: '#3491ff' }]}>
-                          <Hammer size={20} color="#ffffff" strokeWidth={2} />
-                        </View>
-                        <Text style={styles.menuItemText}>Switch to Forge Mode</Text>
-                      </View>
-                      <ChevronRight size={16} color={colors.textMuted} strokeWidth={2} />
-                    </TouchableOpacity>
-                  )}
-                  {canForge && canGate && <View style={styles.menuDivider} />}
-                  {canGate && (
-                    <TouchableOpacity
-                      style={styles.menuItem}
-                      onPress={() => switchMode('gate')}
-                      activeOpacity={0.7}
-                    >
-                      <View style={styles.menuItemLeft}>
-                        <View style={[styles.coloredIconContainer, { backgroundColor: '#22c55e' }]}>
-                          <ScanLine size={20} color="#ffffff" strokeWidth={2} />
-                        </View>
-                        <Text style={styles.menuItemText}>Switch to Gate Mode</Text>
-                      </View>
-                      <ChevronRight size={16} color={colors.textMuted} strokeWidth={2} />
-                    </TouchableOpacity>
-                  )}
-                </>
-              ) : (
-                <TouchableOpacity
-                  style={styles.menuItem}
-                  onPress={() => switchMode('discover')}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.menuItemLeft}>
-                    <View style={[styles.coloredIconContainer, { backgroundColor: colors.primary }]}>
-                      <Compass size={20} color="#ffffff" strokeWidth={2} />
-                    </View>
-                    <Text style={styles.menuItemText}>Switch to Discover Mode</Text>
-                  </View>
-                  <ChevronRight size={16} color={colors.textMuted} strokeWidth={2} />
-                </TouchableOpacity>
-              )}
-            </View>
-          </View>
-        )}
-
         {/* ── Preferences Card ── */}
         <View style={styles.sectionSpacing}>
           <Text style={styles.sectionTitle}>Preferences</Text>
@@ -769,6 +711,65 @@ export default function ProfileScreen() {
               </View>
               <ChevronRight size={16} color={colors.textMuted} strokeWidth={2} />
             </TouchableOpacity>
+
+            {/* ── Mode switches ── */}
+            {isDiscoverMode ? (
+              <>
+                {canForge && (
+                  <>
+                    <View style={styles.menuDivider} />
+                    <TouchableOpacity
+                      style={styles.menuItem}
+                      onPress={() => switchMode('forge')}
+                      activeOpacity={0.7}
+                    >
+                      <View style={styles.menuItemLeft}>
+                        <View style={[styles.coloredIconContainer, { backgroundColor: '#3491ff' }]}>
+                          <Hammer size={20} color="#ffffff" strokeWidth={2} />
+                        </View>
+                        <Text style={styles.menuItemText}>Switch to Forge Mode</Text>
+                      </View>
+                      <ChevronRight size={16} color={colors.textMuted} strokeWidth={2} />
+                    </TouchableOpacity>
+                  </>
+                )}
+                {canGate && (
+                  <>
+                    <View style={styles.menuDivider} />
+                    <TouchableOpacity
+                      style={styles.menuItem}
+                      onPress={() => switchMode('gate')}
+                      activeOpacity={0.7}
+                    >
+                      <View style={styles.menuItemLeft}>
+                        <View style={[styles.coloredIconContainer, { backgroundColor: '#22c55e' }]}>
+                          <ScanLine size={20} color="#ffffff" strokeWidth={2} />
+                        </View>
+                        <Text style={styles.menuItemText}>Switch to Gate Mode</Text>
+                      </View>
+                      <ChevronRight size={16} color={colors.textMuted} strokeWidth={2} />
+                    </TouchableOpacity>
+                  </>
+                )}
+              </>
+            ) : (
+              <>
+                <View style={styles.menuDivider} />
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={() => switchMode('discover')}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.menuItemLeft}>
+                    <View style={[styles.coloredIconContainer, { backgroundColor: colors.primary }]}>
+                      <Compass size={20} color="#ffffff" strokeWidth={2} />
+                    </View>
+                    <Text style={styles.menuItemText}>Switch to Discover Mode</Text>
+                  </View>
+                  <ChevronRight size={16} color={colors.textMuted} strokeWidth={2} />
+                </TouchableOpacity>
+              </>
+            )}
           </View>
         </View>
 
