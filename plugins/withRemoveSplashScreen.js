@@ -12,11 +12,12 @@ const fs = require('fs');
  * Remove Expo's default splash screen to use only custom React Native splash
  */
 const withRemoveSplashScreen = (config) => {
-  // Remove UILaunchStoryboardName from iOS Info.plist
-  config = withInfoPlist(config, (config) => {
-    delete config.modResults.UILaunchStoryboardName;
-    return config;
-  });
+  // NOTE: Do NOT remove UILaunchStoryboardName — removing it causes
+  // the app window to not size correctly on iOS (black gaps top/bottom).
+  // config = withInfoPlist(config, (config) => {
+  //   delete config.modResults.UILaunchStoryboardName;
+  //   return config;
+  // });
 
   // Change Android MainActivity theme from splash to AppTheme
   config = withAndroidManifest(config, (config) => {

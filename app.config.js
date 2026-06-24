@@ -11,7 +11,7 @@ module.exports = () => {
     slug: "unifesto",
     version: "1.5",
     orientation: "default",
-    userInterfaceStyle: "automatic",
+    userInterfaceStyle: "dark",
     scheme: "unifesto",
     icon: "./assets/app-icon-transparent.png",
     assetBundlePatterns: [
