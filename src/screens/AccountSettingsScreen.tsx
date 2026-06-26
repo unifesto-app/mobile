@@ -35,13 +35,14 @@ export default function AccountSettingsScreen() {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<AuthAPI.User | null>(null);
   const [identities, setIdentities] = useState<AuthAPI.UserIdentity[]>([]);
+  const [managingAccounts, setManagingAccounts] = useState(false);
   
   // Username modal state
   const [showUsernameModal, setShowUsernameModal] = useState(false);
   const [username, setUsername] = useState('');
   const [usernameError, setUsernameError] = useState('');
   const [checkingUsername, setCheckingUsername] = useState(false);
-  const [usernameCheckTimeout, setUsernameCheckTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [usernameCheckTimeout, setUsernameCheckTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     loadData();
@@ -243,6 +244,18 @@ export default function AccountSettingsScreen() {
       marginBottom: spacing[3],
       paddingLeft: spacing[1],
     },
+    sectionTitleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    manageLink: {
+      fontSize: typography.fontSize.sm,
+      fontFamily: getFontFamily('semibold'),
+      color: colors.primary,
+      marginBottom: spacing[3],
+      paddingRight: spacing[1],
+    },
     // Card
     card: {
       backgroundColor: colors.card,
@@ -392,6 +405,23 @@ export default function AccountSettingsScreen() {
     },
     verifiedIcon: {
       marginLeft: spacing[2],
+    },
+    legendRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing[4],
+      marginTop: spacing[2],
+      paddingLeft: spacing[1],
+    },
+    legendItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing[1],
+    },
+    legendText: {
+      fontSize: typography.fontSize.xs,
+      fontFamily: getFontFamily('normal'),
+      color: colors.textMuted,
     },
     // Danger Zone
     dangerCard: {
@@ -543,101 +573,133 @@ export default function AccountSettingsScreen() {
 
         {/* Linked Accounts */}
         <View style={styles.sectionSpacing}>
-          <Text style={styles.sectionTitle}>Linked Accounts</Text>
+          <View style={styles.sectionTitleRow}>
+            <Text style={styles.sectionTitle}>Linked Accounts</Text>
+            {identities.length > 0 && (
+              <TouchableOpacity
+                onPress={() => setManagingAccounts((v) => !v)}
+                activeOpacity={0.7}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Text style={styles.manageLink}>
+                  {managingAccounts ? 'Done' : 'Manage'}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
           <View style={styles.card}>
             {identities.length > 0 ? (
-              identities.map((identity, index) => (
-                <React.Fragment key={identity.id}>
-                  <View style={styles.linkedAccountItem}>
-                    <UnIcon
-                      name={getProviderIconName(identity.provider)}
-                      size={32}
-                    />
-                    <View style={styles.linkedAccountInfo}>
-                      {identity.email && (
-                        <Text style={styles.linkedAccountEmail}>{identity.email}</Text>
-                      )}
-                      <View style={{ flexDirection: 'row', gap: 6, marginTop: 4 }}>
-                        {identity.isPrimary && (
-                          <View style={{
-                            paddingHorizontal: 8, paddingVertical: 2,
-                            borderRadius: 10, backgroundColor: 'rgba(52,145,255,0.15)',
-                          }}>
-                            <Text style={{ fontSize: 11, color: colors.primary, fontFamily: getFontFamily('bold') }}>
-                              Primary
-                            </Text>
+              (() => {
+                // Group by email
+                const grouped: { email: string | null; identities: typeof identities }[] = [];
+                identities.forEach((identity) => {
+                  const existing = identity.email
+                    ? grouped.find(g => g.email === identity.email)
+                    : null;
+                  if (existing) {
+                    existing.identities.push(identity);
+                  } else {
+                    grouped.push({ email: identity.email, identities: [identity] });
+                  }
+                });
+
+                return grouped.map((group, groupIndex) => {
+                  const primaryIdentity = group.identities.find(i => i.isPrimary) || group.identities[0];
+                  const isPrimary = group.identities.some(i => i.isPrimary);
+                  const isVerified = group.identities.some(i => i.emailVerified);
+                  const isPrivateRelay = group.email?.includes('privaterelay.appleid.com');
+
+                  return (
+                    <React.Fragment key={group.email || group.identities[0].id}>
+                      <View style={styles.linkedAccountItem}>
+                        <View style={{ width: 40, height: 40, position: 'relative' }}>
+                          <UnIcon name={getProviderIconName(group.identities[0].provider)} size={group.identities.length > 1 ? 28 : 36} />
+                          {group.identities.length > 1 && (
+                            <View style={{ position: 'absolute', bottom: -2, right: -4 }}>
+                              <UnIcon name={getProviderIconName(group.identities[1].provider)} size={20} />
+                            </View>
+                          )}
+                        </View>
+                        <View style={styles.linkedAccountInfo}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                            {group.email && (
+                              <Text style={[styles.linkedAccountEmail, { flexShrink: 1 }]} numberOfLines={1} ellipsizeMode="tail">
+                                {group.email}
+                              </Text>
+                            )}
+                            {!managingAccounts && isPrimary && <UnIcon name="verified-blue" size={18} />}
+                            {!managingAccounts && isVerified && <UnIcon name="verified-green" size={18} />}
                           </View>
-                        )}
-                        {identity.emailVerified && (
-                          <View style={{
-                            paddingHorizontal: 8, paddingVertical: 2,
-                            borderRadius: 10, backgroundColor: 'rgba(34,197,94,0.15)',
-                          }}>
-                            <Text style={{ fontSize: 11, color: '#22c55e', fontFamily: getFontFamily('bold') }}>
-                              Verified
-                            </Text>
-                          </View>
-                        )}
+                        </View>
+                        <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+                          {managingAccounts && !isPrimary && group.email && !isPrivateRelay && (
+                            <TouchableOpacity
+                              onPress={async () => {
+                                try {
+                                  await setPrimaryIdentity(token!, primaryIdentity.id);
+                                  await loadData();
+                                } catch (e: any) {
+                                  Alert.alert('Error', e.message || 'Failed to set primary email');
+                                }
+                              }}
+                              style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, borderWidth: 1, borderColor: colors.primary }}
+                            >
+                              <Text style={{ fontSize: 11, color: colors.primary, fontFamily: getFontFamily('semibold') }}>Set Primary</Text>
+                            </TouchableOpacity>
+                          )}
+                          {managingAccounts && grouped.length > 1 && (
+                            <TouchableOpacity
+                              onPress={() => {
+                                Alert.alert(
+                                  'Remove Account',
+                                  `Remove ${group.email || group.identities[0].provider} from your account?`,
+                                  [
+                                    { text: 'Cancel', style: 'cancel' },
+                                    {
+                                      text: 'Remove', style: 'destructive',
+                                      onPress: async () => {
+                                        try {
+                                          for (const identity of group.identities) {
+                                            await removeIdentity(token!, identity.id);
+                                          }
+                                          await loadData();
+                                        } catch (e: any) {
+                                          Alert.alert('Error', e.message || 'Failed to remove account');
+                                        }
+                                      },
+                                    },
+                                  ]
+                                );
+                              }}
+                            >
+                              <Trash2 size={16} color={colors.textMuted} strokeWidth={2} />
+                            </TouchableOpacity>
+                          )}
+                        </View>
                       </View>
-                    </View>
-                    <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-                      {!identity.isPrimary && identity.email && (
-                        <TouchableOpacity
-                          onPress={async () => {
-                            try {
-                              await setPrimaryIdentity(token!, identity.id);
-                              await loadData();
-                            } catch (e: any) {
-                              Alert.alert('Error', e.message || 'Failed to set primary email');
-                            }
-                          }}
-                          style={{
-                            paddingHorizontal: 10, paddingVertical: 4,
-                            borderRadius: 8, borderWidth: 1, borderColor: colors.primary,
-                          }}
-                        >
-                          <Text style={{ fontSize: 11, color: colors.primary, fontFamily: getFontFamily('semibold') }}>
-                            Set Primary
-                          </Text>
-                        </TouchableOpacity>
-                      )}
-                      {identities.length > 1 && (
-                        <TouchableOpacity
-                          onPress={() => {
-                            Alert.alert(
-                              'Remove Account',
-                              `Remove ${identity.email || identity.provider} from your account?`,
-                              [
-                                { text: 'Cancel', style: 'cancel' },
-                                {
-                                  text: 'Remove', style: 'destructive',
-                                  onPress: async () => {
-                                    try {
-                                      await removeIdentity(token!, identity.id);
-                                      await loadData();
-                                    } catch (e: any) {
-                                      Alert.alert('Error', e.message || 'Failed to remove account');
-                                    }
-                                  },
-                                },
-                              ]
-                            );
-                          }}
-                        >
-                          <Trash2 size={16} color={colors.textMuted} strokeWidth={2} />
-                        </TouchableOpacity>
-                      )}
-                    </View>
-                  </View>
-                  {index < identities.length - 1 && <View style={styles.menuDivider} />}
-                </React.Fragment>
-              ))
+                      {groupIndex < grouped.length - 1 && <View style={styles.menuDivider} />}
+                    </React.Fragment>
+                  );
+                });
+              })()
             ) : (
               <View style={styles.menuItem}>
                 <Text style={styles.menuItemValue}>No linked accounts</Text>
               </View>
             )}
           </View>
+          {!managingAccounts && identities.length > 0 && (
+            <View style={styles.legendRow}>
+              <View style={styles.legendItem}>
+                <UnIcon name="verified-blue" size={14} />
+                <Text style={styles.legendText}>Primary</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <UnIcon name="verified-green" size={14} />
+                <Text style={styles.legendText}>Verified</Text>
+              </View>
+            </View>
+          )}
         </View>
 
         {/* Danger Zone */}
