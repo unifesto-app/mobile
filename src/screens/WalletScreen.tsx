@@ -1981,7 +1981,7 @@ export default function WalletScreen() {
         {/* Pocket Logo Footer */}
         <View style={styles.pocketFooter}>
           <Image
-            source={require('../../assets/Pocket.png')}
+            source={require('../../assets/PocketWordmark.png')}
             style={styles.pocketLogoFooter}
             resizeMode="contain"
           />

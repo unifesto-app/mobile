@@ -9,38 +9,31 @@ import {
   Platform,
   ScrollView,
   ActivityIndicator,
-  Image,
   Linking,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Mail, Phone, ChevronRight } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Mail, Phone, ArrowRight, ArrowLeft, ShieldCheck } from 'lucide-react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useRouter } from 'expo-router';
-import * as AppleAuthentication from 'expo-apple-authentication';
 import { cognitoDiscovery, COGNITO_REDIRECT_URI, exchangeCognitoCode } from '../lib/api/cognito';
 import * as AuthSession from 'expo-auth-session';
-import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import Constants from 'expo-constants';
 import { useAuth } from '../context/AuthContext';
-import GradientText from '../components/GradientText';
-import PasscodeInput from '../components/PasscodeInput';
+import UnifestoAppWordmark from '../components/UnifestoAppWordmark';
 import { spacing, typography, borderRadius, shadows } from '../theme';
 import { getFontFamily } from '../theme/fontHelpers';
 import { useTheme } from '../context/ThemeContext';
 
-
 type LoginStep = 'email' | 'email-otp' | 'mobile' | 'mobile-otp';
 
-// Google OAuth configuration
-const GOOGLE_WEB_CLIENT_ID = Constants.expoConfig?.extra?.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || 
+const GOOGLE_WEB_CLIENT_ID = Constants.expoConfig?.extra?.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ||
   process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
-
-const GOOGLE_IOS_CLIENT_ID = Constants.expoConfig?.extra?.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID || 
+const GOOGLE_IOS_CLIENT_ID = Constants.expoConfig?.extra?.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ||
   process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
-
-const GOOGLE_ANDROID_CLIENT_ID = Constants.expoConfig?.extra?.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID || 
+const GOOGLE_ANDROID_CLIENT_ID = Constants.expoConfig?.extra?.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ||
   process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
-
 
 GoogleSignin.configure({
   webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
@@ -50,259 +43,7 @@ GoogleSignin.configure({
 
 export default function NewLoginScreen() {
   const { colors } = useTheme();
-  
-  const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  scrollContainer: {
-    flexGrow: 1,
-    paddingHorizontal: spacing[6],
-    paddingTop: Platform.OS === 'ios' ? spacing[20] : spacing[16],
-    paddingBottom: spacing[8],
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: spacing[8],
-  },
-  title: {
-    fontSize: typography.fontSize['4xl'],
-    fontFamily: typography.fontFamily.primary,
-    marginBottom: spacing[3],
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: typography.fontSize.base,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: typography.lineHeight.relaxed * typography.fontSize.base,
-    marginBottom: spacing[4],
-  },
-  errorContainer: {
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.2)',
-    borderRadius: borderRadius.xl,
-    padding: spacing[4],
-    marginBottom: spacing[6],
-  },
-  errorText: {
-    color: '#ef4444',
-    fontSize: typography.fontSize.sm,
-    textAlign: 'center',
-  },
-  formContainer: {
-    width: '100%',
-  },
-  imageContainer: {
-    alignItems: 'center',
-    marginBottom: spacing[8],
-  },
-  loginImage: {
-    width: 400,
-    height: 400,
-  },
-  emailInputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[3],
-    marginBottom: spacing[5],
-  },
-  emailInputWrapper: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.card,
-    borderRadius: borderRadius.xl,
-    borderWidth: 1,
-    borderColor: colors.borderMuted,
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[4],
-    ...shadows.sm,
-  },
-  emailInput: {
-    flex: 1,
-    fontSize: typography.fontSize.base,
-    color: colors.text,
-    marginLeft: spacing[3],
-    fontFamily: typography.fontFamily.primary,
-  },
-  sendOtpButton: {
-    borderRadius: borderRadius.xl,
-    overflow: 'hidden',
-    ...shadows.lg,
-    width: 48,
-    height: 48,
-  },
-  sendOtpButtonGradient: {
-    width: '100%',
-    height: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  inputContainer: {
-    marginBottom: spacing[5],
-  },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.card,
-    borderRadius: borderRadius.xl,
-    borderWidth: 1,
-    borderColor: colors.borderMuted,
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[4],
-    ...shadows.sm,
-  },
-  countryCode: {
-    fontSize: typography.fontSize.base,
-    color: colors.text,
-    fontFamily: getFontFamily('bold'),
-    marginLeft: spacing[3],
-    paddingRight: spacing[2],
-    borderRightWidth: 1,
-    borderRightColor: colors.borderMuted,
-  },
-  input: {
-    flex: 1,
-    fontSize: typography.fontSize.base,
-    color: colors.text,
-    marginLeft: spacing[3],
-    fontFamily: typography.fontFamily.primary,
-  },
-  loginButton: {
-    borderRadius: borderRadius.xl,
-    overflow: 'hidden',
-    marginBottom: spacing[6],
-    ...shadows.lg,
-  },
-  loginButtonGradient: {
-    paddingVertical: spacing[4],
-    paddingHorizontal: spacing[6],
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 48,
-  },
-  loginButtonText: {
-    fontSize: typography.fontSize.base,
-    color: '#FFFFFF',
-    fontFamily: typography.fontFamily.primary,
-  },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing[6],
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: colors.borderMuted,
-  },
-  dividerText: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textMuted,
-    marginHorizontal: spacing[4],
-    fontFamily: typography.fontFamily.bold,
-  },
-  socialButtonsContainer: {
-    flexDirection: 'row',
-    gap: spacing[3],
-    marginBottom: spacing[8],
-  },
-  socialButton: {
-    flex: 1,
-    borderRadius: borderRadius.xl,
-    borderWidth: 1.5,
-    borderColor: colors.borderMuted,
-    backgroundColor: colors.card,
-    ...shadows.sm,
-  },
-  appleButtonContent: {
-    flexDirection: 'row',
-    paddingVertical: spacing[4],
-    paddingHorizontal: spacing[3],
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing[2],
-  },
-  appleButtonText: {
-    fontSize: typography.fontSize.xs,
-    color: colors.text,
-    fontFamily: typography.fontFamily.bold,
-  },
-  googleButtonContent: {
-    flexDirection: 'row',
-    paddingVertical: spacing[4],
-    paddingHorizontal: spacing[3],
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing[2],
-  },
-  googleButtonText: {
-    fontSize: typography.fontSize.xs,
-    color: colors.text,
-    fontFamily: typography.fontFamily.bold,
-  },
-  otpInstructions: {
-    fontSize: typography.fontSize.base,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginBottom: spacing[6],
-    lineHeight: typography.lineHeight.relaxed * typography.fontSize.base,
-  },
-  otpEmail: {
-    color: colors.primary,
-    fontFamily: getFontFamily('bold'),
-  },
-  passcodeContainer: {
-    marginBottom: spacing[8],
-  },
-  resendContainer: {
-    alignItems: 'center',
-    marginTop: spacing[4],
-  },
-  resendText: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textMuted,
-  },
-  resendLink: {
-    fontSize: typography.fontSize.sm,
-    color: colors.primary,
-    fontFamily: getFontFamily('bold'),
-  },
-  whatsappNote: {
-    fontSize: typography.fontSize.sm,
-    color: colors.primary,
-    textAlign: 'center',
-    marginBottom: spacing[4],
-  },
-  forgotPasswordContainer: {
-    alignItems: 'center',
-    marginBottom: spacing[4],
-  },
-  forgotPasswordText: {
-    fontSize: typography.fontSize.xs,
-    color: colors.textMuted,
-    textAlign: 'center',
-    lineHeight: typography.lineHeight.relaxed * typography.fontSize.xs,
-  },
-  legalSection: {
-    marginTop: spacing[6],
-    paddingHorizontal: spacing[2],
-  },
-  legalText: {
-    fontSize: typography.fontSize.xs,
-    color: colors.textMuted,
-    textAlign: 'center',
-    lineHeight: typography.lineHeight.relaxed * typography.fontSize.xs,
-  },
-  legalLink: {
-    color: colors.primary,
-    fontFamily: getFontFamily('semibold'),
-  },
-});
-
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const {
     sendEmailOtp,
@@ -310,14 +51,22 @@ export default function NewLoginScreen() {
     sendMobileOtp,
     verifyMobileOtp,
     loginWithGoogle,
-    loginWithApple,
     loginWithCognito,
     user,
     token,
     isAuthenticated,
+    tempToken: contextTempToken,
   } = useAuth();
 
   const [step, setStep] = useState<LoginStep>('email');
+  const [tempToken, setTempToken] = useState('');
+
+  // When context sets tempToken (new user after email OTP), move to mobile step
+  useEffect(() => {
+    if (contextTempToken && step === 'email-otp') {
+      setStep('mobile');
+    }
+  }, [contextTempToken]);
   const [email, setEmail] = useState('');
   const [emailOtp, setEmailOtp] = useState('');
   const [mobileNumber, setMobileNumber] = useState('');
@@ -327,6 +76,7 @@ export default function NewLoginScreen() {
   const [canResend, setCanResend] = useState(false);
   const [resendTimer, setResendTimer] = useState(60);
 
+  const isOtpStep = step === 'email-otp' || step === 'mobile-otp';
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
@@ -334,21 +84,6 @@ export default function NewLoginScreen() {
     await googleCognitoPrompt();
   };
 
-  const handleGoogleAuthSuccess = async (idToken: string) => {
-    try {
-      setIsLoading(true);
-      await loginWithGoogle(idToken);
-      // Navigation handled by auth context
-    } catch (err: any) {
-      setError(err.message || 'Google login failed');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-
-
-  // Cognito Google auth request
   const [googleCognitoRequest, googleCognitoResponse, googleCognitoPrompt] = AuthSession.useAuthRequest(
     {
       clientId: process.env.EXPO_PUBLIC_COGNITO_CLIENT_ID || '',
@@ -361,7 +96,6 @@ export default function NewLoginScreen() {
     cognitoDiscovery
   );
 
-  // Cognito Apple auth request  
   const [appleCognitoRequest, appleCognitoResponse, appleCognitoPrompt] = AuthSession.useAuthRequest(
     {
       clientId: process.env.EXPO_PUBLIC_COGNITO_CLIENT_ID || '',
@@ -374,13 +108,15 @@ export default function NewLoginScreen() {
     cognitoDiscovery
   );
 
-  // Handle Cognito Google response
-  const handleCognitoResponse = async (response: AuthSession.AuthSessionResult | null, request: AuthSession.AuthRequest | null) => {
+  const handleCognitoResponse = async (
+    response: AuthSession.AuthSessionResult | null,
+    request: AuthSession.AuthRequest | null
+  ) => {
     if (response?.type === 'success' && response.params.code) {
       try {
         const idToken = await exchangeCognitoCode(
           response.params.code,
-          request?.codeVerifier || '',
+          request?.codeVerifier || ''
         );
         await loginWithCognito(idToken);
       } catch (err: any) {
@@ -396,23 +132,20 @@ export default function NewLoginScreen() {
     }
   };
 
-  // Navigate when fully authenticated
   useEffect(() => {
     if (user && token && isAuthenticated && user.mobileVerified) {
       router.replace('/(tabs)');
     }
   }, [user, token, isAuthenticated]);
 
-  // Handle mobile verification requirement
   useEffect(() => {
     if (user && !user.mobileVerified) {
       setStep('mobile');
     }
   }, [user]);
 
-  // Resend timer
   useEffect(() => {
-    if (resendTimer > 0 && (step === 'email-otp' || step === 'mobile-otp')) {
+    if (resendTimer > 0 && isOtpStep) {
       const timer = setTimeout(() => setResendTimer(resendTimer - 1), 1000);
       return () => clearTimeout(timer);
     } else if (resendTimer === 0) {
@@ -420,35 +153,30 @@ export default function NewLoginScreen() {
     }
   }, [resendTimer, step]);
 
-  // Handle Cognito Google response
   useEffect(() => {
     if (googleCognitoResponse) {
       handleCognitoResponse(googleCognitoResponse, googleCognitoRequest);
     }
   }, [googleCognitoResponse]);
 
-  // Handle Cognito Apple response
   useEffect(() => {
     if (appleCognitoResponse) {
       handleCognitoResponse(appleCognitoResponse, appleCognitoRequest);
     }
   }, [appleCognitoResponse]);
 
-    const handleSendEmailOtp = async () => {
+  const handleSendEmailOtp = async () => {
     if (!email) {
       setError('Please enter your email address');
       return;
     }
-
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       setError('Please enter a valid email address');
       return;
     }
-
     setIsLoading(true);
     setError('');
-
     try {
       await sendEmailOtp(email);
       setStep('email-otp');
@@ -466,14 +194,11 @@ export default function NewLoginScreen() {
       setError('Please enter the 6-digit OTP');
       return;
     }
-
     setIsLoading(true);
     setError('');
-
     try {
       await verifyEmailOtp(email, emailOtp);
-      // If mobile verification is required, context will update and useEffect will handle navigation
-      // Otherwise, user will be logged in and navigated to tabs
+      // If new user, context sets tempToken — useEffect below detects it and moves to mobile step
     } catch (err: any) {
       setError(err.message || 'Invalid OTP');
     } finally {
@@ -486,19 +211,15 @@ export default function NewLoginScreen() {
       setError('Please enter your mobile number');
       return;
     }
-
     const phoneRegex = /^[0-9]{10}$/;
     if (!phoneRegex.test(mobileNumber)) {
       setError('Please enter a valid 10-digit mobile number');
       return;
     }
-
     setIsLoading(true);
     setError('');
-
     try {
-      const phoneWithPrefix = '+91' + mobileNumber;
-      await sendMobileOtp(phoneWithPrefix);
+      await sendMobileOtp('+91' + mobileNumber);
       setStep('mobile-otp');
       setResendTimer(60);
       setCanResend(false);
@@ -514,14 +235,10 @@ export default function NewLoginScreen() {
       setError('Please enter the 6-digit OTP');
       return;
     }
-
     setIsLoading(true);
     setError('');
-
     try {
-      const phoneWithPrefix = '+91' + mobileNumber;
-      await verifyMobileOtp(phoneWithPrefix, mobileOtp);
-      // User will be fully authenticated and navigated to tabs
+      await verifyMobileOtp('+91' + mobileNumber, mobileOtp);
     } catch (err: any) {
       setError(err.message || 'Invalid OTP');
     } finally {
@@ -531,18 +248,15 @@ export default function NewLoginScreen() {
 
   const handleResendOtp = async () => {
     if (!canResend) return;
-
     setCanResend(false);
     setResendTimer(60);
     setError('');
-
     try {
       if (step === 'email-otp') {
         await sendEmailOtp(email);
         Alert.alert('Success', 'OTP sent to your email');
       } else if (step === 'mobile-otp') {
-        const phoneWithPrefix = '+91' + mobileNumber;
-        await sendMobileOtp(phoneWithPrefix);
+        await sendMobileOtp('+91' + mobileNumber);
         Alert.alert('Success', 'OTP sent via WhatsApp');
       }
     } catch (err: any) {
@@ -554,13 +268,10 @@ export default function NewLoginScreen() {
   const handleGoogleLogin = async () => {
     setIsLoading(true);
     setError('');
-
     try {
-      // Check if Google client ID is configured
       if (!GOOGLE_WEB_CLIENT_ID && !GOOGLE_IOS_CLIENT_ID && !GOOGLE_ANDROID_CLIENT_ID) {
         throw new Error('Google Sign-In is not configured. Please add Google Client IDs to your .env file.');
       }
-
       await handleGoogleSignIn();
     } catch (err: any) {
       setError(err.message || 'Google login failed');
@@ -574,33 +285,258 @@ export default function NewLoginScreen() {
     await appleCognitoPrompt();
   };
 
-
   const handleBack = () => {
+    setError('');
     if (step === 'email-otp') {
       setStep('email');
       setEmailOtp('');
-      setError('');
-    } else if (step === 'mobile') {
-      // Can't go back from mobile verification
-      Alert.alert(
-        'Mobile Verification Required',
-        'You need to verify your mobile number to complete the login process.'
-      );
     } else if (step === 'mobile-otp') {
       setStep('mobile');
       setMobileOtp('');
-      setError('');
     }
   };
 
+  const headings: Record<LoginStep, { title: string; subtitle: string }> = {
+    email: {
+      title: '',
+      subtitle: '',
+    },
+    'email-otp': {
+      title: 'Check your inbox',
+      subtitle: `We sent a 6-digit code to ${email}`,
+    },
+    mobile: {
+      title: 'One last step',
+      subtitle: 'Verify your mobile number to secure your account.',
+    },
+    'mobile-otp': {
+      title: 'Verify your number',
+      subtitle: `We sent a code via WhatsApp to +91 ${mobileNumber}`,
+    },
+  };
+
+  const styles = StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
+    scrollContent: {
+      flexGrow: 1,
+      paddingHorizontal: spacing[6],
+      paddingTop: insets.top + spacing[20],
+      paddingBottom: insets.bottom + spacing[8],
+    },
+    topBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: spacing[10],
+      marginLeft: -spacing[2],
+    },
+    backButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.borderMuted,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    heroSection: { marginBottom: spacing[6] },
+    title: {
+      fontSize: typography.fontSize['2xl'],
+      lineHeight: typography.fontSize['2xl'] * 1.2,
+      color: colors.text,
+      fontFamily: getFontFamily('bold'),
+      marginBottom: spacing[1],
+    },
+    subtitle: {
+      fontSize: typography.fontSize.base,
+      color: colors.textMuted,
+      fontFamily: getFontFamily('normal'),
+      lineHeight: typography.lineHeight.relaxed * typography.fontSize.base,
+    },
+    errorContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing[2],
+      backgroundColor: 'rgba(239, 68, 68, 0.1)',
+      borderWidth: 1,
+      borderColor: 'rgba(239, 68, 68, 0.25)',
+      borderRadius: borderRadius.lg,
+      paddingVertical: spacing[3],
+      paddingHorizontal: spacing[4],
+      marginBottom: spacing[5],
+    },
+    errorText: {
+      flex: 1,
+      color: '#ef4444',
+      fontSize: typography.fontSize.sm,
+      fontFamily: getFontFamily('medium'),
+    },
+    fieldLabel: {
+      fontSize: typography.fontSize.xs,
+      color: colors.textMuted,
+      fontFamily: getFontFamily('bold'),
+      letterSpacing: 1.2,
+      textTransform: 'uppercase',
+      marginBottom: spacing[2],
+    },
+    inputWrapper: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.card,
+      borderRadius: borderRadius.xl,
+      borderWidth: 1,
+      borderColor: colors.borderMuted,
+      paddingHorizontal: spacing[4],
+      height: 58,
+    },
+    emailRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing[3],
+    },
+    emailInputWrapper: { flex: 1 },
+    emailSubmitButton: {
+      width: 58,
+      height: 58,
+      borderRadius: borderRadius.xl,
+      overflow: 'hidden',
+      ...shadows.lg,
+    },
+    emailSubmitGradient: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    input: {
+      flex: 1,
+      fontSize: typography.fontSize.base,
+      color: colors.text,
+      marginLeft: spacing[3],
+      fontFamily: getFontFamily('medium'),
+    },
+    countryCode: {
+      fontSize: typography.fontSize.base,
+      color: colors.text,
+      fontFamily: getFontFamily('bold'),
+      marginLeft: spacing[3],
+      paddingRight: spacing[3],
+      borderRightWidth: 1,
+      borderRightColor: colors.borderMuted,
+    },
+    otpWrapper: {
+      backgroundColor: colors.card,
+      borderRadius: borderRadius.xl,
+      borderWidth: 1,
+      borderColor: colors.borderMuted,
+      height: 64,
+      justifyContent: 'center',
+    },
+    otpInput: {
+      fontSize: typography.fontSize['3xl'],
+      color: colors.text,
+      fontFamily: getFontFamily('bold'),
+      letterSpacing: 12,
+      textAlign: 'center',
+    },
+    primaryButton: {
+      borderRadius: borderRadius.xl,
+      overflow: 'hidden',
+      marginTop: spacing[6],
+      ...shadows.lg,
+    },
+    primaryButtonGradient: {
+      flexDirection: 'row',
+      gap: spacing[2],
+      paddingVertical: spacing[4],
+      alignItems: 'center',
+      justifyContent: 'center',
+      height: 56,
+    },
+    primaryButtonText: {
+      fontSize: typography.fontSize.base,
+      color: '#FFFFFF',
+      fontFamily: getFontFamily('bold'),
+    },
+    divider: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginVertical: spacing[7],
+    },
+    dividerLine: { flex: 1, height: 1, backgroundColor: colors.borderMuted },
+    dividerText: {
+      fontSize: typography.fontSize.xs,
+      color: colors.textMuted,
+      marginHorizontal: spacing[3],
+      fontFamily: getFontFamily('semibold'),
+      letterSpacing: 0.5,
+    },
+    socialColumn: { flexDirection: 'row', gap: spacing[3] },
+    socialButton: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing[2],
+      height: 54,
+      borderRadius: borderRadius.xl,
+      borderWidth: 1,
+      borderColor: colors.borderMuted,
+      backgroundColor: colors.card,
+    },
+    socialButtonText: {
+      fontSize: typography.fontSize.sm,
+      color: colors.text,
+      fontFamily: getFontFamily('semibold'),
+    },
+    resendRow: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      gap: spacing[1],
+      marginTop: spacing[5],
+    },
+    changeRowTop: {
+      flexDirection: 'row',
+      justifyContent: 'flex-start',
+      alignItems: 'center',
+      gap: spacing[1],
+      marginTop: -spacing[2],
+      marginBottom: spacing[5],
+    },
+    resendText: { fontSize: typography.fontSize.sm, color: colors.textMuted, fontFamily: getFontFamily('normal') },
+    resendLink: { fontSize: typography.fontSize.sm, color: colors.primary, fontFamily: getFontFamily('bold') },
+    whatsappNote: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing[2],
+      marginTop: spacing[4],
+    },
+    whatsappNoteText: {
+      fontSize: typography.fontSize.sm,
+      color: colors.textMuted,
+      fontFamily: getFontFamily('medium'),
+    },
+    footer: { flex: 1, justifyContent: 'flex-end' },
+    legalText: {
+      fontSize: typography.fontSize.xs,
+      color: colors.textMuted,
+      textAlign: 'center',
+      lineHeight: typography.lineHeight.relaxed * typography.fontSize.xs,
+      marginTop: spacing[8],
+    },
+    legalLink: { color: colors.primary, fontFamily: getFontFamily('semibold') },
+  });
+
   const renderEmailStep = () => (
     <>
-      <View style={styles.emailInputRow}>
-        <View style={styles.emailInputWrapper}>
+      <View style={styles.emailRow}>
+        <View style={[styles.inputWrapper, styles.emailInputWrapper]}>
           <Mail size={20} color={colors.textMuted} strokeWidth={2} />
           <TextInput
-            style={styles.emailInput}
-            placeholder="Email address"
+            style={styles.input}
+            placeholder="you@example.com"
             placeholderTextColor={colors.textMuted}
             value={email}
             onChangeText={(text) => {
@@ -615,326 +551,209 @@ export default function NewLoginScreen() {
         </View>
 
         <TouchableOpacity
-          style={styles.sendOtpButton}
+          style={styles.emailSubmitButton}
           onPress={handleSendEmailOtp}
           disabled={isLoading}
-          activeOpacity={0.8}
+          activeOpacity={0.85}
         >
           <LinearGradient
             colors={['#3491ff', '#0062ff']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
-            style={styles.sendOtpButtonGradient}
+            style={styles.emailSubmitGradient}
           >
             {isLoading ? (
-              <ActivityIndicator color="#FFFFFF" size="small" />
+              <ActivityIndicator color="#FFFFFF" />
             ) : (
-              <ChevronRight size={20} color="#FFFFFF" strokeWidth={3} />
+              <ArrowRight size={22} color="#FFFFFF" strokeWidth={2.5} />
             )}
           </LinearGradient>
         </TouchableOpacity>
       </View>
 
-      <View style={styles.forgotPasswordContainer}>
-        <Text style={styles.forgotPasswordText}>
-          Don't have an account? We'll create one for you!
-        </Text>
-      </View>
-
       <View style={styles.divider}>
         <View style={styles.dividerLine} />
-        <Text style={styles.dividerText}>or continue with</Text>
+        <Text style={styles.dividerText}>OR CONTINUE WITH</Text>
         <View style={styles.dividerLine} />
       </View>
 
-      <View style={styles.socialButtonsContainer}>
+      <View style={styles.socialColumn}>
         {Platform.OS === 'ios' && (
           <TouchableOpacity
             style={styles.socialButton}
             onPress={handleAppleLogin}
             disabled={isLoading}
-            activeOpacity={0.8}
+            activeOpacity={0.85}
           >
-            <View style={styles.appleButtonContent}>
-              <AppleLogo />
-              <Text style={styles.appleButtonText}>Sign in with Apple</Text>
-            </View>
+            <AppleLogo />
+            <Text style={styles.socialButtonText}>Apple</Text>
           </TouchableOpacity>
         )}
-
         <TouchableOpacity
           style={styles.socialButton}
           onPress={handleGoogleLogin}
           disabled={isLoading}
-          activeOpacity={0.8}
+          activeOpacity={0.85}
         >
-          <View style={styles.googleButtonContent}>
-            <GoogleLogo />
-            <Text style={styles.googleButtonText}>Sign in with Google</Text>
-          </View>
+          <GoogleLogo />
+          <Text style={styles.socialButtonText}>Google</Text>
         </TouchableOpacity>
-      </View>
-
-      {/* Terms and Privacy */}
-      <View style={styles.legalSection}>
-        <Text style={styles.legalText}>
-          By continuing, you agree to our{' '}
-          <Text
-            style={styles.legalLink}
-            onPress={() => Linking.openURL('https://unifesto.app/terms')}
-          >
-            Terms of Service
-          </Text>
-          {' '}and{' '}
-          <Text
-            style={styles.legalLink}
-            onPress={() => Linking.openURL('https://unifesto.app/privacy')}
-          >
-            Privacy Policy
-          </Text>
-        </Text>
       </View>
     </>
   );
 
-  const renderEmailOtpStep = () => (
+  const renderOtpStep = (
+    value: string,
+    setValue: (v: string) => void,
+    onVerify: () => void,
+    buttonLabel: string,
+    onChangeEmail?: () => void,
+    changeLabel: string = 'Change Email'
+  ) => (
     <>
-      <Text style={styles.otpInstructions}>
-        We've sent a 6-digit code to{'\n'}
-        <Text style={styles.otpEmail}>{email}</Text>
-      </Text>
+      {onChangeEmail ? (
+        <View style={styles.changeRowTop}>
+          <Text style={styles.resendText}>Not you?</Text>
+          <TouchableOpacity onPress={onChangeEmail} activeOpacity={0.7}>
+            <Text style={styles.resendLink}>{changeLabel}</Text>
+          </TouchableOpacity>
+        </View>
+      ) : null}
 
-      <View style={styles.passcodeContainer}>
-        <PasscodeInput
-          length={6}
-          value={emailOtp}
+      <View style={styles.otpWrapper}>
+        <TextInput
+          style={styles.otpInput}
+          placeholder="------"
+          placeholderTextColor={colors.borderMuted}
+          value={value}
           onChangeText={(text) => {
-            setEmailOtp(text);
+            setValue(text.replace(/\D/g, '').slice(0, 6));
             setError('');
           }}
-          onComplete={(text) => setEmailOtp(text)}
-          disabled={isLoading}
+          keyboardType="number-pad"
+          maxLength={6}
+          editable={!isLoading}
+          autoFocus
         />
       </View>
 
       <TouchableOpacity
-        style={styles.loginButton}
-        onPress={handleVerifyEmailOtp}
-        disabled={isLoading || emailOtp.length !== 6}
-        activeOpacity={0.8}
+        style={styles.primaryButton}
+        onPress={onVerify}
+        disabled={isLoading || value.length !== 6}
+        activeOpacity={0.85}
       >
         <LinearGradient
-          colors={['#3491ff', '#0062ff']}
+          colors={value.length === 6 ? ['#3491ff', '#0062ff'] : [colors.borderMuted, colors.borderMuted]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
-          style={styles.loginButtonGradient}
+          style={styles.primaryButtonGradient}
         >
           {isLoading ? (
             <ActivityIndicator color="#FFFFFF" />
           ) : (
-            <Text style={styles.loginButtonText}>Verify & Continue</Text>
+            <Text style={styles.primaryButtonText}>{buttonLabel}</Text>
           )}
         </LinearGradient>
       </TouchableOpacity>
 
-      <View style={styles.resendContainer}>
+      <View style={styles.resendRow}>
         {canResend ? (
           <TouchableOpacity onPress={handleResendOtp}>
-            <Text style={styles.resendLink}>Resend OTP</Text>
+            <Text style={styles.resendLink}>Resend code</Text>
           </TouchableOpacity>
         ) : (
-          <Text style={styles.resendText}>
-            Resend OTP in {resendTimer}s
-          </Text>
+          <>
+            <Text style={styles.resendText}>Resend code in</Text>
+            <Text style={styles.resendLink}>{resendTimer}s</Text>
+          </>
         )}
-      </View>
-
-      {/* Terms and Privacy */}
-      <View style={styles.legalSection}>
-        <Text style={styles.legalText}>
-          By continuing, you agree to our{' '}
-          <Text
-            style={styles.legalLink}
-            onPress={() => Linking.openURL('https://unifesto.app/terms')}
-          >
-            Terms of Service
-          </Text>
-          {' '}and{' '}
-          <Text
-            style={styles.legalLink}
-            onPress={() => Linking.openURL('https://unifesto.app/privacy')}
-          >
-            Privacy Policy
-          </Text>
-        </Text>
       </View>
     </>
   );
 
   const renderMobileStep = () => (
     <>
-      <Text style={styles.otpInstructions}>
-        To complete your login, please verify your mobile number
-      </Text>
-
-      <View style={styles.inputContainer}>
-        <View style={styles.inputWrapper}>
-          <Phone size={20} color={colors.textMuted} strokeWidth={2} />
-          <Text style={styles.countryCode}>+91</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Mobile Number"
-            placeholderTextColor={colors.textMuted}
-            value={mobileNumber}
-            onChangeText={(text) => {
-              const cleaned = text.replace(/\D/g, '');
-              setMobileNumber(cleaned);
-              setError('');
-            }}
-            keyboardType="phone-pad"
-            autoCorrect={false}
-            editable={!isLoading}
-            maxLength={10}
-          />
-        </View>
-      </View>
-
-      <Text style={styles.whatsappNote}>
-        📱 You'll receive the OTP via WhatsApp
-      </Text>
-
-      <TouchableOpacity
-        style={styles.loginButton}
-        onPress={handleSendMobileOtp}
-        disabled={isLoading}
-        activeOpacity={0.8}
-      >
-        <LinearGradient
-          colors={['#3491ff', '#0062ff']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.loginButtonGradient}
+      <View style={styles.changeRowTop}>
+        <Text style={styles.resendText}>Not you?</Text>
+        <TouchableOpacity
+          onPress={() => {
+            setError('');
+            setMobileNumber('');
+            setStep('email');
+          }}
+          activeOpacity={0.7}
         >
-          {isLoading ? (
-            <ActivityIndicator color="#FFFFFF" />
-          ) : (
-            <Text style={styles.loginButtonText}>Send OTP</Text>
-          )}
-        </LinearGradient>
-      </TouchableOpacity>
-
-      {/* Terms and Privacy */}
-      <View style={styles.legalSection}>
-        <Text style={styles.legalText}>
-          By continuing, you agree to our{' '}
-          <Text
-            style={styles.legalLink}
-            onPress={() => Linking.openURL('https://unifesto.app/terms')}
-          >
-            Terms of Service
-          </Text>
-          {' '}and{' '}
-          <Text
-            style={styles.legalLink}
-            onPress={() => Linking.openURL('https://unifesto.app/privacy')}
-          >
-            Privacy Policy
-          </Text>
-        </Text>
+          <Text style={styles.resendLink}>Change Email</Text>
+        </TouchableOpacity>
       </View>
-    </>
-  );
-
-  const renderMobileOtpStep = () => (
-    <>
-      <Text style={styles.otpInstructions}>
-        We've sent a 6-digit code via WhatsApp to{'\n'}
-        <Text style={styles.otpEmail}>+91 {mobileNumber}</Text>
-      </Text>
-
-      <View style={styles.passcodeContainer}>
-        <PasscodeInput
-          length={6}
-          value={mobileOtp}
+      <View style={styles.inputWrapper}>
+        <Phone size={20} color={colors.textMuted} strokeWidth={2} />
+        <Text style={styles.countryCode}>+91</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="10-digit number"
+          placeholderTextColor={colors.textMuted}
+          value={mobileNumber}
           onChangeText={(text) => {
-            setMobileOtp(text);
+            setMobileNumber(text.replace(/\D/g, ''));
             setError('');
           }}
-          onComplete={(text) => setMobileOtp(text)}
-          disabled={isLoading}
+          keyboardType="phone-pad"
+          autoCorrect={false}
+          editable={!isLoading}
+          maxLength={10}
         />
       </View>
 
       <TouchableOpacity
-        style={styles.loginButton}
-        onPress={handleVerifyMobileOtp}
-        disabled={isLoading || mobileOtp.length !== 6}
-        activeOpacity={0.8}
+        style={styles.primaryButton}
+        onPress={handleSendMobileOtp}
+        disabled={isLoading}
+        activeOpacity={0.85}
       >
         <LinearGradient
           colors={['#3491ff', '#0062ff']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
-          style={styles.loginButtonGradient}
+          style={styles.primaryButtonGradient}
         >
           {isLoading ? (
             <ActivityIndicator color="#FFFFFF" />
           ) : (
-            <Text style={styles.loginButtonText}>Verify & Login</Text>
+            <Text style={styles.primaryButtonText}>Send code</Text>
           )}
         </LinearGradient>
       </TouchableOpacity>
 
-      <View style={styles.resendContainer}>
-        {canResend ? (
-          <TouchableOpacity onPress={handleResendOtp}>
-            <Text style={styles.resendLink}>Resend OTP</Text>
-          </TouchableOpacity>
-        ) : (
-          <Text style={styles.resendText}>
-            Resend OTP in {resendTimer}s
-          </Text>
-        )}
-      </View>
-
-      {/* Terms and Privacy */}
-      <View style={styles.legalSection}>
-        <Text style={styles.legalText}>
-          By continuing, you agree to our{' '}
-          <Text
-            style={styles.legalLink}
-            onPress={() => Linking.openURL('https://unifesto.app/terms')}
-          >
-            Terms of Service
-          </Text>
-          {' '}and{' '}
-          <Text
-            style={styles.legalLink}
-            onPress={() => Linking.openURL('https://unifesto.app/privacy')}
-          >
-            Privacy Policy
-          </Text>
-        </Text>
+      <View style={styles.whatsappNote}>
+        <ShieldCheck size={16} color={colors.primary} strokeWidth={2} />
+        <Text style={styles.whatsappNoteText}>You'll receive the OTP via WhatsApp</Text>
       </View>
     </>
   );
+
+  const { title, subtitle } = headings[step];
 
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={styles.scrollContainer}
+      contentContainerStyle={styles.scrollContent}
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode="on-drag"
-      automaticallyAdjustKeyboardInsets={true}
+      automaticallyAdjustKeyboardInsets
     >
-      <View style={styles.imageContainer}>
-        <Image
-          source={require('../../assets/login-design.png')}
-          style={styles.loginImage}
-          resizeMode="contain"
-        />
+      <View style={styles.topBar}>
+        <UnifestoAppWordmark width={168} height={52} />
       </View>
+
+      {(title || subtitle) ? (
+        <View style={styles.heroSection}>
+          {title ? <Text style={styles.title}>{title}</Text> : null}
+          {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+        </View>
+      ) : null}
 
       {error ? (
         <View style={styles.errorContainer}>
@@ -942,11 +761,39 @@ export default function NewLoginScreen() {
         </View>
       ) : null}
 
-      <View style={styles.formContainer}>
-        {step === 'email' && renderEmailStep()}
-        {step === 'email-otp' && renderEmailOtpStep()}
-        {step === 'mobile' && renderMobileStep()}
-        {step === 'mobile-otp' && renderMobileOtpStep()}
+      {step === 'email' && renderEmailStep()}
+      {step === 'email-otp' &&
+        renderOtpStep(emailOtp, setEmailOtp, handleVerifyEmailOtp, 'Verify & Continue', () => {
+          setError('');
+          setEmailOtp('');
+          setStep('email');
+        })}
+      {step === 'mobile' && renderMobileStep()}
+      {step === 'mobile-otp' &&
+        renderOtpStep(
+          mobileOtp,
+          setMobileOtp,
+          handleVerifyMobileOtp,
+          'Verify & Login',
+          () => {
+            setError('');
+            setMobileOtp('');
+            setStep('mobile');
+          },
+          'Change Number'
+        )}
+
+      <View style={styles.footer}>
+        <Text style={styles.legalText}>
+          By continuing, you agree to our{' '}
+          <Text style={styles.legalLink} onPress={() => Linking.openURL('https://unifesto.app/terms')}>
+            Terms of Service
+          </Text>{' '}
+          and{' '}
+          <Text style={styles.legalLink} onPress={() => Linking.openURL('https://unifesto.app/privacy')}>
+            Privacy Policy
+          </Text>
+        </Text>
       </View>
     </ScrollView>
   );
@@ -985,4 +832,3 @@ function AppleLogo() {
     </Svg>
   );
 }
-

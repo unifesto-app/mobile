@@ -3,7 +3,7 @@ import { View, StyleSheet, Platform, TouchableOpacity, Image, Text } from 'react
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import LiquidMetalLogo from './LiquidMetalLogo';
+import UnifestoAppWordmark from './UnifestoAppWordmark';
 import { spacing } from '../theme';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -87,7 +87,7 @@ export default function CustomHeader() {
       <View style={styles.content}>
         {/* Left side: Logo */}
         <View style={styles.logoContainer}>
-          <LiquidMetalLogo height={Platform.OS === 'android' ? 30 : 35} width={Platform.OS === 'android' ? 71 : 80} />
+          <UnifestoAppWordmark height={Platform.OS === 'android' ? 30 : 35} width={Platform.OS === 'android' ? 95 : 110} />
         </View>
         
         {/* Right side: Profile icon */}

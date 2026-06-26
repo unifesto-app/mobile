@@ -6,19 +6,41 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
+  Image,
   RefreshControl,
   ActivityIndicator,
   Modal,
   Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ChevronDown, Search, Download, Check, X } from 'lucide-react-native';
+import {
+  ChevronDown,
+  Search,
+  Download,
+  Check,
+  X,
+  CalendarDays,
+  Users,
+} from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
+import ForgeWordmark from '../../components/ForgeWordmark';
 import { getMyOrganiserSpaces, getSpaceEvents } from '../../lib/api/spaces';
-import { getEventRegistrations, EventRegistration } from '../../lib/api/registrations';
+import {
+  getEventRegistrations,
+  EventRegistration,
+} from '../../lib/api/registrations';
 import { Event } from '../../lib/api/events';
 import { spacing, typography, borderRadius } from '../../theme';
 import { getFontFamily } from '../../theme/fontHelpers';
+
+const AVATAR_COLORS = [
+  '#3491ff',
+  '#8b5cf6',
+  '#ec4899',
+  '#f59e0b',
+  '#10b981',
+  '#06b6d4',
+];
 
 export default function ForgeRegistrationsScreen() {
   const { colors } = useTheme();
@@ -36,10 +58,14 @@ export default function ForgeRegistrationsScreen() {
     try {
       const spaces = await getMyOrganiserSpaces();
       const results = await Promise.all(
-        (spaces || []).map((s) => getSpaceEvents(s.id, 1, 50).catch(() => ({ events: [] })))
+        (spaces || []).map((s) =>
+          getSpaceEvents(s.id, 1, 50).catch(() => ({ events: [] }))
+        )
       );
       const map = new Map<string, Event>();
-      results.flatMap((r) => r.events || []).forEach((e: Event) => map.set(e.id, e));
+      results
+        .flatMap((r) => r.events || [])
+        .forEach((e: Event) => map.set(e.id, e));
       const list = Array.from(map.values());
       setEvents(list);
       if (list.length > 0) setSelectedEvent(list[0]);
@@ -77,30 +103,106 @@ export default function ForgeRegistrationsScreen() {
     r.user?.fullName || r.attendees?.[0]?.name || r.user?.username || 'Guest';
 
   const getInitials = (name: string) =>
-    name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
+    name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+
+  const avatarColor = (name: string) =>
+    AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length];
 
   const filtered = registrations.filter((r) =>
     getName(r).toLowerCase().includes(search.toLowerCase())
   );
 
+  const total = registrations.length;
+  const checkedInCount = registrations.filter((r) => !!r.checkedInAt).length;
+  const pendingCount = total - checkedInCount;
+
   const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
-    header: { paddingHorizontal: spacing[5], paddingTop: insets.top + spacing[3], paddingBottom: spacing[3] },
-    headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    headerTitle: { fontSize: typography.fontSize['2xl'], color: colors.text, fontFamily: getFontFamily('bold') },
+    header: {
+      paddingHorizontal: spacing[5],
+      paddingTop: insets.top + spacing[4],
+    },
+    headerRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+    },
+    wordmark: { width: 120, height: 34 },
+    headerSubtitle: {
+      fontSize: typography.fontSize.sm,
+      color: colors.textMuted,
+      fontFamily: getFontFamily('normal'),
+      marginTop: spacing[1],
+    },
+    headerIcon: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: 'rgba(52, 145, 255, 0.15)',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
     picker: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'space-between',
+      gap: spacing[3],
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.borderMuted,
+      borderRadius: borderRadius.xl,
+      padding: spacing[4],
+      marginTop: spacing[5],
+    },
+    pickerIcon: {
+      width: 40,
+      height: 40,
+      borderRadius: borderRadius.md,
+      backgroundColor: 'rgba(52, 145, 255, 0.12)',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    pickerTextWrap: { flex: 1 },
+    pickerLabel: {
+      fontSize: typography.fontSize.xs,
+      color: colors.textMuted,
+      fontFamily: getFontFamily('bold'),
+      letterSpacing: 1,
+      marginBottom: 2,
+    },
+    pickerText: {
+      fontSize: typography.fontSize.sm,
+      color: colors.text,
+      fontFamily: getFontFamily('semibold'),
+    },
+    summaryRow: {
+      flexDirection: 'row',
+      gap: spacing[2],
+      marginTop: spacing[4],
+    },
+    summaryChip: {
+      flex: 1,
       backgroundColor: colors.card,
       borderWidth: 1,
       borderColor: colors.borderMuted,
       borderRadius: borderRadius.lg,
       paddingVertical: spacing[3],
-      paddingHorizontal: spacing[4],
-      marginTop: spacing[3],
+      alignItems: 'center',
+      gap: 2,
     },
-    pickerText: { flex: 1, fontSize: typography.fontSize.sm, color: colors.text, fontFamily: getFontFamily('semibold') },
+    summaryValue: {
+      fontSize: typography.fontSize.xl,
+      fontFamily: getFontFamily('bold'),
+    },
+    summaryLabel: {
+      fontSize: typography.fontSize.xs,
+      color: colors.textMuted,
+      fontFamily: getFontFamily('normal'),
+    },
     searchBar: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -108,12 +210,28 @@ export default function ForgeRegistrationsScreen() {
       backgroundColor: colors.card,
       borderWidth: 1,
       borderColor: colors.borderMuted,
-      borderRadius: borderRadius.lg,
-      paddingHorizontal: spacing[3],
+      borderRadius: borderRadius.full,
+      paddingHorizontal: spacing[4],
       marginHorizontal: spacing[5],
-      marginBottom: spacing[3],
+      marginTop: spacing[4],
+      marginBottom: spacing[2],
     },
-    searchInput: { flex: 1, color: colors.text, fontFamily: getFontFamily('normal'), paddingVertical: spacing[3], fontSize: typography.fontSize.sm },
+    searchInput: {
+      flex: 1,
+      color: colors.text,
+      fontFamily: getFontFamily('normal'),
+      paddingVertical: spacing[3],
+      fontSize: typography.fontSize.sm,
+    },
+    sectionLabel: {
+      fontSize: typography.fontSize.xs,
+      color: colors.textMuted,
+      fontFamily: getFontFamily('bold'),
+      letterSpacing: 1.5,
+      marginHorizontal: spacing[5],
+      marginTop: spacing[3],
+      marginBottom: spacing[2],
+    },
     row: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -124,24 +242,93 @@ export default function ForgeRegistrationsScreen() {
       borderBottomColor: colors.borderMuted,
     },
     avatar: {
-      width: 40, height: 40, borderRadius: 20,
-      backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center',
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
-    avatarText: { color: '#fff', fontFamily: getFontFamily('bold'), fontSize: typography.fontSize.sm },
+    avatarText: {
+      color: '#fff',
+      fontFamily: getFontFamily('bold'),
+      fontSize: typography.fontSize.sm,
+    },
     rowContent: { flex: 1 },
-    name: { fontSize: typography.fontSize.sm, color: colors.text, fontFamily: getFontFamily('semibold') },
-    ticketType: { fontSize: typography.fontSize.xs, color: colors.textMuted, fontFamily: getFontFamily('normal'), marginTop: 2 },
-    statusBadge: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: spacing[2], paddingVertical: 3, borderRadius: borderRadius.md },
+    name: {
+      fontSize: typography.fontSize.sm,
+      color: colors.text,
+      fontFamily: getFontFamily('semibold'),
+    },
+    ticketType: {
+      fontSize: typography.fontSize.xs,
+      color: colors.textMuted,
+      fontFamily: getFontFamily('normal'),
+      marginTop: 2,
+    },
+    statusBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 3,
+      paddingHorizontal: spacing[2],
+      paddingVertical: 4,
+      borderRadius: borderRadius.full,
+    },
     statusText: { fontSize: 10, fontFamily: getFontFamily('bold') },
-    emptyWrap: { alignItems: 'center', paddingVertical: spacing[12] },
-    emptyText: { fontSize: typography.fontSize.base, color: colors.textMuted },
+    emptyWrap: {
+      alignItems: 'center',
+      paddingVertical: spacing[16],
+      gap: spacing[3],
+    },
+    emptyIconWrap: {
+      width: 72,
+      height: 72,
+      borderRadius: 36,
+      backgroundColor: 'rgba(52, 145, 255, 0.12)',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    emptyTitle: {
+      fontSize: typography.fontSize.lg,
+      color: colors.text,
+      fontFamily: getFontFamily('bold'),
+    },
+    emptyText: {
+      fontSize: typography.fontSize.sm,
+      color: colors.textMuted,
+      textAlign: 'center',
+      fontFamily: getFontFamily('normal'),
+    },
     loadingWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     // modal
-    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
-    modalSheet: { backgroundColor: colors.card, borderTopLeftRadius: borderRadius.xl, borderTopRightRadius: borderRadius.xl, paddingBottom: insets.bottom + spacing[4], maxHeight: '70%' },
-    modalTitle: { fontSize: typography.fontSize.lg, color: colors.text, fontFamily: getFontFamily('bold'), padding: spacing[5] },
-    modalItem: { paddingVertical: spacing[3], paddingHorizontal: spacing[5], borderBottomWidth: 1, borderBottomColor: colors.borderMuted },
-    modalItemText: { fontSize: typography.fontSize.sm, color: colors.text, fontFamily: getFontFamily('semibold') },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.7)',
+      justifyContent: 'flex-end',
+    },
+    modalSheet: {
+      backgroundColor: colors.card,
+      borderTopLeftRadius: borderRadius['2xl'],
+      borderTopRightRadius: borderRadius['2xl'],
+      paddingBottom: insets.bottom + spacing[4],
+      maxHeight: '70%',
+    },
+    modalTitle: {
+      fontSize: typography.fontSize.lg,
+      color: colors.text,
+      fontFamily: getFontFamily('bold'),
+      padding: spacing[5],
+    },
+    modalItem: {
+      paddingVertical: spacing[3],
+      paddingHorizontal: spacing[5],
+      borderBottomWidth: 1,
+      borderBottomColor: colors.borderMuted,
+    },
+    modalItemText: {
+      fontSize: typography.fontSize.sm,
+      color: colors.text,
+      fontFamily: getFontFamily('semibold'),
+    },
   });
 
   if (loadingEvents) {
@@ -156,17 +343,60 @@ export default function ForgeRegistrationsScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.headerRow}>
-          <Text style={styles.headerTitle}>Registrations</Text>
-          <TouchableOpacity onPress={() => Alert.alert('Coming soon', 'Export will be available soon.')}>
+          <View>
+            <ForgeWordmark width={120} height={34} />
+            <Text style={styles.headerSubtitle}>Attendees & check-ins</Text>
+          </View>
+          <TouchableOpacity
+            style={styles.headerIcon}
+            activeOpacity={0.8}
+            onPress={() =>
+              Alert.alert('Coming soon', 'Export will be available soon.')
+            }
+          >
             <Download size={20} color={colors.primary} strokeWidth={2} />
           </TouchableOpacity>
         </View>
-        <TouchableOpacity style={styles.picker} activeOpacity={0.8} onPress={() => setPickerOpen(true)}>
-          <Text style={styles.pickerText} numberOfLines={1}>
-            {selectedEvent ? selectedEvent.title : 'Select an event'}
-          </Text>
+
+        <TouchableOpacity
+          style={styles.picker}
+          activeOpacity={0.85}
+          onPress={() => setPickerOpen(true)}
+        >
+          <View style={styles.pickerIcon}>
+            <CalendarDays size={18} color={colors.primary} strokeWidth={2} />
+          </View>
+          <View style={styles.pickerTextWrap}>
+            <Text style={styles.pickerLabel}>EVENT</Text>
+            <Text style={styles.pickerText} numberOfLines={1}>
+              {selectedEvent ? selectedEvent.title : 'Select an event'}
+            </Text>
+          </View>
           <ChevronDown size={18} color={colors.textMuted} strokeWidth={2} />
         </TouchableOpacity>
+
+        {selectedEvent ? (
+          <View style={styles.summaryRow}>
+            <View style={styles.summaryChip}>
+              <Text style={[styles.summaryValue, { color: colors.text }]}>
+                {total}
+              </Text>
+              <Text style={styles.summaryLabel}>Registered</Text>
+            </View>
+            <View style={styles.summaryChip}>
+              <Text style={[styles.summaryValue, { color: '#22c55e' }]}>
+                {checkedInCount}
+              </Text>
+              <Text style={styles.summaryLabel}>Checked in</Text>
+            </View>
+            <View style={styles.summaryChip}>
+              <Text style={[styles.summaryValue, { color: colors.primary }]}>
+                {pendingCount}
+              </Text>
+              <Text style={styles.summaryLabel}>Pending</Text>
+            </View>
+          </View>
+        ) : null}
       </View>
 
       <View style={styles.searchBar}>
@@ -186,52 +416,99 @@ export default function ForgeRegistrationsScreen() {
         </View>
       ) : (
         <ScrollView
+          contentInsetAdjustmentBehavior="automatic"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 120 }}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
-              onRefresh={() => { setRefreshing(true); if (selectedEvent) loadRegistrations(selectedEvent.id); }}
+              onRefresh={() => {
+                setRefreshing(true);
+                if (selectedEvent) loadRegistrations(selectedEvent.id);
+              }}
               tintColor={colors.primary}
             />
           }
         >
           {filtered.length === 0 ? (
             <View style={styles.emptyWrap}>
-              <Text style={styles.emptyText}>No registrations found.</Text>
+              <View style={styles.emptyIconWrap}>
+                <Users size={30} color={colors.primary} strokeWidth={2} />
+              </View>
+              <Text style={styles.emptyTitle}>No attendees</Text>
+              <Text style={styles.emptyText}>
+                {search
+                  ? 'No attendees match your search.'
+                  : 'Registrations for this event will appear here.'}
+              </Text>
             </View>
           ) : (
-            filtered.map((r) => {
-              const name = getName(r);
-              const checkedIn = !!r.checkedInAt;
-              return (
-                <View key={r.id} style={styles.row}>
-                  <View style={styles.avatar}>
-                    <Text style={styles.avatarText}>{getInitials(name)}</Text>
+            <>
+              <Text style={styles.sectionLabel}>
+                {filtered.length} ATTENDEE{filtered.length !== 1 ? 'S' : ''}
+              </Text>
+              {filtered.map((r) => {
+                const name = getName(r);
+                const checkedIn = !!r.checkedInAt;
+                return (
+                  <View key={r.id} style={styles.row}>
+                    <View
+                      style={[
+                        styles.avatar,
+                        { backgroundColor: avatarColor(name) },
+                      ]}
+                    >
+                      <Text style={styles.avatarText}>{getInitials(name)}</Text>
+                    </View>
+                    <View style={styles.rowContent}>
+                      <Text style={styles.name}>{name}</Text>
+                      <Text style={styles.ticketType}>
+                        {r.ticketType?.name || 'RSVP'}
+                      </Text>
+                    </View>
+                    <View
+                      style={[
+                        styles.statusBadge,
+                        {
+                          backgroundColor: checkedIn
+                            ? 'rgba(34,197,94,0.15)'
+                            : 'rgba(148,163,184,0.15)',
+                        },
+                      ]}
+                    >
+                      {checkedIn ? (
+                        <Check size={11} color="#22c55e" strokeWidth={3} />
+                      ) : (
+                        <X size={11} color={colors.textMuted} strokeWidth={3} />
+                      )}
+                      <Text
+                        style={[
+                          styles.statusText,
+                          { color: checkedIn ? '#22c55e' : colors.textMuted },
+                        ]}
+                      >
+                        {checkedIn ? 'Checked in' : 'Pending'}
+                      </Text>
+                    </View>
                   </View>
-                  <View style={styles.rowContent}>
-                    <Text style={styles.name}>{name}</Text>
-                    <Text style={styles.ticketType}>{r.ticketType?.name || 'RSVP'}</Text>
-                  </View>
-                  <View style={[styles.statusBadge, { backgroundColor: checkedIn ? 'rgba(34,197,94,0.15)' : 'rgba(148,163,184,0.15)' }]}>
-                    {checkedIn ? (
-                      <Check size={11} color="#22c55e" strokeWidth={3} />
-                    ) : (
-                      <X size={11} color={colors.textMuted} strokeWidth={3} />
-                    )}
-                    <Text style={[styles.statusText, { color: checkedIn ? '#22c55e' : colors.textMuted }]}>
-                      {checkedIn ? 'Checked in' : 'Not in'}
-                    </Text>
-                  </View>
-                </View>
-              );
-            })
+                );
+              })}
+            </>
           )}
         </ScrollView>
       )}
 
-      <Modal visible={pickerOpen} transparent animationType="slide" onRequestClose={() => setPickerOpen(false)}>
-        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setPickerOpen(false)}>
+      <Modal
+        visible={pickerOpen}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setPickerOpen(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setPickerOpen(false)}
+        >
           <View style={styles.modalSheet}>
             <Text style={styles.modalTitle}>Select Event</Text>
             <ScrollView>
@@ -239,9 +516,14 @@ export default function ForgeRegistrationsScreen() {
                 <TouchableOpacity
                   key={e.id}
                   style={styles.modalItem}
-                  onPress={() => { setSelectedEvent(e); setPickerOpen(false); }}
+                  onPress={() => {
+                    setSelectedEvent(e);
+                    setPickerOpen(false);
+                  }}
                 >
-                  <Text style={styles.modalItemText} numberOfLines={1}>{e.title}</Text>
+                  <Text style={styles.modalItemText} numberOfLines={1}>
+                    {e.title}
+                  </Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>

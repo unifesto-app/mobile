@@ -131,6 +131,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     const data = await response.json();
+
+    if (data.requiresMobileVerification && data.tempToken) {
+      // New user — store tempToken, login screen will show mobile step
+      setTempToken(data.tempToken);
+      return;
+    }
+
     await handleAuthSuccess(data.accessToken, data.user);
   };
 
