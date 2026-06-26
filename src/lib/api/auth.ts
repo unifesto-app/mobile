@@ -366,6 +366,7 @@ export interface UserIdentity {
   provider: 'EMAIL' | 'GOOGLE' | 'APPLE';
   email: string | null;
   emailVerified: boolean;
+  isPrimary: boolean;
   createdAt: string;
 }
 
@@ -386,5 +387,35 @@ export async function getUserIdentities(accessToken: string): Promise<UserIdenti
     throw new Error(error.message || 'Failed to get linked accounts');
   }
 
+  return response.json();
+}
+
+export async function setPrimaryIdentity(accessToken: string, identityId: string): Promise<{ message: string }> {
+  const response = await fetch(`${API_URL}/users/me/identities/${identityId}/primary`, {
+    method: 'PATCH',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+  });
+  if (!response.ok) {
+    const error: ApiError = await response.json();
+    throw new Error(error.message || 'Failed to set primary email');
+  }
+  return response.json();
+}
+
+export async function removeIdentity(accessToken: string, identityId: string): Promise<{ message: string }> {
+  const response = await fetch(`${API_URL}/users/me/identities/${identityId}`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+  });
+  if (!response.ok) {
+    const error: ApiError = await response.json();
+    throw new Error(error.message || 'Failed to remove account');
+  }
   return response.json();
 }

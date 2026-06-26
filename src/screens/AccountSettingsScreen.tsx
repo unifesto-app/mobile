@@ -17,6 +17,7 @@ import { UnIcon } from '@unifesto/unicon/react-native';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import * as AuthAPI from '../lib/api/auth';
+import { setPrimaryIdentity, removeIdentity } from '../lib/api/auth';
 import Skeleton from '../components/Skeleton';
 import {
   spacing,
@@ -548,22 +549,85 @@ export default function AccountSettingsScreen() {
               identities.map((identity, index) => (
                 <React.Fragment key={identity.id}>
                   <View style={styles.linkedAccountItem}>
-                    <UnIcon 
-                      name={getProviderIconName(identity.provider)} 
+                    <UnIcon
+                      name={getProviderIconName(identity.provider)}
                       size={32}
                     />
                     <View style={styles.linkedAccountInfo}>
                       {identity.email && (
                         <Text style={styles.linkedAccountEmail}>{identity.email}</Text>
                       )}
+                      <View style={{ flexDirection: 'row', gap: 6, marginTop: 4 }}>
+                        {identity.isPrimary && (
+                          <View style={{
+                            paddingHorizontal: 8, paddingVertical: 2,
+                            borderRadius: 10, backgroundColor: 'rgba(52,145,255,0.15)',
+                          }}>
+                            <Text style={{ fontSize: 11, color: colors.primary, fontFamily: getFontFamily('bold') }}>
+                              Primary
+                            </Text>
+                          </View>
+                        )}
+                        {identity.emailVerified && (
+                          <View style={{
+                            paddingHorizontal: 8, paddingVertical: 2,
+                            borderRadius: 10, backgroundColor: 'rgba(34,197,94,0.15)',
+                          }}>
+                            <Text style={{ fontSize: 11, color: '#22c55e', fontFamily: getFontFamily('bold') }}>
+                              Verified
+                            </Text>
+                          </View>
+                        )}
+                      </View>
                     </View>
-                    {identity.emailVerified && (
-                      <UnIcon 
-                        name="verified-green" 
-                        size={20}
-                        style={styles.verifiedIcon}
-                      />
-                    )}
+                    <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+                      {!identity.isPrimary && identity.email && (
+                        <TouchableOpacity
+                          onPress={async () => {
+                            try {
+                              await setPrimaryIdentity(token!, identity.id);
+                              await loadData();
+                            } catch (e: any) {
+                              Alert.alert('Error', e.message || 'Failed to set primary email');
+                            }
+                          }}
+                          style={{
+                            paddingHorizontal: 10, paddingVertical: 4,
+                            borderRadius: 8, borderWidth: 1, borderColor: colors.primary,
+                          }}
+                        >
+                          <Text style={{ fontSize: 11, color: colors.primary, fontFamily: getFontFamily('semibold') }}>
+                            Set Primary
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+                      {identities.length > 1 && (
+                        <TouchableOpacity
+                          onPress={() => {
+                            Alert.alert(
+                              'Remove Account',
+                              `Remove ${identity.email || identity.provider} from your account?`,
+                              [
+                                { text: 'Cancel', style: 'cancel' },
+                                {
+                                  text: 'Remove', style: 'destructive',
+                                  onPress: async () => {
+                                    try {
+                                      await removeIdentity(token!, identity.id);
+                                      await loadData();
+                                    } catch (e: any) {
+                                      Alert.alert('Error', e.message || 'Failed to remove account');
+                                    }
+                                  },
+                                },
+                              ]
+                            );
+                          }}
+                        >
+                          <Trash2 size={16} color={colors.textMuted} strokeWidth={2} />
+                        </TouchableOpacity>
+                      )}
+                    </View>
                   </View>
                   {index < identities.length - 1 && <View style={styles.menuDivider} />}
                 </React.Fragment>
