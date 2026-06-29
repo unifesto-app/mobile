@@ -260,7 +260,7 @@ export default function SpaceDetail() {
 
       <SpaceDetailScreen
         key={refreshKey}
-        route={{ params: { spaceId: id } }}
+        route={{ params: { spaceId: space?.id || id } }}
         onMembershipChange={(member) => setIsMember(member)}
       />
 
