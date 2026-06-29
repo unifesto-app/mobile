@@ -105,6 +105,16 @@ const withRemoveSplashScreen = (config) => {
         }
       }
 
+      // Patch ic_launcher_background.xml to remove splashscreen_logo reference
+      const launcherBgPath = path.join(resPath, 'drawable', 'ic_launcher_background.xml');
+      if (fs.existsSync(launcherBgPath)) {
+        let xml = fs.readFileSync(launcherBgPath, 'utf8');
+        // Remove any item referencing splashscreen_logo
+        xml = xml.replace(/<item[^>]*splashscreen_logo[^/]*/g, '');
+        xml = xml.replace(/<item[^>]*splashscreen_logo[^>]*\/>/g, '');
+        fs.writeFileSync(launcherBgPath, xml, 'utf8');
+      }
+
       return config;
     },
   ]);
