@@ -238,7 +238,10 @@ export default function NewLoginScreen() {
     setIsLoading(true);
     setError('');
     try {
-      await verifyMobileOtp('+91' + mobileNumber, mobileOtp);
+      const result = await verifyMobileOtp('+91' + mobileNumber, mobileOtp);
+      if (result?.isNewUser) {
+        router.replace('/referral');
+      }
     } catch (err: any) {
       setError(err.message || 'Invalid OTP');
     } finally {

@@ -26,6 +26,7 @@ export interface AuthResponse {
   accessToken: string;
   user: User;
   requiresMobileVerification?: boolean;
+  isNewUser?: boolean;
   tempToken?: string;
 }
 

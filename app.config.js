@@ -13,7 +13,7 @@ module.exports = () => {
     orientation: "default",
     userInterfaceStyle: "dark",
     scheme: "unifesto",
-    icon: "./assets/app-icon-transparent.png",
+    icon: "./assets/app-icon-light.png",
     splash: {
       image: "./assets/app-icon-transparent.png",
       resizeMode: "contain",
@@ -43,8 +43,7 @@ module.exports = () => {
       },
       associatedDomains: [
         "applinks:unifesto.app",
-        "applinks:www.unifesto.app",
-        "applinks:api.unifesto.app"
+        "applinks:www.unifesto.app"
       ],
       appClip: {
         bundleIdentifier: "com.unifesto.app.Clip"
@@ -79,12 +78,7 @@ module.exports = () => {
             {
               scheme: "https",
               host: "unifesto.app",
-              pathPrefix: "/org"
-            },
-            {
-              scheme: "https",
-              host: "unifesto.app",
-              pathPrefix: "/signup"
+              pathPrefix: "/spaces"
             },
             {
               scheme: "https",
@@ -94,17 +88,7 @@ module.exports = () => {
             {
               scheme: "https",
               host: "www.unifesto.app",
-              pathPrefix: "/org"
-            },
-            {
-              scheme: "https",
-              host: "www.unifesto.app",
-              pathPrefix: "/signup"
-            },
-            {
-              scheme: "https",
-              host: "api.unifesto.app",
-              pathPrefix: "/auth/callback"
+              pathPrefix: "/spaces"
             }
           ],
           category: [

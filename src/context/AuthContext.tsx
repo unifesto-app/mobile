@@ -26,7 +26,7 @@ interface AuthContextType {
   tempToken: string | null;
   // OTP Auth
   sendMobileOtp: (mobileNumber: string) => Promise<void>;
-  verifyMobileOtp: (mobileNumber: string, otp: string) => Promise<void>;
+  verifyMobileOtp: (mobileNumber: string, otp: string) => Promise<{ isNewUser: boolean }>;
   sendEmailOtp: (email: string) => Promise<void>;
   verifyEmailOtp: (email: string, otp: string) => Promise<void>;
   // Social Auth
@@ -107,6 +107,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const data = await response.json();
     setTempToken(null);
     await handleAuthSuccess(data.accessToken, data.user);
+    return { isNewUser: !!data.isNewUser };
   };
 
   const sendEmailOtp = async (email: string) => {
