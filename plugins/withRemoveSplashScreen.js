@@ -105,14 +105,11 @@ const withRemoveSplashScreen = (config) => {
         }
       }
 
-      // Patch ic_launcher_background.xml to remove splashscreen_logo reference
+      // Replace ic_launcher_background.xml with solid black (removes splashscreen_logo reference)
       const launcherBgPath = path.join(resPath, 'drawable', 'ic_launcher_background.xml');
       if (fs.existsSync(launcherBgPath)) {
-        let xml = fs.readFileSync(launcherBgPath, 'utf8');
-        // Remove any item referencing splashscreen_logo
-        xml = xml.replace(/<item[^>]*splashscreen_logo[^/]*/g, '');
-        xml = xml.replace(/<item[^>]*splashscreen_logo[^>]*\/>/g, '');
-        fs.writeFileSync(launcherBgPath, xml, 'utf8');
+        const cleanXml = `<?xml version="1.0" encoding="utf-8"?>\n<shape xmlns:android="http://schemas.android.com/apk/res/android">\n  <solid android:color="#000000"/>\n</shape>`;
+        fs.writeFileSync(launcherBgPath, cleanXml, 'utf8');
       }
 
       return config;
