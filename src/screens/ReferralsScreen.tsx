@@ -20,12 +20,14 @@ import Skeleton from '../components/Skeleton';
 import { spacing, typography, borderRadius, shadows, brandGradient, brandGradientStart, brandGradientEnd } from '../theme';
 import { getFontFamily } from '../theme/fontHelpers';
 import { getReferral } from '../lib/api/referrals';
+import { getReferralRewardAmount } from '../lib/api/wallet';
 
 interface ReferralInfo {
   referralCode: string;
+  referralLink: string;
   totalReferred: number;
   totalCoinsEarned: number;
-  referrals: any[];
+  pendingReferrals: number;
 }
 
 export default function ReferralsScreen() {
@@ -266,17 +268,20 @@ export default function ReferralsScreen() {
   const loadReferralData = async () => {
     try {
       setLoading(true);
-      const info = await getReferral();
-      
-      if (info) {
-        setReferralInfo({
-          referralCode: info.code || '',
-          totalReferred: info.totalReferrals || 0,
-          totalCoinsEarned: info.totalRewards || 0,
-          referrals: [],
-        });
-      }
-      setRewardAmount(100); // Hardcoded as per requirements
+
+      const [info, rewardAmt] = await Promise.all([
+        getReferral(),
+        getReferralRewardAmount(),
+      ]);
+
+      setReferralInfo(info ? {
+        referralCode: info.referralCode || info.code || '',
+        referralLink: info.link || '',
+        totalReferred: info.totalReferred || info.totalReferrals || 0,
+        totalCoinsEarned: info.totalCoinsEarned || info.totalRewards || 0,
+        pendingReferrals: info.pendingReferrals || 0,
+      } : null);
+      setRewardAmount(rewardAmt);
     } catch (error) {
       console.error('Error loading referral data:', error);
     } finally {
@@ -294,7 +299,7 @@ export default function ReferralsScreen() {
     if (!referralInfo) return;
     try {
       await Share.share({
-        message: `Join me on Unifesto! Use my referral code: ${referralInfo.referralCode}\n\nDownload the app!`,
+        message: `Join Unifesto and get bonus coins! Sign up with my referral code: ${referralInfo.referralCode}\n\nunifesto.app/signup?ref=${referralInfo.referralCode}`,
       });
     } catch (error) {
       console.error('Error sharing referral:', error);
@@ -417,7 +422,7 @@ export default function ReferralsScreen() {
                   <View style={[styles.statIcon, { backgroundColor: 'rgba(245,158,11,0.1)' }]}>
                     <Sparkle size={22} color="#f59e0b" />
                   </View>
-                  <Text style={styles.statValue}>0</Text>
+                  <Text style={styles.statValue}>{referralInfo?.pendingReferrals || 0}</Text>
                   <Text style={styles.statLabel}>Pending</Text>
                 </View>
               </View>
@@ -446,7 +451,7 @@ export default function ReferralsScreen() {
                 <View style={styles.referralLink}>
                   <Text style={styles.referralLinkLabel}>Referral Link</Text>
                   <Text style={styles.referralLinkText} numberOfLines={1}>
-                    unifesto.app/refer/{referralInfo?.referralCode || '—'}
+                    {referralInfo?.referralLink || `unifesto.app/signup?ref=${referralInfo?.referralCode || '—'}`}
                   </Text>
                 </View>
               </View>

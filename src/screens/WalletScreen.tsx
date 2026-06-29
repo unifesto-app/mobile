@@ -765,7 +765,7 @@ export default function WalletScreen() {
 
     try {
       await Share.share({
-        message: `Join me on Unifesto! Use my referral code: ${referralInfo.referralCode}\n\nDownload the app!`,
+        message: `Join me on Unifesto! Use my referral code: ${referralInfo.referralCode}\n\nunifesto.app/signup?ref=${referralInfo.referralCode}`,
       });
     } catch (error) {
       console.error('Error sharing referral:', error);
