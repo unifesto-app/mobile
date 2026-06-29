@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Clock } from 'lucide-react-native';
+import { Clock } from 'phosphor-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { getMyOrganiserSpaces, getSpaceEvents } from '../../lib/api/spaces';
 import { getEventRegistrations, EventRegistration } from '../../lib/api/registrations';
@@ -149,7 +149,7 @@ export default function GateRecentScreen() {
       >
         {groups.length === 0 ? (
           <View style={styles.emptyWrap}>
-            <Clock size={40} color={colors.textMuted} strokeWidth={1.5} />
+            <Clock size={40} color={colors.textMuted} />
             <Text style={styles.emptyText}>No check-ins yet.</Text>
           </View>
         ) : (

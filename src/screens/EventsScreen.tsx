@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useHeaderHeight } from '@react-navigation/elements';
-import { Calendar, MapPin, Search, X } from 'lucide-react-native';
+import { Calendar, MagnifyingGlass, MapPin, X } from 'phosphor-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import GradientText from '../components/GradientText';
 import Skeleton from '../components/Skeleton';
@@ -576,7 +576,7 @@ export default function EventsScreen() {
       {/* Search Bar */}
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
-          <Search size={18} color={colors.textSecondary} strokeWidth={2} />
+          <MagnifyingGlass size={18} color={colors.textSecondary} />
           <TextInput
             style={styles.searchInput}
             placeholder="Search events..."
@@ -586,7 +586,7 @@ export default function EventsScreen() {
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <X size={18} color={colors.textSecondary} strokeWidth={2} />
+              <X size={18} color={colors.textSecondary} />
             </TouchableOpacity>
           )}
         </View>
@@ -687,7 +687,7 @@ export default function EventsScreen() {
           }
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Calendar size={64} color={colors.borderLight} strokeWidth={1.5} />
+              <Calendar size={64} color={colors.borderLight} />
               <Text style={styles.emptyText}>No events found</Text>
               <Text style={styles.emptySubtext}>
                 {searchQuery ? 'Try different keywords' : 'Try selecting a different category'}

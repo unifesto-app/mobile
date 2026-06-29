@@ -5,8 +5,7 @@
 
 import { Event } from './events';
 import { makeAuthenticatedRequest, makePublicRequest } from './helpers';
-
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://api.unifesto.app';
+import { API_URL } from '../constants';
 
 // ============================================================================
 // Types & Interfaces
@@ -44,6 +43,7 @@ export interface Space {
     id: string;
     fullName: string | null;
     username: string | null;
+    avatarUrl: string | null;
   };
   _count?: {
     userRoles: number;
@@ -51,6 +51,7 @@ export interface Space {
     events?: number;
   };
   userRoles?: SpaceMember[];
+  organisers?: SpaceMember[];
   userRole?: {
     id: string;
     userId: string;
@@ -625,3 +626,47 @@ export function isSpaceAccessible(space: Space, userSpaces?: Space[]): boolean {
 }
 
 
+
+export interface SpaceRequest {
+  id: string;
+  name: string;
+  description: string | null;
+  type: string;
+  visibility: string;
+  city: string | null;
+  state: string | null;
+  tags: string[];
+  websiteUrl: string | null;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  reviewNote: string | null;
+  createdAt: string;
+}
+
+export const createSpaceRequest = async (data: {
+  name: string;
+  description?: string;
+  type?: string;
+  visibility?: string;
+  city?: string;
+  state?: string;
+  tags?: string[];
+  websiteUrl?: string;
+}): Promise<SpaceRequest> => {
+  const response = await makeAuthenticatedRequest('/spaces/request', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+  if (!response?.ok) {
+    const error = await response?.json();
+    throw new Error(error?.message || 'Failed to submit request');
+  }
+  return response.json();
+};
+
+export const getMySpaceRequests = async (): Promise<SpaceRequest[]> => {
+  const response = await makeAuthenticatedRequest('/spaces/my-requests');
+  if (!response?.ok) return [];
+  const text = await response.text();
+  if (!text) return [];
+  try { return JSON.parse(text); } catch { return []; }
+};

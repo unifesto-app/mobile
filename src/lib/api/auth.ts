@@ -3,7 +3,7 @@
  * Handles all authentication-related API calls to the new backend
  */
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://api.unifesto.app';
+import { API_URL } from '../constants';
 
 export interface User {
   id: string;

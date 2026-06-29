@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
-import { MessageCircle, Users, Search } from 'lucide-react-native';
+import { ChatCircle, Users, MagnifyingGlass } from 'phosphor-react-native';
 import CustomHeader from '../../src/components/CustomHeader';
 import { spacing, typography, borderRadius, shadows } from '../../src/theme';
 import { getFontFamily } from '../../src/theme/fontHelpers';
@@ -114,7 +114,7 @@ export default function ChatTab() {
       >
         <View style={styles.emptyStateContainer}>
           <View style={styles.emptyStateIcon}>
-            <MessageCircle size={80} color={colors.primary} strokeWidth={1.5} />
+            <ChatCircle size={80} color={colors.primary} />
           </View>
 
           <Text style={styles.emptyStateTitle}>Coming Soon</Text>
@@ -126,7 +126,7 @@ export default function ChatTab() {
           <View style={styles.featuresList}>
             <View style={styles.featureItem}>
               <View style={styles.featureIconContainer}>
-                <MessageCircle size={20} color={colors.primary} strokeWidth={2} />
+                <ChatCircle size={20} color={colors.primary} />
               </View>
               <View style={styles.featureContent}>
                 <Text style={styles.featureTitle}>Direct Messages</Text>
@@ -138,7 +138,7 @@ export default function ChatTab() {
 
             <View style={styles.featureItem}>
               <View style={styles.featureIconContainer}>
-                <Users size={20} color={colors.primary} strokeWidth={2} />
+                <Users size={20} color={colors.primary} />
               </View>
               <View style={styles.featureContent}>
                 <Text style={styles.featureTitle}>Group Chats</Text>
@@ -150,7 +150,7 @@ export default function ChatTab() {
 
             <View style={styles.featureItem}>
               <View style={styles.featureIconContainer}>
-                <Search size={20} color={colors.primary} strokeWidth={2} />
+                <MagnifyingGlass size={20} color={colors.primary} />
               </View>
               <View style={styles.featureContent}>
                 <Text style={styles.featureTitle}>Discover People</Text>

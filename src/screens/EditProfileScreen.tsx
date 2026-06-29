@@ -14,7 +14,7 @@ import { useRouter } from 'expo-router';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
-import { Camera, ChevronDown } from 'lucide-react-native';
+import { Camera, CaretDown } from 'phosphor-react-native';
 import { UnIcon } from '@unifesto/unicon/react-native';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -50,7 +50,7 @@ export default function EditProfileScreen() {
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
 
   // Auto-save
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [showGenderDropdown, setShowGenderDropdown] = useState(false);
 
@@ -459,7 +459,7 @@ export default function EditProfileScreen() {
               )}
             </View>
             <View style={styles.cameraBadge}>
-              <Camera size={16} color="#ffffff" strokeWidth={2.5} />
+              <Camera size={16} color="#ffffff"  weight="bold" />
             </View>
           </TouchableOpacity>
           <TouchableOpacity onPress={handlePickImage} activeOpacity={0.7}>
@@ -522,7 +522,7 @@ export default function EditProfileScreen() {
                   <Text style={[styles.dropdownButtonText, !gender && styles.dropdownPlaceholder]}>
                     {getGenderLabel()}
                   </Text>
-                  <ChevronDown size={20} color={colors.textMuted} />
+                  <CaretDown size={20} color={colors.textMuted} />
                 </TouchableOpacity>
               </View>
             </View>

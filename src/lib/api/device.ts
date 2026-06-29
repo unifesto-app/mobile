@@ -3,8 +3,7 @@ import * as Device from 'expo-device';
 import * as Application from 'expo-application';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
-
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://api.unifesto.app';
+import { API_URL } from '../constants';
 
 // Track active abort controllers to cancel requests on logout
 const activeRequests = new Set<AbortController>();

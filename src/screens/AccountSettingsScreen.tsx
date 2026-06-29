@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useHeaderHeight } from '@react-navigation/elements';
-import { ChevronRight, Trash2, X } from 'lucide-react-native';
+import { CaretRight, Trash, X } from 'phosphor-react-native';
 import { UnIcon } from '@unifesto/unicon/react-native';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -550,7 +550,7 @@ export default function AccountSettingsScreen() {
                   </Text>
                 </View>
               </View>
-              <ChevronRight size={18} color={colors.textMuted} strokeWidth={2} />
+              <CaretRight size={18} color={colors.textMuted} />
             </TouchableOpacity>
 
             <View style={styles.menuDivider} />
@@ -672,7 +672,7 @@ export default function AccountSettingsScreen() {
                                 );
                               }}
                             >
-                              <Trash2 size={16} color={colors.textMuted} strokeWidth={2} />
+                              <Trash size={16} color={colors.textMuted} />
                             </TouchableOpacity>
                           )}
                         </View>
@@ -715,7 +715,7 @@ export default function AccountSettingsScreen() {
               onPress={handleDeleteAccount}
               activeOpacity={0.8}
             >
-              <Trash2 size={16} color="#ffffff" strokeWidth={2} />
+              <Trash size={16} color="#ffffff" />
               <Text style={styles.deleteButtonText}>Delete Account</Text>
             </TouchableOpacity>
           </View>
@@ -738,7 +738,7 @@ export default function AccountSettingsScreen() {
               onPress={closeUsernameModal}
               activeOpacity={0.7}
             >
-              <X size={24} color={colors.textMuted} strokeWidth={2} />
+              <X size={24} color={colors.textMuted} />
             </TouchableOpacity>
           </View>
 

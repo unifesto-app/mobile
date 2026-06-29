@@ -17,27 +17,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import {
-  Wallet,
-  Gift,
-  Share as ShareIcon,
-  Check,
-  TrendingUp,
-  ArrowUpRight,
-  ArrowDownLeft,
-  Tag,
-  X,
-  Sparkles,
-  User,
-  Users,
-  Coins,
-  Ticket,
-  Zap,
-  Award,
-  Eye,
-  EyeOff,
-  RefreshCw,
-} from 'lucide-react-native';
+import { ArrowClockwise, ArrowDownLeft, ArrowUpRight, Check, Coins, Eye, EyeSlash, Gift, Lightning, ShareNetwork as ShareIcon, Sparkle, Tag, Ticket, TrendUp, Trophy, User, Users, Wallet, X } from 'phosphor-react-native';
 import { useAuth } from '../context/AuthContext';
 import CustomHeader from '../components/CustomHeader';
 import GradientText from '../components/GradientText';
@@ -310,7 +290,7 @@ const CoinFlowAnimation = () => {
           <Animated.View style={[styles.flowDot, { transform: [{ translateX: dot3TranslateX }] }]} />
         </View>
         <Animated.View style={[styles.walletIconContainer, { transform: [{ scale: walletScale }] }]}>
-          <Wallet size={32} color={animationColors.primary} strokeWidth={2} />
+          <Wallet size={32} color={animationColors.primary} />
         </Animated.View>
       </View>
       <Animated.View style={[styles.animatedTextContainer, { opacity: textOpacity }]}>
@@ -455,7 +435,7 @@ const BenefitsAnimation = () => {
               }
             ]}
           >
-            <Coins size={24} color={animationColors.primary} strokeWidth={2} />
+            <Coins size={24} color={animationColors.primary} />
           </Animated.View>
           <Text style={styles.benefitLabel}>Earn Coins</Text>
         </View>
@@ -469,7 +449,7 @@ const BenefitsAnimation = () => {
               }
             ]}
           >
-            <Ticket size={24} color={animationColors.primary} strokeWidth={2} />
+            <Ticket size={24} color={animationColors.primary} />
           </Animated.View>
           <Text style={styles.benefitLabel}>Free Tickets</Text>
         </View>
@@ -485,7 +465,7 @@ const BenefitsAnimation = () => {
               }
             ]}
           >
-            <Zap size={24} color={animationColors.primary} strokeWidth={2} />
+            <Lightning size={24} color={animationColors.primary} />
           </Animated.View>
           <Text style={styles.benefitLabel}>Instant Rewards</Text>
         </View>
@@ -499,7 +479,7 @@ const BenefitsAnimation = () => {
               }
             ]}
           >
-            <Award size={24} color={animationColors.primary} strokeWidth={2} />
+            <Trophy size={24} color={animationColors.primary} />
           </Animated.View>
           <Text style={styles.benefitLabel}>Exclusive Perks</Text>
         </View>
@@ -685,7 +665,7 @@ const ReferralAnimation = () => {
       <Animated.View style={[styles.userNode, { transform: [{ scale: userScale }] }]}>
         <Animated.View style={[styles.userGlow, { opacity: glowOpacity }]} />
         <View style={styles.userCircle}>
-          <User size={40} color={animationColors.text} strokeWidth={2} />
+          <User size={40} color={animationColors.text} />
         </View>
         <Text style={styles.referralYouLabel}>You</Text>
       </Animated.View>
@@ -697,7 +677,7 @@ const ReferralAnimation = () => {
       <View style={styles.friendNodes}>
         <View style={styles.friendNodeContainer}>
           <Animated.View style={[styles.friendNode, { transform: [{ scale: friend1Scale }], opacity: friend1Opacity }]}>
-            <Users size={28} color={animationColors.primary} strokeWidth={2} />
+            <Users size={28} color={animationColors.primary} />
           </Animated.View>
           <Animated.View style={[styles.coinBadge, { transform: [{ scale: friend1Scale }], opacity: friend1Opacity }]}>
             <Text style={styles.coinBadgeText}>+25</Text>
@@ -705,7 +685,7 @@ const ReferralAnimation = () => {
         </View>
         <View style={styles.friendNodeContainer}>
           <Animated.View style={[styles.friendNode, { transform: [{ scale: friend2Scale }], opacity: friend2Opacity }]}>
-            <Users size={28} color={animationColors.primary} strokeWidth={2} />
+            <Users size={28} color={animationColors.primary} />
           </Animated.View>
           <Animated.View style={[styles.coinBadge, { transform: [{ scale: friend2Scale }], opacity: friend2Opacity }]}>
             <Text style={styles.coinBadgeText}>+25</Text>
@@ -713,7 +693,7 @@ const ReferralAnimation = () => {
         </View>
         <View style={styles.friendNodeContainer}>
           <Animated.View style={[styles.friendNode, { transform: [{ scale: friend3Scale }], opacity: friend3Opacity }]}>
-            <Users size={28} color={animationColors.primary} strokeWidth={2} />
+            <Users size={28} color={animationColors.primary} />
           </Animated.View>
           <Animated.View style={[styles.coinBadge, { transform: [{ scale: friend3Scale }], opacity: friend3Opacity }]}>
             <Text style={styles.coinBadgeText}>+25</Text>
@@ -846,9 +826,9 @@ export default function WalletScreen() {
 
   const getTransactionIcon = (type: string, coins: number) => {
     if (coins > 0) {
-      return <ArrowDownLeft size={20} color={colors.success} strokeWidth={2} />;
+      return <ArrowDownLeft size={20} color={colors.success} />;
     } else {
-      return <ArrowUpRight size={20} color={colors.error} strokeWidth={2} />;
+      return <ArrowUpRight size={20} color={colors.error} />;
     }
   };
 
@@ -1568,7 +1548,7 @@ export default function WalletScreen() {
                   end={brandGradientEnd}
                   style={styles.guestIconGradient}
                 >
-                  <Wallet size={24} color={colors.text} strokeWidth={2} />
+                  <Wallet size={24} color={colors.text} />
                 </LinearGradient>
 
                 <View style={styles.guestCardContent}>
@@ -1579,7 +1559,7 @@ export default function WalletScreen() {
                 </View>
 
                 <View style={styles.guestArrowButton}>
-                  <ArrowUpRight size={20} color={colors.primary} strokeWidth={2.5} />
+                  <ArrowUpRight size={20} color={colors.primary}  weight="bold" />
                 </View>
               </View>
             </TouchableOpacity>
@@ -1686,14 +1666,14 @@ export default function WalletScreen() {
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <View style={styles.modalIconContainer}>
-                <Tag size={24} color={colors.primary} strokeWidth={2} />
+                <Tag size={24} color={colors.primary} />
               </View>
               <TouchableOpacity
                 style={styles.modalCloseButton}
                 onPress={() => setShowRedeemModal(false)}
                 activeOpacity={0.7}
               >
-                <X size={24} color={colors.textMuted} strokeWidth={2} />
+                <X size={24} color={colors.textMuted} />
               </TouchableOpacity>
             </View>
 
@@ -1764,9 +1744,9 @@ export default function WalletScreen() {
                       activeOpacity={0.7}
                     >
                       {balanceVisible ? (
-                        <Eye size={20} color={colors.text} strokeWidth={2} />
+                        <Eye size={20} color={colors.text} />
                       ) : (
-                        <EyeOff size={20} color={colors.text} strokeWidth={2} />
+                        <EyeSlash size={20} color={colors.text} />
                       )}
                     </TouchableOpacity>
                     <TouchableOpacity
@@ -1775,7 +1755,7 @@ export default function WalletScreen() {
                       activeOpacity={0.7}
                       disabled={refreshing}
                     >
-                      <RefreshCw size={20} color={colors.text} strokeWidth={2} />
+                      <ArrowClockwise size={20} color={colors.text} />
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -1810,7 +1790,7 @@ export default function WalletScreen() {
           <View style={styles.redeemSection}>
             <View style={styles.redeemInputRow}>
               <View style={styles.redeemInputWrapper}>
-                <Tag size={20} color={colors.textMuted} strokeWidth={2} />
+                <Tag size={20} color={colors.textMuted} />
                 <TextInput
                   style={styles.redeemInput}
                   placeholder="Enter redeem code"
@@ -1850,7 +1830,7 @@ export default function WalletScreen() {
           <View style={styles.card}>
             <View style={styles.cardHeader}>
               <View style={styles.cardTitleContainer}>
-                <Gift size={22} color={colors.primary} strokeWidth={2} />
+                <Gift size={22} color={colors.primary} />
                 <Text style={styles.cardTitle}>Referral Program</Text>
               </View>
               <TouchableOpacity
@@ -1883,7 +1863,7 @@ export default function WalletScreen() {
                       onPress={handleShareReferral}
                       activeOpacity={0.7}
                     >
-                      <ShareIcon size={20} color={colors.primary} strokeWidth={2} />
+                      <ShareIcon size={20} color={colors.primary} />
                     </TouchableOpacity>
                   </View>
 
@@ -1912,7 +1892,7 @@ export default function WalletScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionTitleContainer}>
-              <TrendingUp size={22} color={colors.primary} strokeWidth={2} />
+              <TrendUp size={22} color={colors.primary} />
               <Text style={styles.sectionTitle}>Recent Transactions</Text>
             </View>
           </View>
@@ -1936,7 +1916,7 @@ export default function WalletScreen() {
               </View>
             ) : transactions.length === 0 ? (
               <View style={styles.emptyContainer}>
-                <Sparkles size={48} color={colors.textMuted} strokeWidth={1.5} />
+                <Sparkle size={48} color={colors.textMuted} />
                 <Text style={styles.emptyText}>No transactions yet</Text>
                 <Text style={styles.emptySubtext}>
                   Start earning coins by attending events!

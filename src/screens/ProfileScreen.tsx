@@ -14,18 +14,13 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import {
-  User,
-  ChevronRight,
-  ArrowUpRight,
-} from 'lucide-react-native';
+import { ArrowUpRight, CaretRight, User } from 'phosphor-react-native';
 import { UnIcon } from '@unifesto/unicon/react-native';
 import Svg, { Rect, Circle } from 'react-native-svg';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useAppMode } from '../context/AppModeContext';
 import { makeAuthenticatedRequest } from '../lib/api/helpers';
-import { Hammer, ScanLine, Compass } from 'lucide-react-native';
 import * as AuthAPI from '../lib/api/auth';
 import GradientText from '../components/GradientText';
 import Skeleton from '../components/Skeleton';
@@ -542,7 +537,7 @@ export default function ProfileScreen() {
               end={brandGradientEnd}
               style={styles.guestIcon}
             >
-              <User size={48} color={colors.text} strokeWidth={2} />
+              <User size={48} color={colors.text} />
             </LinearGradient>
 
             <GradientText style={styles.guestTitle}>
@@ -643,7 +638,7 @@ export default function ProfileScreen() {
                 <Text style={styles.profileUsername}>@{displayUsername}</Text>
               ) : null}
             </View>
-            <ChevronRight size={18} color={colors.textMuted} strokeWidth={2} />
+            <CaretRight size={18} color={colors.textMuted} />
           </View>
         </TouchableOpacity>
 
@@ -660,7 +655,7 @@ export default function ProfileScreen() {
                 <UnIcon name="profile" size={32} />
                 <Text style={styles.menuItemText}>Edit Profile</Text>
               </View>
-              <ChevronRight size={16} color={colors.textMuted} strokeWidth={2} />
+              <CaretRight size={16} color={colors.textMuted} />
             </TouchableOpacity>
 
             <View style={styles.menuDivider} />
@@ -675,8 +670,81 @@ export default function ProfileScreen() {
                 <UnIcon name="account" size={32} />
                 <Text style={styles.menuItemText}>Account Settings</Text>
               </View>
-              <ChevronRight size={16} color={colors.textMuted} strokeWidth={2} />
+              <CaretRight size={16} color={colors.textMuted} />
             </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* ── Space Card ── */}
+        <View style={styles.sectionSpacing}>
+          <Text style={styles.sectionTitle}>Space</Text>
+          <View style={styles.card}>
+            {/* Forge */}
+            {canForge && isDiscoverMode && (
+              <>
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={() => switchMode('forge')}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.menuItemLeft}>
+                    <UnIcon name="hammer" size={32} />
+                    <Text style={styles.menuItemText}>Forge</Text>
+                  </View>
+                  <CaretRight size={16} color={colors.textMuted} />
+                </TouchableOpacity>
+                <View style={styles.menuDivider} />
+              </>
+            )}
+
+            {/* Gate */}
+            {canGate && isDiscoverMode && (
+              <>
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={() => switchMode('gate')}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.menuItemLeft}>
+                    <UnIcon name="qr" size={32} />
+                    <Text style={styles.menuItemText}>Gate</Text>
+                  </View>
+                  <CaretRight size={16} color={colors.textMuted} />
+                </TouchableOpacity>
+                <View style={styles.menuDivider} />
+              </>
+            )}
+
+            {/* Request a Space */}
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => router.push('/space-request')}
+              activeOpacity={0.7}
+            >
+              <View style={styles.menuItemLeft}>
+                <UnIcon name="plus" size={32} />
+                <Text style={styles.menuItemText}>Request a Space</Text>
+              </View>
+              <CaretRight size={16} color={colors.textMuted} />
+            </TouchableOpacity>
+
+            {/* Discover (only when not already in discover mode) */}
+            {!isDiscoverMode && (
+              <>
+                <View style={styles.menuDivider} />
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={() => switchMode('discover')}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.menuItemLeft}>
+                    <UnIcon name="megaphone" size={32} />
+                    <Text style={styles.menuItemText}>Discover</Text>
+                  </View>
+                  <CaretRight size={16} color={colors.textMuted} />
+                </TouchableOpacity>
+              </>
+            )}
           </View>
         </View>
 
@@ -694,7 +762,7 @@ export default function ProfileScreen() {
                 <UnIcon name="notification" size={32} />
                 <Text style={styles.menuItemText}>Notification Settings</Text>
               </View>
-              <ChevronRight size={16} color={colors.textMuted} strokeWidth={2} />
+              <CaretRight size={16} color={colors.textMuted} />
             </TouchableOpacity>
 
             <View style={styles.menuDivider} />
@@ -709,67 +777,8 @@ export default function ProfileScreen() {
                 <UnIcon name="permission" size={32} />
                 <Text style={styles.menuItemText}>Permissions</Text>
               </View>
-              <ChevronRight size={16} color={colors.textMuted} strokeWidth={2} />
+              <CaretRight size={16} color={colors.textMuted} />
             </TouchableOpacity>
-
-            {/* ── Mode switches ── */}
-            {isDiscoverMode ? (
-              <>
-                {canForge && (
-                  <>
-                    <View style={styles.menuDivider} />
-                    <TouchableOpacity
-                      style={styles.menuItem}
-                      onPress={() => switchMode('forge')}
-                      activeOpacity={0.7}
-                    >
-                      <View style={styles.menuItemLeft}>
-                        <View style={[styles.coloredIconContainer, { backgroundColor: '#3491ff' }]}>
-                          <Hammer size={20} color="#ffffff" strokeWidth={2} />
-                        </View>
-                        <Text style={styles.menuItemText}>Switch to Forge Mode</Text>
-                      </View>
-                      <ChevronRight size={16} color={colors.textMuted} strokeWidth={2} />
-                    </TouchableOpacity>
-                  </>
-                )}
-                {canGate && (
-                  <>
-                    <View style={styles.menuDivider} />
-                    <TouchableOpacity
-                      style={styles.menuItem}
-                      onPress={() => switchMode('gate')}
-                      activeOpacity={0.7}
-                    >
-                      <View style={styles.menuItemLeft}>
-                        <View style={[styles.coloredIconContainer, { backgroundColor: '#22c55e' }]}>
-                          <ScanLine size={20} color="#ffffff" strokeWidth={2} />
-                        </View>
-                        <Text style={styles.menuItemText}>Switch to Gate Mode</Text>
-                      </View>
-                      <ChevronRight size={16} color={colors.textMuted} strokeWidth={2} />
-                    </TouchableOpacity>
-                  </>
-                )}
-              </>
-            ) : (
-              <>
-                <View style={styles.menuDivider} />
-                <TouchableOpacity
-                  style={styles.menuItem}
-                  onPress={() => switchMode('discover')}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.menuItemLeft}>
-                    <View style={[styles.coloredIconContainer, { backgroundColor: colors.primary }]}>
-                      <Compass size={20} color="#ffffff" strokeWidth={2} />
-                    </View>
-                    <Text style={styles.menuItemText}>Switch to Discover Mode</Text>
-                  </View>
-                  <ChevronRight size={16} color={colors.textMuted} strokeWidth={2} />
-                </TouchableOpacity>
-              </>
-            )}
           </View>
         </View>
 
@@ -787,7 +796,7 @@ export default function ProfileScreen() {
                 <UnIcon name="support" size={32} />
                 <Text style={styles.menuItemText}>Contact Support</Text>
               </View>
-              <ChevronRight size={16} color={colors.textMuted} strokeWidth={2} />
+              <CaretRight size={16} color={colors.textMuted} />
             </TouchableOpacity>
 
             <View style={styles.menuDivider} />
@@ -802,7 +811,7 @@ export default function ProfileScreen() {
                 <UnIcon name="rate" size={32} />
                 <Text style={styles.menuItemText}>Rate in Store</Text>
               </View>
-              <ArrowUpRight size={16} color={colors.textMuted} strokeWidth={2} />
+              <ArrowUpRight size={16} color={colors.textMuted} />
             </TouchableOpacity>
 
             <View style={styles.menuDivider} />
@@ -817,7 +826,7 @@ export default function ProfileScreen() {
                 <UnIcon name="instagram" size={32} />
                 <Text style={styles.menuItemText}>Unifesto on Instagram</Text>
               </View>
-              <ArrowUpRight size={16} color={colors.textMuted} strokeWidth={2} />
+              <ArrowUpRight size={16} color={colors.textMuted} />
             </TouchableOpacity>
 
             <View style={styles.menuDivider} />
@@ -832,7 +841,7 @@ export default function ProfileScreen() {
                 <UnIcon name="x" size={32} />
                 <Text style={styles.menuItemText}>Unifesto on X</Text>
               </View>
-              <ArrowUpRight size={16} color={colors.textMuted} strokeWidth={2} />
+              <ArrowUpRight size={16} color={colors.textMuted} />
             </TouchableOpacity>
           </View>
         </View>

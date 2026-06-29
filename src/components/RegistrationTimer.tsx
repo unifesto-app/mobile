@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Clock } from 'lucide-react-native';
+import { Clock } from 'phosphor-react-native';
 import { spacing, typography, borderRadius } from '../theme';
 import { getFontFamily } from '../theme/fontHelpers';
 import { useTheme } from '../context/ThemeContext';
@@ -113,7 +113,7 @@ export default function RegistrationTimer({ initialSeconds, onExpire }: Registra
     return (
       <View style={styles.container}>
         <View style={[styles.timerCard, styles.expiredCard]}>
-          <Clock size={16} color="#ef4444" strokeWidth={2} />
+          <Clock size={16} color="#ef4444" />
           <Text style={styles.expiredText}>Time Expired</Text>
         </View>
       </View>
@@ -123,7 +123,7 @@ export default function RegistrationTimer({ initialSeconds, onExpire }: Registra
   return (
     <View style={styles.container}>
       <View style={styles.timerCard}>
-        <Clock size={16} color={getTimerColor()} strokeWidth={2} />
+        <Clock size={16} color={getTimerColor()} />
         <View style={styles.timerContent}>
           <Text style={[styles.timerText, { color: getTimerColor() }]}>
             {formatTime(timeLeft)}

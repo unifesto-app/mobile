@@ -13,17 +13,7 @@ import {
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
-import {
-  Camera,
-  Trash2,
-  Edit2,
-  Check,
-  X,
-  User,
-  Mail,
-  Phone,
-  CalendarDays,
-} from 'lucide-react-native';
+import { CalendarBlank, Camera, Check, Envelope, PencilSimple, Phone, Trash, User, X } from 'phosphor-react-native';
 import { useAuth } from '../context/AuthContext';
 import {
   getProfile,
@@ -333,7 +323,7 @@ export default function AccountScreen() {
               )}
               {/* Camera badge */}
               <View style={styles.cameraBadge}>
-                <Camera size={14} color="#ffffff" strokeWidth={2.5} />
+                <Camera size={14} color="#ffffff"  weight="bold" />
               </View>
             </TouchableOpacity>
 
@@ -348,7 +338,7 @@ export default function AccountScreen() {
                   onPress={handlePickImage}
                   activeOpacity={0.8}
                 >
-                  <Camera size={13} color={colors.primary} strokeWidth={2} />
+                  <Camera size={13} color={colors.primary} />
                   <Text style={styles.photoButtonText}>Change Photo</Text>
                 </TouchableOpacity>
                 {profile?.avatarUrl && (
@@ -357,7 +347,7 @@ export default function AccountScreen() {
                     onPress={handleDeleteAvatar}
                     activeOpacity={0.8}
                   >
-                    <Trash2 size={13} color="#ef4444" strokeWidth={2} />
+                    <Trash size={13} color="#ef4444" />
                   </TouchableOpacity>
                 )}
               </View>
@@ -381,7 +371,7 @@ export default function AccountScreen() {
               <Text style={styles.cardTitle}>Personal Information</Text>
               {!isEditing ? (
                 <TouchableOpacity onPress={() => setEditingSection('personal')} activeOpacity={0.7}>
-                  <Edit2 size={17} color={colors.primary} strokeWidth={2} />
+                  <PencilSimple size={17} color={colors.primary} />
                 </TouchableOpacity>
               ) : null}
             </View>
@@ -429,7 +419,7 @@ export default function AccountScreen() {
                 </View>
                 <View style={styles.formActions}>
                   <TouchableOpacity style={styles.cancelBtn} onPress={handleCancelEdit} activeOpacity={0.7}>
-                    <X size={15} color={colors.textSecondary} strokeWidth={2} />
+                    <X size={15} color={colors.textSecondary} />
                     <Text style={styles.cancelBtnText}>Cancel</Text>
                   </TouchableOpacity>
                   <GradientButton
@@ -444,11 +434,11 @@ export default function AccountScreen() {
               </View>
             ) : (
               <>
-                <InfoRow icon={<User size={15} color={colors.primary} strokeWidth={2} />} label="Full Name" value={profile?.fullName || 'Not set'} />
+                <InfoRow icon={<User size={15} color={colors.primary} />} label="Full Name" value={profile?.fullName || 'Not set'} />
                 <View style={styles.rowDivider} />
-                <InfoRow icon={<User size={15} color={colors.primary} strokeWidth={2} />} label="Username" value={profile?.username ? `@${profile.username}` : 'Not set'} />
+                <InfoRow icon={<User size={15} color={colors.primary} />} label="Username" value={profile?.username ? `@${profile.username}` : 'Not set'} />
                 <View style={styles.rowDivider} />
-                <InfoRow icon={<User size={15} color={colors.textMuted} strokeWidth={2} />} label="Bio" value={profile?.bio || 'Not set'} />
+                <InfoRow icon={<User size={15} color={colors.textMuted} />} label="Bio" value={profile?.bio || 'Not set'} />
               </>
             )}
           </View>
@@ -461,7 +451,7 @@ export default function AccountScreen() {
               <Text style={styles.cardTitle}>Contact Information</Text>
               {!isEditing ? (
                 <TouchableOpacity onPress={() => setEditingSection('contact')} activeOpacity={0.7}>
-                  <Edit2 size={17} color={colors.primary} strokeWidth={2} />
+                  <PencilSimple size={17} color={colors.primary} />
                 </TouchableOpacity>
               ) : null}
             </View>
@@ -487,7 +477,7 @@ export default function AccountScreen() {
                 </View>
                 <View style={styles.formActions}>
                   <TouchableOpacity style={styles.cancelBtn} onPress={handleCancelEdit} activeOpacity={0.7}>
-                    <X size={15} color={colors.textSecondary} strokeWidth={2} />
+                    <X size={15} color={colors.textSecondary} />
                     <Text style={styles.cancelBtnText}>Cancel</Text>
                   </TouchableOpacity>
                   <GradientButton
@@ -502,10 +492,10 @@ export default function AccountScreen() {
               </View>
             ) : (
               <>
-                <InfoRow icon={<Mail size={15} color={colors.primary} strokeWidth={2} />} label="Email" value={profile?.email || 'Not set'} />
+                <InfoRow icon={<Envelope size={15} color={colors.primary} />} label="Email" value={profile?.email || 'Not set'} />
                 <View style={styles.rowDivider} />
                 <InfoRow
-                  icon={<Phone size={15} color="#10b981" strokeWidth={2} />}
+                  icon={<Phone size={15} color="#10b981" />}
                   label="Phone"
                   value={
                     editedUser.mobileNumber
@@ -525,7 +515,7 @@ export default function AccountScreen() {
               <Text style={styles.cardTitle}>Account Details</Text>
             </View>
             <InfoRow
-              icon={<CalendarDays size={15} color="#f59e0b" strokeWidth={2} />}
+              icon={<CalendarBlank size={15} color="#f59e0b" />}
               label="Member Since"
               value={
                 user?.createdAt
@@ -549,7 +539,7 @@ export default function AccountScreen() {
               disabled={deleteLoading}
               activeOpacity={0.8}
             >
-              <Trash2 size={16} color="#ffffff" strokeWidth={2} />
+              <Trash size={16} color="#ffffff" />
               <Text style={styles.deleteBtnText}>
                 {deleteLoading ? 'Deleting…' : 'Delete Account'}
               </Text>

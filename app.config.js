@@ -9,7 +9,7 @@ module.exports = () => {
   const config = {
     name: "Unifesto",
     slug: "unifesto",
-    version: "1.5",
+    version: "2.0.0",
     orientation: "default",
     userInterfaceStyle: "dark",
     scheme: "unifesto",
@@ -146,10 +146,11 @@ module.exports = () => {
       [
         "onesignal-expo-plugin",
         {
-          mode: "development"
+          mode: "production"
         }
       ],
       "@react-native-firebase/app",
+      "@react-native-firebase/crashlytics",
       "expo-dev-client",
       ["@react-native-google-signin/google-signin", { "iosUrlScheme": "com.googleusercontent.apps.1013647520532-kv0g8vf89h92l0s63vgj7jdfilqp41qq" }]
     ],

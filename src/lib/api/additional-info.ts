@@ -3,7 +3,7 @@
  * Handles agenda, speakers, prizes, and FAQ for event details
  */
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/api';
+import { API_URL } from '../constants';
 
 // ==========================================
 // TYPES

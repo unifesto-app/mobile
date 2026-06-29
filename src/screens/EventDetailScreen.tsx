@@ -17,7 +17,7 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { MenuView } from '@react-native-menu/menu';
 import { Ionicons } from '@expo/vector-icons';
-import { Clock, MapPin, Calendar, Users, ChevronRight, LogIn } from 'lucide-react-native';
+import { Calendar, CaretRight, Clock, MapPin, SignIn, Users } from 'phosphor-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import GradientText from '../components/GradientText';
 import Footer from '../components/Footer';
@@ -1048,7 +1048,7 @@ export default function EventDetailScreen() {
                 {agenda.map((item: any) => (
                   <View key={item.id} style={styles.agendaItem}>
                     <View style={styles.agendaTimeContainer}>
-                      <Clock size={16} color={colors.primary} strokeWidth={2} />
+                      <Clock size={16} color={colors.primary} />
                       <Text style={styles.agendaTime}>
                         {new Date(item.startTime || item.start_time).toLocaleTimeString('en-US', {
                           hour: 'numeric',
@@ -1069,7 +1069,7 @@ export default function EventDetailScreen() {
                       )}
                       {(item.location || item.speakerName) && (
                         <View style={styles.agendaLocation}>
-                          <MapPin size={12} color={colors.textMuted} strokeWidth={2} />
+                          <MapPin size={12} color={colors.textMuted} />
                           <Text style={styles.agendaLocationText}>{item.location || item.speakerName}</Text>
                         </View>
                       )}
@@ -1248,7 +1248,7 @@ export default function EventDetailScreen() {
                 <Text style={styles.parentEventLabel}>ORGANIZED BY</Text>
                 <Text style={styles.parentEventTitle}>{event.space.name}</Text>
               </View>
-              <ChevronRight size={20} color={colors.textMuted} strokeWidth={2} />
+              <CaretRight size={20} color={colors.textMuted} />
             </TouchableOpacity>
           )}
 
@@ -1354,7 +1354,7 @@ export default function EventDetailScreen() {
                 style={styles.ctaButtonGradient}
               >
                 {!user && (
-                  <LogIn size={16} color={colors.text} strokeWidth={2} style={{ marginRight: spacing[2] }} />
+                  <SignIn size={16} color={colors.text} style={{ marginRight: spacing[2] }} />
                 )}
                 <Text style={styles.ctaButtonText}>
                   {!user ? 'Sign In to Register' : event.registrationType === 'MIXED' ? (isRegistered ? 'View / Add Ticket' : 'Choose Ticket') : isRegistered ? 'Already Registered' : isFree ? 'Register Free' : 'Register Now'}

@@ -12,15 +12,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import {
-  Gift,
-  Share as ShareIcon,
-  Check,
-  ChevronLeft,
-  Users,
-  TrendingUp,
-  Sparkles,
-} from 'lucide-react-native';
+import { CaretLeft, Check, Gift, ShareNetwork as ShareIcon, Sparkle, TrendUp, Users } from 'phosphor-react-native';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import GradientText from '../components/GradientText';
@@ -395,7 +387,7 @@ export default function ReferralsScreen() {
                 style={styles.heroCard}
               >
                 <View style={styles.heroHeader}>
-                  <Gift size={28} color="#000000" strokeWidth={2} />
+                  <Gift size={28} color="#000000" />
                   <Text style={styles.heroCardTitle}>Referral Program</Text>
                 </View>
                 <Text style={styles.heroBalance}>{rewardAmount}</Text>
@@ -409,21 +401,21 @@ export default function ReferralsScreen() {
               <View style={styles.statsContainer}>
                 <View style={styles.statCard}>
                   <View style={styles.statIcon}>
-                    <Users size={22} color={colors.primary} strokeWidth={2} />
+                    <Users size={22} color={colors.primary} />
                   </View>
                   <Text style={styles.statValue}>{referralInfo?.totalReferred || 0}</Text>
                   <Text style={styles.statLabel}>Total Referrals</Text>
                 </View>
                 <View style={styles.statCard}>
                   <View style={[styles.statIcon, { backgroundColor: 'rgba(16,185,129,0.1)' }]}>
-                    <TrendingUp size={22} color="#10b981" strokeWidth={2} />
+                    <TrendUp size={22} color="#10b981" />
                   </View>
                   <Text style={styles.statValue}>{referralInfo?.totalCoinsEarned || 0}</Text>
                   <Text style={styles.statLabel}>Coins Earned</Text>
                 </View>
                 <View style={styles.statCard}>
                   <View style={[styles.statIcon, { backgroundColor: 'rgba(245,158,11,0.1)' }]}>
-                    <Sparkles size={22} color="#f59e0b" strokeWidth={2} />
+                    <Sparkle size={22} color="#f59e0b" />
                   </View>
                   <Text style={styles.statValue}>0</Text>
                   <Text style={styles.statLabel}>Pending</Text>
@@ -447,7 +439,7 @@ export default function ReferralsScreen() {
                     onPress={handleShareReferral}
                     activeOpacity={0.7}
                   >
-                    <ShareIcon size={20} color={colors.primary} strokeWidth={2.5} />
+                    <ShareIcon size={20} color={colors.primary}  weight="bold" />
                   </TouchableOpacity>
                 </View>
 

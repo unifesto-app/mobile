@@ -12,6 +12,7 @@ import {
   Modal,
   TouchableWithoutFeedback,
   Pressable,
+  Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { MenuView } from '@react-native-menu/menu';
@@ -71,22 +72,21 @@ export default function SpaceDetail() {
   };
 
   const showActionSheet = () => {
+    const hasWebsite = !!(space?.websiteUrl || space?.website_url);
+    const baseOptions = ['Copy Link', ...(hasWebsite ? ['Visit Website'] : []), 'Report Space'];
     const options = user && isMember
-      ? ['Leave Space', 'Copy Link', 'Report Space', 'Cancel']
-      : ['Copy Link', 'Report Space', 'Cancel'];
+      ? ['Leave Space', ...baseOptions, 'Cancel']
+      : [...baseOptions, 'Cancel'];
     const cancelIndex = options.length - 1;
-    const destructiveIndex = user && isMember ? 0 : 1;
+    const destructiveIndex = user && isMember ? 0 : undefined;
     ActionSheetIOS.showActionSheetWithOptions(
       { options, destructiveButtonIndex: destructiveIndex, cancelButtonIndex: cancelIndex, title: space?.name },
       (index) => {
-        if (user && isMember) {
-          if (index === 0) confirmLeave();
-          else if (index === 1) handleCopyLink();
-          else if (index === 2) handleReport();
-        } else {
-          if (index === 0) handleCopyLink();
-          else if (index === 1) handleReport();
-        }
+        const selected = options[index];
+        if (selected === 'Leave Space') confirmLeave();
+        else if (selected === 'Copy Link') handleCopyLink();
+        else if (selected === 'Visit Website') handleVisitWebsite();
+        else if (selected === 'Report Space') handleReport();
       }
     );
   };
@@ -108,6 +108,25 @@ export default function SpaceDetail() {
     
     // Copy to clipboard (you might need expo-clipboard)
     Alert.alert('Link Copied', 'Space link copied to clipboard');
+  };
+
+  const handleVisitWebsite = async () => {
+    closeMenu();
+    const url = space?.websiteUrl || space?.website_url;
+    if (!url) return;
+
+    const normalizedUrl = /^https?:\/\//i.test(url) ? url : `https://${url}`;
+    try {
+      const canOpen = await Linking.canOpenURL(normalizedUrl);
+      if (canOpen) {
+        await Linking.openURL(normalizedUrl);
+      } else {
+        Alert.alert('Unable to open link', 'The website link is invalid.');
+      }
+    } catch (error) {
+      console.error('Error opening website:', error);
+      Alert.alert('Unable to open link', 'Something went wrong opening the website.');
+    }
   };
 
   const confirmLeave = () => {
@@ -201,6 +220,7 @@ export default function SpaceDetail() {
                 onPressAction={({ nativeEvent }) => {
                   if (nativeEvent.event === 'leave') confirmLeave();
                   else if (nativeEvent.event === 'copy') handleCopyLink();
+                  else if (nativeEvent.event === 'website') handleVisitWebsite();
                   else if (nativeEvent.event === 'report') handleReport();
                 }}
                 actions={[
@@ -213,6 +233,10 @@ export default function SpaceDetail() {
                     id: 'copy',
                     title: 'Copy Link',
                                       },
+                  ...((space?.websiteUrl || space?.website_url) ? [{
+                    id: 'website',
+                    title: 'Visit Website',
+                  }] : []),
                   {
                     id: 'report',
                     title: 'Report Space',
@@ -267,6 +291,21 @@ export default function SpaceDetail() {
                     Copy Link
                   </Text>
                 </Pressable>
+
+                {(space?.websiteUrl || space?.website_url) && (
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.menuItem,
+                      pressed && { backgroundColor: colors.backgroundSecondary },
+                    ]}
+                    onPress={handleVisitWebsite}
+                  >
+                    <Ionicons name="globe-outline" size={22} color={colors.text} />
+                    <Text style={[styles.menuItemText, { color: colors.text }]}>
+                      Visit Website
+                    </Text>
+                  </Pressable>
+                )}
 
                 <Pressable
                   style={({ pressed }) => [

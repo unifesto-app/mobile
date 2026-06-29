@@ -11,7 +11,7 @@ import {
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Check, X, ChevronDown, ScanLine } from 'lucide-react-native';
+import { CaretDown, Check, Scan, X } from 'phosphor-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { getMyOrganiserSpaces, getSpaceEvents } from '../../lib/api/spaces';
 import { checkIn } from '../../lib/api/registrations';
@@ -182,9 +182,9 @@ export default function GateScanScreen() {
         <View style={styles.resultOverlay}>
           <View style={[styles.resultIcon, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
             {scanResult.valid ? (
-              <Check size={56} color="#fff" strokeWidth={3} />
+              <Check size={56} color="#fff"  weight="bold" />
             ) : (
-              <X size={56} color="#fff" strokeWidth={3} />
+              <X size={56} color="#fff"  weight="bold" />
             )}
           </View>
           {scanResult.valid ? (
@@ -217,7 +217,7 @@ export default function GateScanScreen() {
           <Text style={styles.eventPickerText} numberOfLines={1}>
             {selectedEvent ? selectedEvent.title : 'Select Event'}
           </Text>
-          <ChevronDown size={18} color={GATE_ACCENT} strokeWidth={2} />
+          <CaretDown size={18} color={GATE_ACCENT} />
         </TouchableOpacity>
       </View>
 
@@ -228,7 +228,7 @@ export default function GateScanScreen() {
           <ActivityIndicator color={GATE_ACCENT} />
         ) : (
           <>
-            <ScanLine size={22} color={GATE_ACCENT} strokeWidth={2} />
+            <Scan size={22} color={GATE_ACCENT} />
             <Text style={styles.hintText}>
               {selectedEvent ? 'Point at a ticket QR code' : 'Select an event to start scanning'}
             </Text>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Image, TextInput, Modal, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ArrowRight, Ticket, Calendar, MapPin, User, Search, X, TrendingUp, Grid, Sparkles } from 'lucide-react-native';
+import { ArrowRight, Calendar, GridFour, MagnifyingGlass, MapPin, Sparkle, Ticket, TrendUp, User, X } from 'phosphor-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import CustomHeader from '../../src/components/CustomHeader';
 import GradientText from '../../src/components/GradientText';
@@ -1188,11 +1188,11 @@ export default function HomeTab() {
           <Text style={styles.ticketTitle} numberOfLines={2}>{event.title}</Text>
           <View style={{ gap: 4, marginTop: 6 }}>
             <View style={styles.ticketInfoRow}>
-              <Calendar size={11} color={colors.primary} strokeWidth={2} />
+              <Calendar size={11} color={colors.primary} />
               <Text style={styles.ticketInfoText}>{formattedDate} · {formattedTime}</Text>
             </View>
             <View style={styles.ticketInfoRow}>
-              <MapPin size={11} color={colors.primary} strokeWidth={2} />
+              <MapPin size={11} color={colors.primary} />
               <Text style={styles.ticketInfoText} numberOfLines={1}>{venue}</Text>
             </View>
           </View>
@@ -1238,7 +1238,7 @@ export default function HomeTab() {
           <Text style={styles.spaceName} numberOfLines={2}>{space.name}</Text>
           {space.city && (
             <View style={styles.spaceLocationRow}>
-              <MapPin size={9} color={colors.textMuted} strokeWidth={2} />
+              <MapPin size={9} color={colors.textMuted} />
               <Text style={styles.spaceLocation} numberOfLines={1}>{space.city}{space.state ? `, ${space.state}` : ''}</Text>
             </View>
           )}
@@ -1307,7 +1307,7 @@ export default function HomeTab() {
         )}
         <View style={styles.searchResultMeta}>
           <View style={styles.searchResultMetaItem}>
-            <Calendar size={12} color={colors.textMuted} strokeWidth={2} />
+            <Calendar size={12} color={colors.textMuted} />
             <Text style={styles.searchResultMetaText}>
               {new Date(event.startDateTime).toLocaleDateString('en-US', {
                 month: 'short',
@@ -1533,7 +1533,7 @@ export default function HomeTab() {
         {/* Badges at top */}
         <View style={styles.featuredEventBadgesTop}>
           <View style={styles.trendingBadgeOnImage}>
-            <TrendingUp size={8} color={colors.text} strokeWidth={2.5} />
+            <TrendUp size={8} color={colors.text}  weight="bold" />
             <Text style={styles.trendingBadgeText}>Trending</Text>
           </View>
           <View style={styles.featuredEventPriceBadge}>
@@ -1641,7 +1641,7 @@ export default function HomeTab() {
                     end={brandGradientEnd}
                     style={styles.guestIconGradient}
                   >
-                    <User size={24} color={colors.text} strokeWidth={2} />
+                    <User size={24} color={colors.text} />
                   </LinearGradient>
 
                   <View style={styles.guestCardContent}>
@@ -1652,7 +1652,7 @@ export default function HomeTab() {
                   </View>
 
                   <View style={styles.guestArrowButton}>
-                    <ArrowRight size={20} color={colors.primary} strokeWidth={2.5} />
+                    <ArrowRight size={20} color={colors.primary}  weight="bold" />
                   </View>
                 </View>
               </TouchableOpacity>
@@ -1673,7 +1673,7 @@ export default function HomeTab() {
                   end={brandGradientEnd}
                   style={styles.guestIconGradient}
                 >
-                  <User size={24} color={colors.text} strokeWidth={2} />
+                  <User size={24} color={colors.text} />
                 </LinearGradient>
                 <View style={styles.guestCardContent}>
                   <Text style={styles.guestCardTitle}>Set Your Username</Text>
@@ -1682,7 +1682,7 @@ export default function HomeTab() {
                   </Text>
                 </View>
                 <View style={styles.guestArrowButton}>
-                  <ArrowRight size={20} color={colors.primary} strokeWidth={2.5} />
+                  <ArrowRight size={20} color={colors.primary}  weight="bold" />
                 </View>
               </View>
             </TouchableOpacity>
@@ -1700,7 +1700,7 @@ export default function HomeTab() {
                   end={brandGradientEnd}
                   style={styles.guestIconGradient}
                 >
-                  <User size={24} color={colors.text} strokeWidth={2} />
+                  <User size={24} color={colors.text} />
                 </LinearGradient>
                 <View style={styles.guestCardContent}>
                   <Text style={styles.guestCardTitle}>Complete Your Profile</Text>
@@ -1709,7 +1709,7 @@ export default function HomeTab() {
                   </Text>
                 </View>
                 <View style={styles.guestArrowButton}>
-                  <ArrowRight size={20} color={colors.primary} strokeWidth={2.5} />
+                  <ArrowRight size={20} color={colors.primary}  weight="bold" />
                 </View>
               </View>
             </TouchableOpacity>
@@ -1723,7 +1723,7 @@ export default function HomeTab() {
           activeOpacity={0.7}
         >
           <View style={styles.searchContainer}>
-            <Search size={20} color={colors.textMuted} strokeWidth={2} />
+            <MagnifyingGlass size={20} color={colors.textMuted} />
             <Text style={styles.searchPlaceholder}>Search events & spaces</Text>
           </View>
         </TouchableOpacity>
@@ -1738,7 +1738,7 @@ export default function HomeTab() {
             <View style={styles.modalHeader}>
               <View style={styles.modalHeaderTop}>
                 <TouchableOpacity onPress={closeSearchModal} style={styles.modalBackButton}>
-                  <X size={24} color={colors.text} strokeWidth={2} />
+                  <X size={24} color={colors.text} />
                 </TouchableOpacity>
                 <View style={styles.modalHeaderTitle}>
                   <Text style={styles.modalTitle}>Search</Text>
@@ -1764,7 +1764,7 @@ export default function HomeTab() {
               </View>
 
               <View style={styles.modalSearchContainer}>
-                <Search size={20} color={colors.textMuted} strokeWidth={2} />
+                <MagnifyingGlass size={20} color={colors.textMuted} />
                 <TextInput
                   style={styles.searchInput}
                   placeholder={`Search ${searchType}...`}
@@ -1778,7 +1778,7 @@ export default function HomeTab() {
                 />
                 {searchQuery !== '' && (
                   <TouchableOpacity onPress={clearSearch}>
-                    <X size={20} color={colors.textMuted} strokeWidth={2} />
+                    <X size={20} color={colors.textMuted} />
                   </TouchableOpacity>
                 )}
               </View>
@@ -1848,7 +1848,7 @@ export default function HomeTab() {
                     </>
                   ) : (
                     <View style={styles.searchEmptyState}>
-                      <Search size={48} color={colors.textMuted} strokeWidth={1.5} />
+                      <MagnifyingGlass size={48} color={colors.textMuted} />
                       <Text style={styles.searchEmptyTitle}>No results found</Text>
                       <Text style={styles.searchEmptyText}>
                         Try different keywords or find your vibe
@@ -1894,7 +1894,7 @@ export default function HomeTab() {
               </ScrollView>
             ) : (
               <View style={styles.emptyTicketsState}>
-                <Ticket size={48} color={colors.textMuted} strokeWidth={1.5} />
+                <Ticket size={48} color={colors.textMuted} />
                 <Text style={styles.emptyTicketsText}>No upcoming tickets</Text>
                 <TouchableOpacity
                   style={styles.browseEventsButton}
@@ -1959,7 +1959,7 @@ export default function HomeTab() {
               </View>
             ) : (
               <View style={styles.emptySpacesState}>
-                <MapPin size={48} color={colors.textMuted} strokeWidth={1.5} />
+                <MapPin size={48} color={colors.textMuted} />
                 <Text style={styles.emptySpacesText}>No spaces available</Text>
                 <TouchableOpacity
                   style={styles.browseSpacesButton}
@@ -2025,7 +2025,7 @@ export default function HomeTab() {
                     end={brandGradientEnd}
                     style={styles.filterButtonGradient}
                   >
-                    <Calendar size={14} color={colors.text} strokeWidth={2} />
+                    <Calendar size={14} color={colors.text} />
                     <Text style={styles.filterButtonTextActive}>Upcoming</Text>
                   </LinearGradient>
                 </TouchableOpacity>
@@ -2035,7 +2035,7 @@ export default function HomeTab() {
                   onPress={() => setActiveFilter('upcoming')}
                   activeOpacity={0.7}
                 >
-                  <Calendar size={14} color={colors.text} strokeWidth={2} />
+                  <Calendar size={14} color={colors.text} />
                   <Text style={styles.filterButtonText}>Upcoming</Text>
                 </TouchableOpacity>
               )}
@@ -2051,7 +2051,7 @@ export default function HomeTab() {
                     end={brandGradientEnd}
                     style={styles.filterButtonGradient}
                   >
-                    <TrendingUp size={14} color={colors.text} strokeWidth={2} />
+                    <TrendUp size={14} color={colors.text} />
                     <Text style={styles.filterButtonTextActive}>Trending</Text>
                   </LinearGradient>
                 </TouchableOpacity>
@@ -2061,7 +2061,7 @@ export default function HomeTab() {
                   onPress={() => setActiveFilter('trending')}
                   activeOpacity={0.7}
                 >
-                  <TrendingUp size={14} color={colors.text} strokeWidth={2} />
+                  <TrendUp size={14} color={colors.text} />
                   <Text style={styles.filterButtonText}>Trending</Text>
                 </TouchableOpacity>
               )}
@@ -2077,7 +2077,7 @@ export default function HomeTab() {
                     end={brandGradientEnd}
                     style={styles.filterButtonGradient}
                   >
-                    <Grid size={14} color={colors.text} strokeWidth={2} />
+                    <GridFour size={14} color={colors.text} />
                     <Text style={styles.filterButtonTextActive}>Featured</Text>
                   </LinearGradient>
                 </TouchableOpacity>
@@ -2087,7 +2087,7 @@ export default function HomeTab() {
                   onPress={() => setActiveFilter('featured')}
                   activeOpacity={0.7}
                 >
-                  <Grid size={14} color={colors.text} strokeWidth={2} />
+                  <GridFour size={14} color={colors.text} />
                   <Text style={styles.filterButtonText}>Featured</Text>
                 </TouchableOpacity>
               )}
@@ -2122,7 +2122,7 @@ export default function HomeTab() {
                   </ScrollView>
                 ) : (
                   <View style={styles.emptyState}>
-                    <Calendar size={48} color={colors.textMuted} strokeWidth={1.5} />
+                    <Calendar size={48} color={colors.textMuted} />
                     <Text style={styles.emptyStateText}>No upcoming events</Text>
                   </View>
                 )
@@ -2141,7 +2141,7 @@ export default function HomeTab() {
                   </ScrollView>
                 ) : (
                   <View style={styles.emptyState}>
-                    <TrendingUp size={48} color={colors.textMuted} strokeWidth={1.5} />
+                    <TrendUp size={48} color={colors.textMuted} />
                     <Text style={styles.emptyStateText}>No trending events</Text>
                   </View>
                 )
@@ -2160,7 +2160,7 @@ export default function HomeTab() {
                   </ScrollView>
                 ) : (
                   <View style={styles.emptyState}>
-                    <Grid size={48} color={colors.textMuted} strokeWidth={1.5} />
+                    <GridFour size={48} color={colors.textMuted} />
                     <Text style={styles.emptyStateText}>No featured events</Text>
                   </View>
                 )
@@ -2189,7 +2189,7 @@ export default function HomeTab() {
             </View>
           ) : (
             <View style={styles.emptyState}>
-              <MapPin size={48} color={colors.textMuted} strokeWidth={1.5} />
+              <MapPin size={48} color={colors.textMuted} />
               <Text style={styles.emptyStateText}>No spaces available</Text>
             </View>
           )}

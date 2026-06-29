@@ -11,7 +11,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Calendar, Clock, Ticket } from 'lucide-react-native';
+import { Calendar, Clock, Ticket } from 'phosphor-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import GradientText from '../components/GradientText';
 import { useAuth } from '../context/AuthContext';
@@ -344,11 +344,11 @@ export default function TicketsScreen() {
           <Text style={styles.ticketTitle} numberOfLines={2}>{event.title}</Text>
           <View style={styles.ticketInfo}>
             <View style={styles.ticketInfoRow}>
-              <Calendar size={12} color={colors.primary} strokeWidth={2} />
+              <Calendar size={12} color={colors.primary} />
               <Text style={styles.ticketInfoText}>{formattedDate} · {formattedTime}</Text>
             </View>
             <View style={styles.ticketInfoRow}>
-              <Clock size={12} color={colors.primary} strokeWidth={2} />
+              <Clock size={12} color={colors.primary} />
               <Text style={styles.ticketInfoText} numberOfLines={1}>{venue}</Text>
             </View>
           </View>
@@ -372,7 +372,7 @@ export default function TicketsScreen() {
               end={brandGradientEnd}
               style={styles.guestIcon}
             >
-              <Ticket size={48} color={colors.text} strokeWidth={2} />
+              <Ticket size={48} color={colors.text} />
             </LinearGradient>
 
             <GradientText style={styles.guestTitle}>Sign in to view your tickets</GradientText>
@@ -469,7 +469,7 @@ export default function TicketsScreen() {
           </>
         ) : (
           <View style={styles.emptyState}>
-            <Ticket size={64} color={colors.textMuted} strokeWidth={1.5} />
+            <Ticket size={64} color={colors.textMuted} />
             <Text style={styles.emptyStateTitle}>No tickets yet</Text>
             <Text style={styles.emptyStateText}>
               {activeTab === 'Upcoming'

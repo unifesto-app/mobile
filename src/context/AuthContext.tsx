@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import * as SecureStore from 'expo-secure-store';
+import crashlytics from '@react-native-firebase/crashlytics';
 import { getToken, saveToken, clearToken, makeAuthenticatedRequest, makePublicRequest } from '../lib/api/helpers';
-
-const BASE_URL = 'https://api.unifesto.app';
+import { API_URL as BASE_URL } from '../lib/constants';
 
 interface User {
   id: string;
@@ -62,6 +62,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (response.ok) {
           const userData = await response.json();
           setUser(userData);
+          await crashlytics().setUserId(userData.id);
         } else {
           await clearToken();
         }
@@ -77,6 +78,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await saveToken(accessToken);
     setToken(accessToken);
     setUser(userData);
+    await crashlytics().setUserId(userData.id);
   };
 
   const sendMobileOtp = async (mobileNumber: string) => {
@@ -204,6 +206,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await clearToken();
     setToken(null);
     setUser(null);
+    await crashlytics().setUserId('');
   };
 
   const refreshUser = async () => {

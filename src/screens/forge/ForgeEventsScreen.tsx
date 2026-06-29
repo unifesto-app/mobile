@@ -13,7 +13,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Plus, Calendar, MapPin, CalendarX } from 'lucide-react-native';
+import { Calendar, CalendarX, MapPin, Plus } from 'phosphor-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import ForgeWordmark from '../../components/ForgeWordmark';
 import { getMyOrganiserSpaces, getSpaceEvents } from '../../lib/api/spaces';
@@ -287,12 +287,12 @@ export default function ForgeEventsScreen() {
         <View style={styles.cardBody}>
           <View style={styles.chipsRow}>
             <View style={styles.chip}>
-              <Calendar size={12} color={colors.textMuted} strokeWidth={2} />
+              <Calendar size={12} color={colors.textMuted} />
               <Text style={styles.chipText}>{formatDate(e.startDateTime)}</Text>
             </View>
             {e.city ? (
               <View style={styles.chip}>
-                <MapPin size={12} color={colors.textMuted} strokeWidth={2} />
+                <MapPin size={12} color={colors.textMuted} />
                 <Text style={styles.chipText}>{e.city}</Text>
               </View>
             ) : null}
@@ -366,7 +366,7 @@ export default function ForgeEventsScreen() {
         {filtered.length === 0 ? (
           <View style={styles.emptyWrap}>
             <View style={styles.emptyIconWrap}>
-              <CalendarX size={30} color={colors.primary} strokeWidth={2} />
+              <CalendarX size={30} color={colors.primary} />
             </View>
             <Text style={styles.emptyTitle}>No {filter} events</Text>
             <Text style={styles.emptyText}>
@@ -386,7 +386,7 @@ export default function ForgeEventsScreen() {
           Alert.alert('Coming soon', 'Event creation will be available soon.')
         }
       >
-        <Plus size={26} color="#fff" strokeWidth={2.5} />
+        <Plus size={26} color="#fff"  weight="bold" />
       </TouchableOpacity>
     </View>
   );

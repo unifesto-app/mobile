@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Check } from 'lucide-react-native';
+import { Check } from 'phosphor-react-native';
 import { spacing, typography, borderRadius } from '../theme';
 import { getFontFamily } from '../theme/fontHelpers';
 import { useTheme } from '../context/ThemeContext';
@@ -113,7 +113,7 @@ export default function StepIndicator({ steps, currentStep }: StepIndicatorProps
                 ]}
               >
                 {isCompleted ? (
-                  <Check size={16} color={colors.background} strokeWidth={3} />
+                  <Check size={16} color={colors.background}  weight="bold" />
                 ) : (
                   <Text
                     style={[

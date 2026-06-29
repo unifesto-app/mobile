@@ -6,7 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
 } from 'react-native';
-import { Moon, Sun, Monitor, Palette, Check } from 'lucide-react-native';
+import { Check, Monitor, Moon, Palette, Sun } from 'phosphor-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import GlassyButton from '../components/GlassyButton';
 import { useTheme } from '../context/ThemeContext';
@@ -29,7 +29,7 @@ export default function AppearanceScreen() {
       key: 'dark' as const,
       label: 'Dark',
       description: 'Easy on the eyes, always on',
-      icon: <Moon size={16} color={theme === 'dark' ? colors.primary : colors.textMuted} strokeWidth={2} />,
+      icon: <Moon size={16} color={theme === 'dark' ? colors.primary : colors.textMuted} />,
       active: theme === 'dark',
       disabled: false,
     },
@@ -37,7 +37,7 @@ export default function AppearanceScreen() {
       key: 'light' as const,
       label: 'Light',
       description: 'Bright and clean',
-      icon: <Sun size={16} color={false ? colors.primary : colors.textMuted} strokeWidth={2} />,
+      icon: <Sun size={16} color={false ? colors.primary : colors.textMuted} />,
       active: false,
       disabled: false,
     },
@@ -45,7 +45,7 @@ export default function AppearanceScreen() {
       key: 'system' as const,
       label: 'System Default',
       description: 'Follow system settings',
-      icon: <Monitor size={16} color={false ? colors.primary : colors.textMuted} strokeWidth={2} />,
+      icon: <Monitor size={16} color={false ? colors.primary : colors.textMuted} />,
       active: false,
       disabled: false,
     },
@@ -175,7 +175,7 @@ export default function AppearanceScreen() {
                       end={brandGradientEnd}
                       style={styles.checkCircle}
                     >
-                      <Check size={12} color="#000" strokeWidth={3} />
+                      <Check size={12} color="#000"  weight="bold" />
                     </LinearGradient>
                   )}
                 </TouchableOpacity>
@@ -188,7 +188,7 @@ export default function AppearanceScreen() {
         {/* Info */}
         <View style={styles.section}>
           <View style={styles.infoCard}>
-            <Palette size={18} color={colors.primary} strokeWidth={2} />
+            <Palette size={18} color={colors.primary} />
             <Text style={styles.infoText}>
               Switch between light and dark themes, or follow your system settings.
             </Text>

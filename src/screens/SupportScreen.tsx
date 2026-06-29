@@ -8,19 +8,7 @@ import {
   TextInput,
   Linking,
 } from 'react-native';
-import {
-  MessageCircle,
-  Mail,
-  Phone,
-  HelpCircle,
-  ChevronRight,
-  Send,
-  ChevronDown,
-  ChevronUp,
-  CheckCircle,
-  Book,
-  ExternalLink,
-} from 'lucide-react-native';
+import { ArrowSquareOut, Book, CaretDown, CaretRight, CaretUp, ChatCircle, CheckCircle, Envelope, PaperPlaneTilt, Phone, Question } from 'phosphor-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import GradientText from '../components/GradientText';
 import Footer from '../components/Footer';
@@ -83,7 +71,7 @@ const FAQ_ITEMS = [
 const CONTACT_OPTIONS = [
   {
     id: 'email',
-    icon: Mail,
+    icon: Envelope,
     title: 'Email Support',
     description: 'Get help via email within 24 hours',
     action: 'support@unifesto.app',
@@ -91,7 +79,7 @@ const CONTACT_OPTIONS = [
   },
   {
     id: 'chat',
-    icon: MessageCircle,
+    icon: ChatCircle,
     title: 'Live Chat',
     description: 'Chat with our support team',
     action: 'Start Chat',
@@ -491,7 +479,7 @@ export default function SupportScreen() {
           {/* Search Bar for FAQ */}
           {activeTab === 'faq' && (
             <View style={styles.searchContainer}>
-              <HelpCircle size={20} color={colors.textMuted} strokeWidth={2} />
+              <Question size={20} color={colors.textMuted} />
               <TextInput
                 style={styles.searchInput}
                 placeholder="Search for help..."
@@ -532,9 +520,9 @@ export default function SupportScreen() {
                         <Text style={styles.faqQuestionText}>{faq.question}</Text>
                       </View>
                       {expandedFaq === faq.id ? (
-                        <ChevronUp size={20} color={colors.textMuted} strokeWidth={2} />
+                        <CaretUp size={20} color={colors.textMuted} />
                       ) : (
-                        <ChevronDown size={20} color={colors.textMuted} strokeWidth={2} />
+                        <CaretDown size={20} color={colors.textMuted} />
                       )}
                     </TouchableOpacity>
                     {expandedFaq === faq.id && (
@@ -562,7 +550,7 @@ export default function SupportScreen() {
                       onPress={option.onPress}
                     >
                       <View style={styles.contactOptionIcon}>
-                        <option.icon size={24} color="#000000" strokeWidth={2} />
+                        <option.icon size={24} color="#000000" />
                       </View>
                       <Text style={styles.contactOptionTitle}>{option.title}</Text>
                       <Text style={styles.contactOptionDescription}>{option.description}</Text>
@@ -581,7 +569,7 @@ export default function SupportScreen() {
 
                 {submitted ? (
                   <View style={styles.successMessage}>
-                    <CheckCircle size={48} color={colors.primary} strokeWidth={2} />
+                    <CheckCircle size={48} color={colors.primary} />
                     <Text style={styles.successTitle}>Message Sent!</Text>
                     <Text style={styles.successText}>
                       We've received your message and will respond within 24 hours.
@@ -619,7 +607,7 @@ export default function SupportScreen() {
                         <Text style={styles.selectText}>
                           {formData.category || 'Select a category'}
                         </Text>
-                        <ChevronDown size={20} color={colors.textMuted} strokeWidth={2} />
+                        <CaretDown size={20} color={colors.textMuted} />
                       </TouchableOpacity>
                     </View>
 
@@ -642,7 +630,7 @@ export default function SupportScreen() {
                         colors={['#3491ff', '#0062ff']}
                         style={styles.submitGradient}
                       >
-                        <Send size={18} color="#000000" strokeWidth={2} />
+                        <PaperPlaneTilt size={18} color="#000000" />
                         <Text style={styles.submitText}>Send Message</Text>
                       </LinearGradient>
                     </TouchableOpacity>
@@ -662,7 +650,7 @@ export default function SupportScreen() {
                     <TouchableOpacity key={resource.title} style={styles.resource}>
                       <Text style={styles.resourceTitle}>{resource.title}</Text>
                       <Text style={styles.resourceDescription}>{resource.description}</Text>
-                      <ExternalLink size={16} color={colors.primary} strokeWidth={2} />
+                      <ArrowSquareOut size={16} color={colors.primary} />
                     </TouchableOpacity>
                   ))}
                 </View>

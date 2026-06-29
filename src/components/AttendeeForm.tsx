@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
-import { User, Mail, Phone } from 'lucide-react-native';
+import { Envelope, Phone, User } from 'phosphor-react-native';
 import { spacing, typography, borderRadius } from '../theme';
 import { getFontFamily } from '../theme/fontHelpers';
 import { useTheme } from '../context/ThemeContext';
@@ -151,7 +151,7 @@ export default function AttendeeForm({
           Full Name <Text style={styles.required}>*</Text>
         </Text>
         <View style={[styles.inputContainer, errors.name && styles.inputError]}>
-          <User size={18} color={colors.textMuted} strokeWidth={2} />
+          <User size={18} color={colors.textMuted} />
           <TextInput
             style={styles.input}
             placeholder="Enter full name"
@@ -170,7 +170,7 @@ export default function AttendeeForm({
           Email Address <Text style={styles.required}>*</Text>
         </Text>
         <View style={[styles.inputContainer, errors.email && styles.inputError]}>
-          <Mail size={18} color={colors.textMuted} strokeWidth={2} />
+          <Envelope size={18} color={colors.textMuted} />
           <TextInput
             style={styles.input}
             placeholder="Enter email address"
@@ -190,7 +190,7 @@ export default function AttendeeForm({
           Mobile Number <Text style={styles.required}>*</Text>
         </Text>
         <View style={[styles.inputContainer, errors.mobile && styles.inputError]}>
-          <Phone size={18} color={colors.textMuted} strokeWidth={2} />
+          <Phone size={18} color={colors.textMuted} />
           <Text style={styles.countryCode}>+91</Text>
           <TextInput
             style={styles.input}

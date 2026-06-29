@@ -13,15 +13,7 @@ import {
   Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import {
-  ChevronDown,
-  Search,
-  Download,
-  Check,
-  X,
-  CalendarDays,
-  Users,
-} from 'lucide-react-native';
+import { CalendarBlank, CaretDown, Check, DownloadSimple, MagnifyingGlass, Users, X } from 'phosphor-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import ForgeWordmark from '../../components/ForgeWordmark';
 import { getMyOrganiserSpaces, getSpaceEvents } from '../../lib/api/spaces';
@@ -354,7 +346,7 @@ export default function ForgeRegistrationsScreen() {
               Alert.alert('Coming soon', 'Export will be available soon.')
             }
           >
-            <Download size={20} color={colors.primary} strokeWidth={2} />
+            <DownloadSimple size={20} color={colors.primary} />
           </TouchableOpacity>
         </View>
 
@@ -364,7 +356,7 @@ export default function ForgeRegistrationsScreen() {
           onPress={() => setPickerOpen(true)}
         >
           <View style={styles.pickerIcon}>
-            <CalendarDays size={18} color={colors.primary} strokeWidth={2} />
+            <CalendarBlank size={18} color={colors.primary} />
           </View>
           <View style={styles.pickerTextWrap}>
             <Text style={styles.pickerLabel}>EVENT</Text>
@@ -372,7 +364,7 @@ export default function ForgeRegistrationsScreen() {
               {selectedEvent ? selectedEvent.title : 'Select an event'}
             </Text>
           </View>
-          <ChevronDown size={18} color={colors.textMuted} strokeWidth={2} />
+          <CaretDown size={18} color={colors.textMuted} />
         </TouchableOpacity>
 
         {selectedEvent ? (
@@ -400,7 +392,7 @@ export default function ForgeRegistrationsScreen() {
       </View>
 
       <View style={styles.searchBar}>
-        <Search size={16} color={colors.textMuted} strokeWidth={2} />
+        <MagnifyingGlass size={16} color={colors.textMuted} />
         <TextInput
           style={styles.searchInput}
           placeholder="Search by name"
@@ -433,7 +425,7 @@ export default function ForgeRegistrationsScreen() {
           {filtered.length === 0 ? (
             <View style={styles.emptyWrap}>
               <View style={styles.emptyIconWrap}>
-                <Users size={30} color={colors.primary} strokeWidth={2} />
+                <Users size={30} color={colors.primary} />
               </View>
               <Text style={styles.emptyTitle}>No attendees</Text>
               <Text style={styles.emptyText}>
@@ -477,9 +469,9 @@ export default function ForgeRegistrationsScreen() {
                       ]}
                     >
                       {checkedIn ? (
-                        <Check size={11} color="#22c55e" strokeWidth={3} />
+                        <Check size={11} color="#22c55e"  weight="bold" />
                       ) : (
-                        <X size={11} color={colors.textMuted} strokeWidth={3} />
+                        <X size={11} color={colors.textMuted}  weight="bold" />
                       )}
                       <Text
                         style={[

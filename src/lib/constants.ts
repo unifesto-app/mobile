@@ -3,7 +3,7 @@
  */
 
 // API Configuration
-export const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080';
+export const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://api.unifesto.app';
 
 // Registration Configuration
 export const REGISTRATION_TIME_LIMIT = 15 * 60; // 15 minutes in seconds

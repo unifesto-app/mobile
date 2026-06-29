@@ -13,7 +13,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Grid, Ticket, Calendar, MapPin, Clock } from 'lucide-react-native';
+import { Calendar, Clock, GridFour, MapPin, Ticket } from 'phosphor-react-native';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import * as AuthAPI from '../lib/api/auth';
@@ -162,14 +162,14 @@ export default function UserProfileScreen() {
       <View style={styles.eventContent}>
         <Text style={styles.eventTitle} numberOfLines={2}>{event.title}</Text>
         <View style={styles.eventMeta}>
-          <Calendar size={12} color={colors.primary} strokeWidth={2} />
+          <Calendar size={12} color={colors.primary} />
           <Text style={styles.eventMetaText}>
             {new Date(event.startDateTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
           </Text>
           {(event.venueName || event.city) && (
             <>
               <Text style={styles.eventMetaText}>•</Text>
-              <MapPin size={12} color={colors.textMuted} strokeWidth={2} />
+              <MapPin size={12} color={colors.textMuted} />
               <Text style={styles.eventMetaText} numberOfLines={1}>{event.venueName || event.city}</Text>
             </>
           )}
@@ -200,7 +200,7 @@ export default function UserProfileScreen() {
         </View>
         <Text style={styles.ticketTitle} numberOfLines={2}>{event.title}</Text>
         <View style={styles.ticketMeta}>
-          <Clock size={11} color={colors.textMuted} strokeWidth={2} />
+          <Clock size={11} color={colors.textMuted} />
           <Text style={styles.ticketMetaText}>
             {new Date(event.startDateTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
           </Text>
@@ -269,11 +269,11 @@ export default function UserProfileScreen() {
         {/* Tabs */}
         <View style={styles.tabsContainer}>
           <TouchableOpacity style={[styles.tab, activeTab === 'events' && styles.tabActive]} onPress={() => setActiveTab('events')} activeOpacity={0.7}>
-            <Grid size={20} color={activeTab === 'events' ? colors.primary : colors.textMuted} strokeWidth={2} style={styles.tabIcon} />
+            <GridFour size={20} color={activeTab === 'events' ? colors.primary : colors.textMuted} style={styles.tabIcon} />
             <Text style={[styles.tabText, activeTab === 'events' && styles.tabTextActive]}>Upcoming</Text>
           </TouchableOpacity>
           <TouchableOpacity style={[styles.tab, activeTab === 'tickets' && styles.tabActive]} onPress={() => setActiveTab('tickets')} activeOpacity={0.7}>
-            <Ticket size={20} color={activeTab === 'tickets' ? colors.primary : colors.textMuted} strokeWidth={2} style={styles.tabIcon} />
+            <Ticket size={20} color={activeTab === 'tickets' ? colors.primary : colors.textMuted} style={styles.tabIcon} />
             <Text style={[styles.tabText, activeTab === 'tickets' && styles.tabTextActive]}>Past</Text>
           </TouchableOpacity>
         </View>
@@ -287,14 +287,14 @@ export default function UserProfileScreen() {
           ) : activeTab === 'events' ? (
             events.length > 0 ? events.map(renderEvent) : (
               <View style={styles.emptyState}>
-                <Grid size={64} color={colors.textMuted} strokeWidth={1} />
+                <GridFour size={64} color={colors.textMuted} />
                 <Text style={styles.emptyStateText}>No upcoming events</Text>
               </View>
             )
           ) : (
             tickets.length > 0 ? tickets.map(renderTicket) : (
               <View style={styles.emptyState}>
-                <Ticket size={64} color={colors.textMuted} strokeWidth={1} />
+                <Ticket size={64} color={colors.textMuted} />
                 <Text style={styles.emptyStateText}>No past events</Text>
               </View>
             )

@@ -11,16 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { 
-  ArrowLeft, 
-  Minus, 
-  Plus, 
-  CheckCircle,
-  CreditCard,
-  Smartphone,
-  Building2,
-  Clock
-} from 'lucide-react-native';
+import { ArrowLeft, Buildings, CheckCircle, Clock, CreditCard, DeviceMobile, Minus, Plus } from 'phosphor-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import GradientText from '../components/GradientText';
 import RegistrationTimer from '../components/RegistrationTimer';
@@ -1199,7 +1190,7 @@ export default function EventRegistrationScreen() {
       <View style={styles.container}>
         <View style={styles.expiredContainer}>
           <View style={styles.expiredIcon}>
-            <Clock size={32} color={colors.error} strokeWidth={2} />
+            <Clock size={32} color={colors.error} />
           </View>
           <Text style={styles.expiredTitle}>Registration Time Expired</Text>
           <Text style={styles.expiredText}>
@@ -1229,7 +1220,7 @@ export default function EventRegistrationScreen() {
           style={styles.headerBackButton}
           onPress={handleBackPress}
         >
-          <ArrowLeft size={24} color={colors.text} strokeWidth={2} />
+          <ArrowLeft size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Event Registration</Text>
       </View>
@@ -1553,7 +1544,7 @@ export default function EventRegistrationScreen() {
               {calculateTotal() === 0 ? (
                 <View style={styles.freeEventContainer}>
                   <View style={styles.freeEventIcon}>
-                    <CheckCircle size={32} color={colors.primary} strokeWidth={2} />
+                    <CheckCircle size={32} color={colors.primary} />
                   </View>
                   <Text style={styles.freeEventTitle}>Free Event</Text>
                   <Text style={styles.freeEventText}>

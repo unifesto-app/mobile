@@ -8,7 +8,7 @@ import {
   BackHandler,
 } from 'react-native';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
-import { CheckCircle, ArrowRight, Ticket } from 'lucide-react-native';
+import { ArrowRight, CheckCircle, Ticket } from 'phosphor-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import GradientText from '../components/GradientText';
 import Footer from '../components/Footer';
@@ -141,7 +141,7 @@ export default function RegistrationSuccessScreen() {
           <View style={styles.heroContent}>
             <View style={styles.successIconContainer}>
               <View style={styles.successIcon}>
-                <CheckCircle size={32} color="#000000" strokeWidth={2.5} />
+                <CheckCircle size={32} color="#000000"  weight="bold" />
               </View>
             </View>
             <GradientText style={styles.successTitle}>Registration Successful!</GradientText>
@@ -175,7 +175,7 @@ export default function RegistrationSuccessScreen() {
           <View style={styles.actionButtons}>
             <TouchableOpacity style={styles.primaryButton} onPress={handleViewTicket}>
               <LinearGradient colors={['#3491ff', '#0062ff']} style={styles.primaryButtonGradient}>
-                <Ticket size={16} color="#000000" strokeWidth={2} />
+                <Ticket size={16} color="#000000" />
                 <Text style={styles.primaryButtonText}>View My Ticket</Text>
               </LinearGradient>
             </TouchableOpacity>

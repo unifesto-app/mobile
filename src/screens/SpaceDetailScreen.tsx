@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Building2, Calendar, Globe, Users, ArrowRight } from 'lucide-react-native';
+import { ArrowRight, Buildings, Calendar, Users } from 'phosphor-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Skeleton from '../components/Skeleton';
 import { spacing, typography, borderRadius, shadows, brandGradient, brandGradientStart, brandGradientEnd } from '../theme';
@@ -180,7 +180,7 @@ export default function SpaceDetailScreen({ route, onMembershipChange }: SpaceDe
   if (!space) {
     return (
       <View style={[styles.container, styles.centerContent, { backgroundColor: colors.background }]}>
-        <Building2 size={48} color={colors.textMuted} strokeWidth={1.5} />
+        <Buildings size={48} color={colors.textMuted} />
         <Text style={[styles.errorText, { color: colors.textMuted }]}>Space not found</Text>
       </View>
     );
@@ -266,31 +266,61 @@ export default function SpaceDetailScreen({ route, onMembershipChange }: SpaceDe
           </View>
         )}
 
-        {/* Organiser/Creator */}
-        {space.creator && (
-          <View style={styles.section}>
-            <Text style={[styles.organiserTitle, { color: colors.text }]}>Organisers</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing[3], backgroundColor: colors.card, padding: spacing[4], borderRadius: borderRadius.xl }}>
-              <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={{ color: '#fff', fontWeight: '700', fontSize: 18 }}>{(space.creator.fullName || space.creator.username || 'U')[0].toUpperCase()}</Text>
-              </View>
-              <View>
-                <Text style={{ color: colors.text, fontWeight: '600' }}>{space.creator.fullName || space.creator.username}</Text>
+        {/* Organisers (creator + co-organisers) */}
+        {(() => {
+          const organiserList: { id: string; name: string; avatarUrl: string | null; roleLabel: string }[] = [];
+
+          if (space.creator) {
+            organiserList.push({
+              id: space.creator.id,
+              name: space.creator.fullName || space.creator.username || 'Organiser',
+              avatarUrl: space.creator.avatarUrl,
+              roleLabel: 'Organiser',
+            });
+          }
+
+          (space.organisers || []).forEach((member) => {
+            if (organiserList.some((o) => o.id === member.user.id)) return;
+            organiserList.push({
+              id: member.user.id,
+              name: member.user.fullName || member.user.username || 'Organiser',
+              avatarUrl: member.user.avatarUrl,
+              roleLabel: member.role?.name || 'Co-Organiser',
+            });
+          });
+
+          if (organiserList.length === 0) return null;
+
+          return (
+            <View style={styles.section}>
+              <Text style={[styles.organiserTitle, { color: colors.text }]}>Organisers</Text>
+              <View style={{ gap: spacing[2] }}>
+                {organiserList.map((organiser) => (
+                  <View
+                    key={organiser.id}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: spacing[3], backgroundColor: colors.card, padding: spacing[4], borderRadius: borderRadius.xl }}
+                  >
+                    {organiser.avatarUrl ? (
+                      <Image
+                        source={{ uri: organiser.avatarUrl }}
+                        style={{ width: 44, height: 44, borderRadius: 22 }}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' }}>
+                        <Text style={{ color: '#fff', fontWeight: '700', fontSize: 18 }}>{organiser.name[0].toUpperCase()}</Text>
+                      </View>
+                    )}
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ color: colors.text, fontWeight: '600' }}>{organiser.name}</Text>
+                      <Text style={{ color: colors.textMuted, fontSize: 13, marginTop: 2 }}>{organiser.roleLabel}</Text>
+                    </View>
+                  </View>
+                ))}
               </View>
             </View>
-          </View>
-        )}
-
-        {/* Website Link */}
-        {(space.websiteUrl || space.website_url) && (
-          <View style={styles.section}>
-            <TouchableOpacity style={styles.websiteButton} activeOpacity={0.7}>
-              <Globe size={20} color={colors.primary} strokeWidth={2} />
-              <Text style={[styles.websiteButtonText, { color: colors.primary }]}>Visit Website</Text>
-              <ArrowRight size={20} color={colors.primary} strokeWidth={2} />
-            </TouchableOpacity>
-          </View>
-        )}
+          );
+        })()}
 
         {/* Parent Space */}
         {parentSpace && (
@@ -327,7 +357,7 @@ export default function SpaceDetailScreen({ route, onMembershipChange }: SpaceDe
                   )}
                 </View>
               </View>
-              <ArrowRight size={20} color={colors.textMuted} strokeWidth={2} />
+              <ArrowRight size={20} color={colors.textMuted} />
             </TouchableOpacity>
           </View>
         )}
@@ -375,7 +405,7 @@ export default function SpaceDetailScreen({ route, onMembershipChange }: SpaceDe
                       )}
                     </View>
                   </View>
-                  <ArrowRight size={20} color={colors.textMuted} strokeWidth={2} />
+                  <ArrowRight size={20} color={colors.textMuted} />
                 </TouchableOpacity>
               ))}
             </View>
@@ -429,7 +459,7 @@ export default function SpaceDetailScreen({ route, onMembershipChange }: SpaceDe
                       
                       <View style={styles.eventMetaRow}>
                         <View style={styles.eventMetaItem}>
-                          <Calendar size={14} color={colors.textMuted} strokeWidth={2} />
+                          <Calendar size={14} color={colors.textMuted} />
                           <Text style={[styles.eventMetaText, { color: colors.textMuted }]}>{formattedDate}</Text>
                         </View>
                         <Text style={[styles.eventPrice, { color: colors.primary }]}>
@@ -595,24 +625,6 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.base,
     fontFamily: getFontFamily('bold'),
     lineHeight: typography.lineHeight.relaxed * typography.fontSize.base,
-  },
-  
-  // Website Button
-  websiteButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing[2],
-    backgroundColor: 'rgba(52, 145, 255, 0.1)',
-    paddingVertical: spacing[4],
-    paddingHorizontal: spacing[6],
-    borderRadius: borderRadius.xl,
-    borderWidth: 1,
-    borderColor: 'rgba(52, 145, 255, 0.3)',
-  },
-  websiteButtonText: {
-    fontSize: typography.fontSize.base,
-    fontFamily: getFontFamily('bold'),
   },
   
   // Related Cards (Parent/Sub-spaces)

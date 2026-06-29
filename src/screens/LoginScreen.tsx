@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Mail, Phone, ArrowRight, ArrowLeft, ShieldCheck } from 'lucide-react-native';
+import { ArrowLeft, ArrowRight, Envelope, Phone, ShieldCheck } from 'phosphor-react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useRouter } from 'expo-router';
 import { cognitoDiscovery, COGNITO_REDIRECT_URI, exchangeCognitoCode } from '../lib/api/cognito';
@@ -533,7 +533,7 @@ export default function NewLoginScreen() {
     <>
       <View style={styles.emailRow}>
         <View style={[styles.inputWrapper, styles.emailInputWrapper]}>
-          <Mail size={20} color={colors.textMuted} strokeWidth={2} />
+          <Envelope size={20} color={colors.textMuted} />
           <TextInput
             style={styles.input}
             placeholder="you@example.com"
@@ -565,7 +565,7 @@ export default function NewLoginScreen() {
             {isLoading ? (
               <ActivityIndicator color="#FFFFFF" />
             ) : (
-              <ArrowRight size={22} color="#FFFFFF" strokeWidth={2.5} />
+              <ArrowRight size={22} color="#FFFFFF"  weight="bold" />
             )}
           </LinearGradient>
         </TouchableOpacity>
@@ -688,7 +688,7 @@ export default function NewLoginScreen() {
         </TouchableOpacity>
       </View>
       <View style={styles.inputWrapper}>
-        <Phone size={20} color={colors.textMuted} strokeWidth={2} />
+        <Phone size={20} color={colors.textMuted} />
         <Text style={styles.countryCode}>+91</Text>
         <TextInput
           style={styles.input}
@@ -727,7 +727,7 @@ export default function NewLoginScreen() {
       </TouchableOpacity>
 
       <View style={styles.whatsappNote}>
-        <ShieldCheck size={16} color={colors.primary} strokeWidth={2} />
+        <ShieldCheck size={16} color={colors.primary} />
         <Text style={styles.whatsappNoteText}>You'll receive the OTP via WhatsApp</Text>
       </View>
     </>

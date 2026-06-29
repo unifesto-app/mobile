@@ -4,8 +4,7 @@
  */
 
 import { makeAuthenticatedRequest } from './helpers';
-
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080';
+import { API_URL } from '../constants';
 
 const CURRENCY_SYMBOLS: Record<string, string> = {
   INR: '₹',

@@ -13,7 +13,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Search, Building2, X } from 'lucide-react-native';
+import { Buildings, MagnifyingGlass, X } from 'phosphor-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import GradientText from '../components/GradientText';
 import Skeleton from '../components/Skeleton';
@@ -451,7 +451,7 @@ export default function SpacesListScreen() {
       {/* Search Bar */}
       <View style={styles.searchSection}>
         <View style={styles.searchBar}>
-          <Search size={18} color={colors.textSecondary} strokeWidth={2} />
+          <MagnifyingGlass size={18} color={colors.textSecondary} />
           <TextInput
             style={styles.searchInput}
             placeholder="Search spaces..."
@@ -461,7 +461,7 @@ export default function SpacesListScreen() {
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <X size={18} color={colors.textSecondary} strokeWidth={2} />
+              <X size={18} color={colors.textSecondary} />
             </TouchableOpacity>
           )}
         </View>
@@ -548,7 +548,7 @@ export default function SpacesListScreen() {
           }
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Building2 size={64} color={colors.borderLight} strokeWidth={1.5} />
+              <Buildings size={64} color={colors.borderLight} />
               <Text style={styles.emptyText}>No spaces found</Text>
               <Text style={styles.emptySubtext}>
                 {searchQuery ? 'Try different keywords' : 'Try selecting a different type'}

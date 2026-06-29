@@ -1,7 +1,7 @@
 import * as SecureStore from 'expo-secure-store';
+import { API_URL as BASE_URL } from '../constants';
 
 const TOKEN_KEY = 'unifesto_access_token';
-const BASE_URL = 'https://api.unifesto.app';
 
 export async function getToken(): Promise<string | null> {
   try {

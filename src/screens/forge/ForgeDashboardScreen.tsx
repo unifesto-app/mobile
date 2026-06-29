@@ -13,15 +13,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import {
-  Plus,
-  Users,
-  Calendar,
-  CalendarClock,
-  Ticket,
-  BarChart3,
-  Hammer,
-} from 'lucide-react-native';
+import { Calendar, CalendarCheck, ChartBar, Hammer, Plus, Ticket, Users } from 'phosphor-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import ForgeWordmark from '../../components/ForgeWordmark';
 import { getMyOrganiserSpaces, Space } from '../../lib/api/spaces';
@@ -266,11 +258,11 @@ export default function ForgeDashboardScreen() {
                 </Text>
                 <View style={styles.chipsRow}>
                   <View style={styles.chip}>
-                    <Users size={11} color="#fff" strokeWidth={2.5} />
+                    <Users size={11} color="#fff"  weight="bold" />
                     <Text style={styles.chipText}>{members}</Text>
                   </View>
                   <View style={styles.chip}>
-                    <Calendar size={11} color="#fff" strokeWidth={2.5} />
+                    <Calendar size={11} color="#fff"  weight="bold" />
                     <Text style={styles.chipText}>{events}</Text>
                   </View>
                 </View>
@@ -284,7 +276,7 @@ export default function ForgeDashboardScreen() {
             activeOpacity={0.7}
             onPress={() => router.push('/(tabs)/forge-events')}
           >
-            <CalendarClock size={15} color={colors.primary} strokeWidth={2} />
+            <CalendarCheck size={15} color={colors.primary} />
             <Text style={styles.actionText}>Events</Text>
           </TouchableOpacity>
           <View style={styles.actionDivider} />
@@ -293,7 +285,7 @@ export default function ForgeDashboardScreen() {
             activeOpacity={0.7}
             onPress={() => router.push('/(tabs)/forge-registrations')}
           >
-            <Ticket size={15} color={colors.primary} strokeWidth={2} />
+            <Ticket size={15} color={colors.primary} />
             <Text style={styles.actionText}>Registrations</Text>
           </TouchableOpacity>
           <View style={styles.actionDivider} />
@@ -304,7 +296,7 @@ export default function ForgeDashboardScreen() {
               Alert.alert('Coming soon', 'Analytics will be available soon.')
             }
           >
-            <BarChart3 size={15} color={colors.textMuted} strokeWidth={2} />
+            <ChartBar size={15} color={colors.textMuted} />
             <Text style={styles.actionText}>Analytics</Text>
           </TouchableOpacity>
         </View>
@@ -340,14 +332,14 @@ export default function ForgeDashboardScreen() {
             <Text style={styles.headerSubtitle}>Your spaces</Text>
           </View>
           <View style={styles.headerIcon}>
-            <Hammer size={20} color={colors.primary} strokeWidth={2} />
+            <Hammer size={20} color={colors.primary} />
           </View>
         </View>
 
         {spaces.length === 0 ? (
           <View style={styles.emptyWrap}>
             <View style={styles.emptyIconWrap}>
-              <Plus size={30} color={colors.primary} strokeWidth={2} />
+              <Plus size={30} color={colors.primary} />
             </View>
             <Text style={styles.emptyTitle}>No spaces yet</Text>
             <Text style={styles.emptyText}>
@@ -364,7 +356,7 @@ export default function ForgeDashboardScreen() {
                 )
               }
             >
-              <Plus size={16} color="#fff" strokeWidth={2.5} />
+              <Plus size={16} color="#fff"  weight="bold" />
               <Text style={styles.ctaText}>Create Space</Text>
             </TouchableOpacity>
           </View>

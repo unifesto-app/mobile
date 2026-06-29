@@ -11,14 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import {
-  ChevronLeft,
-  Bell,
-  Mail,
-  Star,
-  Link2,
-  ExternalLink,
-} from 'lucide-react-native';
+import { ArrowSquareOut, Bell, CaretLeft, Envelope, LinkSimple, Star } from 'phosphor-react-native';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, typography, borderRadius, shadows } from '../theme';
 import { getFontFamily } from '../theme/fontHelpers';
@@ -312,7 +305,7 @@ export default function SettingsScreen() {
           onPress={() => router.back()}
           activeOpacity={0.7}
         >
-          <ChevronLeft size={24} color={colors.text} strokeWidth={2} />
+          <CaretLeft size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Settings</Text>
         <View style={styles.headerRight} />
@@ -325,7 +318,7 @@ export default function SettingsScreen() {
         {/* Notifications Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Bell size={20} color={colors.primary} strokeWidth={2} />
+            <Bell size={20} color={colors.primary} />
             <Text style={styles.sectionTitle}>Notifications</Text>
           </View>
 
@@ -333,7 +326,7 @@ export default function SettingsScreen() {
             <View style={styles.preferenceItem}>
               <View style={styles.preferenceLeft}>
                 <View style={styles.preferenceIcon}>
-                  <Bell size={20} color={colors.textSecondary} strokeWidth={2} />
+                  <Bell size={20} color={colors.textSecondary} />
                 </View>
                 <View style={styles.preferenceInfo}>
                   <Text style={styles.preferenceLabel}>Push Notifications</Text>
@@ -355,7 +348,7 @@ export default function SettingsScreen() {
             <View style={styles.preferenceItem}>
               <View style={styles.preferenceLeft}>
                 <View style={styles.preferenceIcon}>
-                  <Bell size={20} color={colors.textSecondary} strokeWidth={2} />
+                  <Bell size={20} color={colors.textSecondary} />
                 </View>
                 <View style={styles.preferenceInfo}>
                   <Text style={styles.preferenceLabel}>Event Reminders</Text>
@@ -377,7 +370,7 @@ export default function SettingsScreen() {
         {/* Email Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Mail size={20} color={colors.primary} strokeWidth={2} />
+            <Envelope size={20} color={colors.primary} />
             <Text style={styles.sectionTitle}>Email</Text>
           </View>
 
@@ -385,7 +378,7 @@ export default function SettingsScreen() {
             <View style={styles.preferenceItem}>
               <View style={styles.preferenceLeft}>
                 <View style={styles.preferenceIcon}>
-                  <Mail size={20} color={colors.textSecondary} strokeWidth={2} />
+                  <Envelope size={20} color={colors.textSecondary} />
                 </View>
                 <View style={styles.preferenceInfo}>
                   <Text style={styles.preferenceLabel}>Email Notifications</Text>
@@ -407,7 +400,7 @@ export default function SettingsScreen() {
             <View style={styles.preferenceItem}>
               <View style={styles.preferenceLeft}>
                 <View style={styles.preferenceIcon}>
-                  <Mail size={20} color={colors.textSecondary} strokeWidth={2} />
+                  <Envelope size={20} color={colors.textSecondary} />
                 </View>
                 <View style={styles.preferenceInfo}>
                   <Text style={styles.preferenceLabel}>Marketing Emails</Text>
@@ -438,7 +431,7 @@ export default function SettingsScreen() {
             >
               <View style={styles.resourceLeft}>
                 <View style={styles.resourceIcon}>
-                  <Star size={20} color={colors.primary} strokeWidth={2} />
+                  <Star size={20} color={colors.primary} />
                 </View>
                 <View style={styles.resourceInfo}>
                   <Text style={styles.resourceLabel}>Rate in App Store</Text>
@@ -447,7 +440,7 @@ export default function SettingsScreen() {
                   </Text>
                 </View>
               </View>
-              <ExternalLink size={20} color={colors.textMuted} strokeWidth={2} />
+              <ArrowSquareOut size={20} color={colors.textMuted} />
             </TouchableOpacity>
 
             <View style={styles.preferenceDivider} />
@@ -459,7 +452,7 @@ export default function SettingsScreen() {
             >
               <View style={styles.resourceLeft}>
                 <View style={styles.resourceIcon}>
-                  <Link2 size={20} color={colors.primary} strokeWidth={2} />
+                  <LinkSimple size={20} color={colors.primary} />
                 </View>
                 <View style={styles.resourceInfo}>
                   <Text style={styles.resourceLabel}>Unifesto on Instagram</Text>
@@ -468,7 +461,7 @@ export default function SettingsScreen() {
                   </Text>
                 </View>
               </View>
-              <ExternalLink size={20} color={colors.textMuted} strokeWidth={2} />
+              <ArrowSquareOut size={20} color={colors.textMuted} />
             </TouchableOpacity>
           </View>
         </View>

@@ -6,7 +6,7 @@ import {
   FlatList,
   TouchableOpacity,
 } from 'react-native';
-import { Briefcase, MapPin, DollarSign } from 'lucide-react-native';
+import { Briefcase, CurrencyDollar, MapPin } from 'phosphor-react-native';
 import { getFontFamily } from '../theme/fontHelpers';
 
 // Mock data
@@ -108,7 +108,7 @@ export default function CareersScreen() {
         )}
         {item.salary_range && (
           <View style={styles.detailRow}>
-            <DollarSign size={16} color="#6B7280" />
+            <CurrencyDollar size={16} color="#6B7280" />
             <Text style={styles.detailText}>{item.salary_range}</Text>
           </View>
         )}
