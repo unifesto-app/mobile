@@ -27,7 +27,7 @@ import { spacing, typography, borderRadius, shadows, brandGradient, brandGradien
 import { getFontFamily } from '../theme/fontHelpers';
 import { useTheme } from '../context/ThemeContext';
 import { getWallet, getTransactions, redeemCode } from '../lib/api/wallet';
-import { getReferral } from '../lib/api/referrals';
+import { getReferral, applyReferralCode } from '../lib/api/referrals';
 
 interface WalletTransaction {
   id: string;
@@ -705,7 +705,7 @@ const ReferralAnimation = () => {
 };
 
 export default function WalletScreen() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const router = useRouter();
   const { colors } = useTheme();
   const [loading, setLoading] = useState(false);
@@ -722,6 +722,8 @@ export default function WalletScreen() {
   const [showRedeemModal, setShowRedeemModal] = useState(false);
   const [redeemCodeInput, setRedeemCodeInput] = useState('');
   const [redeemLoading, setRedeemLoading] = useState(false);
+  const [applyReferralInput, setApplyReferralInput] = useState('');
+  const [applyReferralLoading, setApplyReferralLoading] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -769,6 +771,22 @@ export default function WalletScreen() {
       });
     } catch (error) {
       console.error('Error sharing referral:', error);
+    }
+  };
+
+  const handleApplyReferral = async () => {
+    if (!applyReferralInput.trim()) return;
+    setApplyReferralLoading(true);
+    try {
+      await applyReferralCode(applyReferralInput.trim());
+      await refreshUser();
+      setApplyReferralInput('');
+      Alert.alert('Success!', 'Referral code applied! Coins have been added to your wallet.');
+      handleRefresh();
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Failed to apply referral code');
+    } finally {
+      setApplyReferralLoading(false);
     }
   };
 
@@ -1003,11 +1021,11 @@ export default function WalletScreen() {
     opacity: 0.5,
   },
   redeemButtonGradient: {
-    paddingVertical: spacing[4],
+    paddingVertical: spacing[3],
     paddingHorizontal: spacing[6],
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 56,
+    minHeight: 52,
   },
   redeemButtonText: {
     fontSize: typography.fontSize.base,
@@ -1882,6 +1900,48 @@ export default function WalletScreen() {
                       <Text style={styles.referralStatLabel}>Coins Earned</Text>
                     </View>
                   </View>
+
+                  {!user?.hasAppliedReferral && (
+                    <View style={{ marginTop: spacing[4] }}>
+                      <Text style={[styles.referralCodeLabel, { marginBottom: spacing[2] }]}>
+                        Have a referral code?
+                      </Text>
+                      <View style={styles.redeemInputRow}>
+                        <View style={styles.redeemInputWrapper}>
+                          <Gift size={18} color={colors.textMuted} />
+                          <TextInput
+                            style={styles.redeemInput}
+                            placeholder="Enter code"
+                            placeholderTextColor={colors.textMuted}
+                            value={applyReferralInput}
+                            onChangeText={setApplyReferralInput}
+                            autoCapitalize="characters"
+                            autoCorrect={false}
+                            editable={!applyReferralLoading}
+                          />
+                        </View>
+                        <TouchableOpacity
+                          style={[styles.redeemButton, (!applyReferralInput.trim() || applyReferralLoading) && styles.redeemButtonDisabled]}
+                          onPress={handleApplyReferral}
+                          disabled={!applyReferralInput.trim() || applyReferralLoading}
+                          activeOpacity={0.8}
+                        >
+                          <LinearGradient
+                            colors={brandGradient}
+                            start={brandGradientStart}
+                            end={brandGradientEnd}
+                            style={styles.redeemButtonGradient}
+                          >
+                            {applyReferralLoading ? (
+                              <ActivityIndicator color={colors.text} size="small" />
+                            ) : (
+                              <Text style={styles.redeemButtonText}>Apply</Text>
+                            )}
+                          </LinearGradient>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  )}
                 </>
               )}
             </View>
