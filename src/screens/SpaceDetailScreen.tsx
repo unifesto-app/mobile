@@ -23,15 +23,16 @@ import { useAuth } from '../context/AuthContext';
 interface SpaceDetailScreenProps {
   route: { params: { spaceId: string } };
   onMembershipChange?: (isMember: boolean) => void;
+  initialSpace?: Space | null;
 }
 
-export default function SpaceDetailScreen({ route, onMembershipChange }: SpaceDetailScreenProps) {
+export default function SpaceDetailScreen({ route, onMembershipChange, initialSpace }: SpaceDetailScreenProps) {
   const router = useRouter();
   const { spaceId } = route.params;
   const { user, token } = useAuth();
   const { colors } = useTheme();
   
-  const [space, setOrganization] = useState<Space | null>(null);
+  const [space, setOrganization] = useState<Space | null>(initialSpace || null);
   const [parentSpace, setParentOrg] = useState<Space | null>(null);
   const [subSpaces, setSubOrgs] = useState<Space[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
@@ -46,7 +47,7 @@ export default function SpaceDetailScreen({ route, onMembershipChange }: SpaceDe
   const loadSpaceData = async () => {
     try {
       setLoading(true);
-      const orgData = await getSpaceById(spaceId, token || undefined);
+      const orgData = initialSpace || await getSpaceById(spaceId, token || undefined);
       
       if (!orgData) {
         setLoading(false);
