@@ -14,6 +14,11 @@ module.exports = () => {
     userInterfaceStyle: "dark",
     scheme: "unifesto",
     icon: "./assets/app-icon-transparent.png",
+    splash: {
+      image: "./assets/app-icon-transparent.png",
+      resizeMode: "contain",
+      backgroundColor: "#000000"
+    },
     assetBundlePatterns: [
       "**/*"
     ],
