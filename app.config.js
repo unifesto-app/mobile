@@ -73,22 +73,32 @@ module.exports = () => {
             {
               scheme: "https",
               host: "unifesto.app",
-              pathPrefix: "/events"
+              pathPrefix: "/event"
             },
             {
               scheme: "https",
               host: "unifesto.app",
-              pathPrefix: "/spaces"
+              pathPrefix: "/space"
+            },
+            {
+              scheme: "https",
+              host: "unifesto.app",
+              pathPrefix: "/signup"
             },
             {
               scheme: "https",
               host: "www.unifesto.app",
-              pathPrefix: "/events"
+              pathPrefix: "/event"
             },
             {
               scheme: "https",
               host: "www.unifesto.app",
-              pathPrefix: "/spaces"
+              pathPrefix: "/space"
+            },
+            {
+              scheme: "https",
+              host: "www.unifesto.app",
+              pathPrefix: "/signup"
             }
           ],
           category: [
