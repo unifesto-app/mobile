@@ -13,6 +13,7 @@ interface User {
   avatarUrl: string | null;
   bio: string | null;
   isOnboarded: boolean;
+  hasAppliedReferral?: boolean;
   referralCode: string | null;
   createdAt: string;
 }
@@ -23,6 +24,7 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   isOnboarded: boolean;
+  hasAppliedReferral?: boolean;
   tempToken: string | null;
   // OTP Auth
   sendMobileOtp: (mobileNumber: string) => Promise<void>;
