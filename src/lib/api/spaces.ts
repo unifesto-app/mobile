@@ -221,7 +221,7 @@ export async function getSpaceById(spaceId: string, accessToken?: string): Promi
 /**
  * Get space by slug
  */
-export async function getSpaceBySlug(slug: string): Promise<Space> {
+export async function getSpaceBySlug(slug: string, accessToken?: string): Promise<Space> {
   try {
     // Remove @ if present
     const cleanSlug = slug.replace(/^@/, '');
@@ -230,6 +230,7 @@ export async function getSpaceBySlug(slug: string): Promise<Space> {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
       },
     });
 

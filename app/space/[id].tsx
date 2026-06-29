@@ -24,6 +24,7 @@ import { getFontFamily } from '../../src/theme/fontHelpers';
 import SpaceDetailScreen from '../../src/screens/SpaceDetailScreen';
 import {
   getSpaceById,
+  getSpaceBySlug,
   joinSpace,
   leaveSpace,
   Space,
@@ -46,7 +47,10 @@ export default function SpaceDetail() {
 
   const loadSpace = async () => {
     try {
-      const spaceData = await getSpaceById(id, token || undefined);
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+      const spaceData = isUuid
+        ? await getSpaceById(id, token || undefined)
+        : await getSpaceBySlug(id, token || undefined);
       setSpace(spaceData);
       setIsMember(!!spaceData.userRole);
     } catch (error) {
